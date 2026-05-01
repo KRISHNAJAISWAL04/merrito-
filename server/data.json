@@ -1,0 +1,223 @@
+{
+  "leads": [],
+  "counselors": [
+    {
+      "id": "c001-rbmi-priya",
+      "name": "Priya Sharma",
+      "email": "priya@rbmi.edu.in",
+      "phone": "+91 98765 43210",
+      "role": "Senior Counselor",
+      "department": "Management",
+      "branch": "bareilly",
+      "rating": 4.8,
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "c002-rbmi-rajesh",
+      "name": "Rajesh Kumar",
+      "email": "rajesh@rbmi.edu.in",
+      "phone": "+91 87654 32109",
+      "role": "Counselor",
+      "department": "Management",
+      "branch": "bareilly",
+      "rating": 4.5,
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "c003-rbmi-anita",
+      "name": "Anita Desai",
+      "email": "anita@rbmi.edu.in",
+      "phone": "+91 76543 21098",
+      "role": "Senior Counselor",
+      "department": "Management",
+      "branch": "bareilly",
+      "rating": 4.9,
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "c004-rbmi-vikram",
+      "name": "Vikram Singh",
+      "email": "vikram@rbmi.edu.in",
+      "phone": "+91 65432 10987",
+      "role": "Counselor",
+      "department": "Management",
+      "branch": "greater_noida",
+      "rating": 4.3,
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "c005-rbmi-neha",
+      "name": "Neha Patel",
+      "email": "neha@rbmi.edu.in",
+      "phone": "+91 54321 09876",
+      "role": "Junior Counselor",
+      "department": "Management",
+      "branch": "greater_noida",
+      "rating": 4.6,
+      "created_at": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "courses": [
+    {
+      "id": "cr001-mba",
+      "name": "MBA (Master of Business Administration)",
+      "code": "MBA",
+      "department": "Management",
+      "duration": "2 Years",
+      "total_seats": 120,
+      "filled_seats": 0,
+      "fee": "₹3,50,000/yr",
+      "status": "Active",
+      "branch": "bareilly",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "cr002-bba",
+      "name": "BBA (Bachelor of Business Administration)",
+      "code": "BBA",
+      "department": "Management",
+      "duration": "3 Years",
+      "total_seats": 120,
+      "filled_seats": 0,
+      "fee": "₹1,80,000/yr",
+      "status": "Active",
+      "branch": "bareilly",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "cr003-bca",
+      "name": "BCA (Bachelor of Computer Applications)",
+      "code": "BCA",
+      "department": "Computer Science",
+      "duration": "3 Years",
+      "total_seats": 60,
+      "filled_seats": 0,
+      "fee": "₹1,60,000/yr",
+      "status": "Active",
+      "branch": "bareilly",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "cr004-mca",
+      "name": "MCA (Master of Computer Applications)",
+      "code": "MCA",
+      "department": "Computer Science",
+      "duration": "2 Years",
+      "total_seats": 60,
+      "filled_seats": 0,
+      "fee": "₹2,00,000/yr",
+      "status": "Active",
+      "branch": "bareilly",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "cr005-bcom",
+      "name": "B.Com (Bachelor of Commerce)",
+      "code": "BCOM",
+      "department": "Commerce",
+      "duration": "3 Years",
+      "total_seats": 60,
+      "filled_seats": 0,
+      "fee": "₹1,20,000/yr",
+      "status": "Active",
+      "branch": "bareilly",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "cr008-mba-gn",
+      "name": "MBA (Master of Business Administration)",
+      "code": "MBA-GN",
+      "department": "Management",
+      "duration": "2 Years",
+      "total_seats": 120,
+      "filled_seats": 0,
+      "fee": "₹3,75,000/yr",
+      "status": "Active",
+      "branch": "greater_noida",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "cr009-bba-gn",
+      "name": "BBA (Bachelor of Business Administration)",
+      "code": "BBA-GN",
+      "department": "Management",
+      "duration": "3 Years",
+      "total_seats": 120,
+      "filled_seats": 0,
+      "fee": "₹2,00,000/yr",
+      "status": "Active",
+      "branch": "greater_noida",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "name": "B.Tech AI and DS",
+      "code": "BTAI",
+      "department": "Engineering",
+      "duration": "4 Years",
+      "total_seats": 200,
+      "filled_seats": 0,
+      "fee": "85000/yr",
+      "status": "Active",
+      "created_at": "2026-04-30T17:46:48.053Z"
+    }
+  ],
+  "activities": [],
+  "users": [
+    {
+      "id": "u001-admin",
+      "name": "Admin RBMI",
+      "email": "admin@rbmi.edu.in",
+      "password": "admin123",
+      "role": "admin",
+      "counselor_id": null,
+      "branch": "bareilly",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "u002-priya",
+      "name": "Priya Sharma",
+      "email": "priya@rbmi.edu.in",
+      "password": "counselor123",
+      "role": "counselor",
+      "counselor_id": "c001-rbmi-priya",
+      "branch": "bareilly",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "u003-rajesh",
+      "name": "Rajesh Kumar",
+      "email": "rajesh@rbmi.edu.in",
+      "password": "counselor123",
+      "role": "counselor",
+      "counselor_id": "c002-rbmi-rajesh",
+      "branch": "bareilly",
+      "created_at": "2026-01-01T00:00:00.000Z"
+    }
+  ],
+  "settings": {
+    "institute_name": "Rakshpal Bahadur Management Institute (RBMI)",
+    "short_name": "RBMI",
+    "email": "admissions@rbmi.edu.in",
+    "phone": "+91 581 250 0000",
+    "address": "Pilibhit Bypass Road, Bareilly, Uttar Pradesh - 243006",
+    "website": "https://www.rbmi.edu.in",
+    "academic_year": "2025-2026",
+    "city": "Bareilly",
+    "state": "Uttar Pradesh",
+    "branches": [
+      {
+        "id": "bareilly",
+        "name": "Bareilly Campus",
+        "address": "Pilibhit Bypass Road, Bareilly, UP - 243006",
+        "phone": "+91 581 250 0000"
+      },
+      {
+        "id": "greater_noida",
+        "name": "Greater Noida Campus",
+        "address": "Knowledge Park II, Greater Noida, UP - 201306",
+        "phone": "+91 120 250 0000"
+      }
+    ]
+  }
+}

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>RBMI CRM</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script>
+    window.renderIcons = function() {}; // placeholder until module loads
+  </script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    html,body{height:100%;font-family:'Inter',sans-serif;background:#f1f5f9;color:#0f172a}
+
+    /* BOOT */
+    #boot{position:fixed;inset:0;z-index:99999;background:linear-gradient(135deg,#1e1b4b,#312e81,#4338ca);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;transition:opacity 0.4s}
+    .b-logo{width:72px;height:72px;background:rgba(255,255,255,0.15);border:2px solid rgba(255,255,255,0.3);border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:800;color:#fff;margin-bottom:20px}
+    .b-title{font-size:26px;font-weight:800;color:#fff;margin-bottom:6px}
+    .b-sub{font-size:13px;color:rgba(255,255,255,0.6);margin-bottom:40px}
+    .b-track{width:180px;height:4px;background:rgba(255,255,255,0.15);border-radius:99px;overflow:hidden;margin-bottom:12px}
+    .b-fill{height:100%;width:0;background:#a5b4fc;border-radius:99px;transition:width 0.3s ease}
+    .b-msg{font-size:12px;color:rgba(255,255,255,0.4)}
+
+    /* APP */
+    #app{display:none;position:fixed;inset:0;flex-direction:row;overflow:hidden}
+    #app.show{display:flex}
+    #sidebar{width:260px;min-width:260px;height:100vh;background:#0f172a;display:flex;flex-direction:column;overflow:hidden}
+    #main-wrapper{flex:1;display:flex;flex-direction:column;min-width:0;overflow:hidden;background:#f1f5f9}
+    #top-header{height:64px;min-height:64px;background:#fff;border-bottom:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;padding:0 24px}
+    #page-content{flex:1;overflow-y:auto;overflow-x:hidden;padding:24px}
+
+    /* LOGIN */
+    #login-root{display:none;position:fixed;inset:0;z-index:9998;background:#fff}
+    #login-root.show{display:flex}
+    .lp{display:flex;width:100%;height:100vh}
+    .lp-left{flex:1;background:linear-gradient(160deg,#1e1b4b,#312e81,#4338ca);display:flex;flex-direction:column;justify-content:space-between;padding:48px;color:#fff;overflow:hidden}
+    .lp-brand{display:flex;align-items:center;gap:14px}
+    .lp-logo{width:44px;height:44px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:#fff}
+    .lp-brand-name{font-size:20px;font-weight:800}
+    .lp-brand-sub{font-size:11px;opacity:0.6;margin-top:2px}
+    .lp-hero h1{font-size:40px;font-weight:800;line-height:1.15;margin-bottom:14px;letter-spacing:-1px}
+    .lp-hero p{font-size:15px;opacity:0.7;line-height:1.7;margin-bottom:32px;max-width:380px}
+    .lp-stats{display:flex;gap:32px;margin-bottom:28px}
+    .lp-stat{display:flex;flex-direction:column;gap:2px}
+    .ls-n{font-size:28px;font-weight:800}
+    .ls-l{font-size:12px;opacity:0.55}
+    .lp-branches{display:flex;flex-direction:column;gap:10px}
+    .lp-branch{display:flex;align-items:center;gap:10px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12);border-radius:10px;padding:12px 16px;font-size:13px}
+    .lp-branch strong{display:block;font-weight:600}
+    .lp-branch small{opacity:0.6;font-size:11px}
+    .lp-right{width:480px;background:#fff;display:flex;align-items:center;justify-content:center;padding:48px 40px}
+    .lp-card{width:100%;max-width:380px}
+    .lp-card-logo{display:flex;align-items:center;gap:12px;margin-bottom:28px}
+    .lp-card-icon{width:40px;height:40px;background:linear-gradient(135deg,#818cf8,#6366f1);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff}
+    .lp-title{font-size:22px;font-weight:700;color:#0f172a;margin-bottom:24px}
+    .lp-err{background:#fef2f2;border:1px solid #fecaca;color:#dc2626;padding:10px 14px;border-radius:8px;font-size:13px;margin-bottom:16px;display:none}
+    .lp-form{display:flex;flex-direction:column;gap:16px}
+    .lp-group{display:flex;flex-direction:column;gap:6px}
+    .lp-group label{font-size:13px;font-weight:600;color:#374151}
+    .lp-input{padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:8px;font-size:14px;color:#0f172a;background:#f8fafc;outline:none;font-family:inherit;width:100%;transition:border-color 0.15s}
+    .lp-input:focus{border-color:#6366f1;background:#fff;box-shadow:0 0 0 3px rgba(99,102,241,0.1)}
+    .lp-btn{padding:12px;background:#6366f1;color:#fff;border:none;border-radius:8px;font-size:15px;font-weight:600;cursor:pointer;font-family:inherit;transition:background 0.15s;margin-top:4px}
+    .lp-btn:hover{background:#4f46e5}
+    .lp-btn:disabled{opacity:0.6;cursor:not-allowed}
+    .lp-div{display:flex;align-items:center;gap:10px;margin:20px 0 14px;color:#94a3b8;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.5px}
+    .lp-div::before,.lp-div::after{content:'';flex:1;height:1px;background:#e2e8f0}
+    .lp-demos{display:flex;flex-direction:column;gap:8px}
+    .lp-demo{display:flex;align-items:center;gap:10px;padding:10px 14px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:8px;cursor:pointer;font-family:inherit;text-align:left;width:100%;transition:border-color 0.15s}
+    .lp-demo:hover{border-color:#6366f1;background:#f5f3ff}
+    .lp-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:20px;text-transform:uppercase;white-space:nowrap}
+    .lp-badge.admin{background:#ede9fe;color:#7c3aed}
+    .lp-badge.counselor{background:#dcfce7;color:#16a34a}
+    .lp-demo-name{font-weight:600;font-size:13px;color:#0f172a}
+    .lp-demo-email{font-size:11px;color:#64748b}
+  </style>
+</head>
+<body>
+
+<!-- BOOT SCREEN -->
+<div id="boot">
+  <div class="b-logo">R</div>
+  <div class="b-title">RBMI CRM</div>
+  <div class="b-sub">Rakshpal Bahadur Management Institute</div>
+  <div class="b-track"><div class="b-fill" id="bfill"></div></div>
+  <div class="b-msg" id="bmsg">Loading...</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="app">
+  <aside id="sidebar"></aside>
+  <main id="main-wrapper">
+    <header id="top-header"></header>
+    <section id="page-content"></section>
+  </main>
+</div>
+
+<div id="modal-root"></div>
+
+<!-- LOGIN -->
+<div id="login-root"></div>
+
+<script>
+// Boot progress animation
+var msgs = ['Loading modules...','Setting up CRM...','Connecting to server...','Almost ready...','Ready!'];
+var pcts = [20,45,70,90,100];
+var fill = document.getElementById('bfill');
+var bmsg = document.getElementById('bmsg');
+for(var i=0;i<msgs.length;i++){
+  (function(idx){
+    setTimeout(function(){
+      fill.style.width = pcts[idx]+'%';
+      bmsg.textContent = msgs[idx];
+    }, 400 + idx*600);
+  })(i);
+}
+</script>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
