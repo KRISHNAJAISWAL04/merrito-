@@ -153,3 +153,51 @@ export async function fetchSettings() {
 export async function saveSettings(data) {
   return request('/settings', { method: 'PUT', body: JSON.stringify(data) });
 }
+
+// ---- STUDENT PORTAL ----
+export async function fetchPortalProfile() {
+  return request('/portal/profile');
+}
+
+export async function updatePortalProfile(data) {
+  return request('/portal/profile', { method: 'PUT', body: JSON.stringify(data) });
+}
+
+// ---- APPLICATIONS ----
+export async function fetchApplications() {
+  return request('/applications');
+}
+
+export async function createApplication(data) {
+  return request('/applications', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateApplication(id, data) {
+  return request(`/applications/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+// ---- QUERIES ----
+export async function fetchQueries() {
+  return request('/queries');
+}
+
+export async function createQuery(data) {
+  return request('/queries', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateQuery(id, data) {
+  return request(`/queries/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+// ---- PAYMENTS ----
+export async function fetchPayments() {
+  return request('/payments');
+}
+
+export async function createPayment(data) {
+  return request('/payments', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updatePayment(id, data) {
+  return request(`/payments/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}

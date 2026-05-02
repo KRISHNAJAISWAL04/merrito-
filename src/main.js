@@ -19,6 +19,10 @@ import { renderCounselors } from './pages/counselors.js';
 import { renderCourses } from './pages/courses.js';
 import { renderReports } from './pages/reports.js';
 import { renderSettings } from './pages/settings.js';
+import { renderApplications } from './pages/applications.js';
+import { renderQueries } from './pages/queries.js';
+import { renderPayments } from './pages/payments.js';
+import { renderStudentPortal } from './pages/studentPortal.js';
 import { getCurrentUser } from './lib/auth.js';
 import { createIcons } from './lib/icons.js';
 
@@ -35,13 +39,14 @@ registerRoute('/counselors', renderCounselors);
 registerRoute('/courses', renderCourses);
 registerRoute('/reports', renderReports);
 registerRoute('/settings', renderSettings);
+registerRoute('/portal', renderStudentPortal);
 registerRoute('/formdesk', ph('FormDesk'));
 registerRoute('/calendar', ph('Calendar Pro'));
-registerRoute('/applications', ph('Application Manager'));
+registerRoute('/applications', renderApplications);
 registerRoute('/marketing', ph('Marketing'));
 registerRoute('/campaigns', ph('Campaign Manager'));
-registerRoute('/queries', ph('Query Manager'));
-registerRoute('/payments', ph('Payment Manager'));
+registerRoute('/queries', renderQueries);
+registerRoute('/payments', renderPayments);
 registerRoute('/templates', ph('Template Manager'));
 registerRoute('/access-control', ph('User Access Control'));
 registerRoute('/download', ph('Download App'));
@@ -54,6 +59,7 @@ function hideBoot(cb) {
 }
 
 function startApp(user) {
+  if (user?.role === 'student' && (!window.location.hash || window.location.hash === '#/dashboard')) window.location.hash = '/portal';
   document.getElementById('app').classList.add('show');
   renderSidebar(user);
   renderHeader(user);
@@ -70,11 +76,11 @@ function showLogin() {
     <div class="lp-left">
       <div class="lp-brand">
         <div class="lp-logo">R</div>
-        <div><div class="lp-brand-name">RBMI CRM</div><div class="lp-brand-sub">Rakshpal Bahadur Management Institute</div></div>
+        <div><div class="lp-brand-name">RBMI Admission Hub</div><div class="lp-brand-sub">Admissions, applications and student journeys</div></div>
       </div>
       <div class="lp-hero">
-        <h1>Admissions<br/>Made Smarter</h1>
-        <p>Manage leads, track counselors, and grow enrollments across Bareilly &amp; Greater Noida campuses.</p>
+        <h1>Admissions<br/>That Move</h1>
+        <p>Run leads, applications, fee checkpoints and student communication from one focused enrollment workspace.</p>
         <div class="lp-stats">
           <div class="lp-stat"><span class="ls-n">2</span><span class="ls-l">Campuses</span></div>
           <div class="lp-stat"><span class="ls-n">500+</span><span class="ls-l">Leads/Year</span></div>
@@ -90,7 +96,7 @@ function showLogin() {
       <div class="lp-card">
         <div class="lp-card-logo">
           <div class="lp-card-icon">R</div>
-          <div><div style="font-weight:700;font-size:17px">RBMI CRM</div><div style="font-size:12px;color:#64748b">Admission Management System</div></div>
+          <div><div style="font-weight:700;font-size:17px">RBMI Admission Hub</div><div style="font-size:12px;color:#64748b">Admin, counselor and student panels</div></div>
         </div>
         <h2 class="lp-title">Sign in to your account</h2>
         <div id="lerr" class="lp-err"></div>
@@ -117,6 +123,7 @@ function showLogin() {
           <button class="lp-demo" data-e="admin@rbmi.edu.in" data-p="admin123"><span class="lp-badge admin">Admin</span><div><div class="lp-demo-name">Admin RBMI</div><div class="lp-demo-email">admin@rbmi.edu.in</div></div></button>
           <button class="lp-demo" data-e="priya@rbmi.edu.in" data-p="counselor123"><span class="lp-badge counselor">Counselor</span><div><div class="lp-demo-name">Priya Sharma</div><div class="lp-demo-email">priya@rbmi.edu.in</div></div></button>
           <button class="lp-demo" data-e="rajesh@rbmi.edu.in" data-p="counselor123"><span class="lp-badge counselor">Counselor</span><div><div class="lp-demo-name">Rajesh Kumar</div><div class="lp-demo-email">rajesh@rbmi.edu.in</div></div></button>
+          <button class="lp-demo" data-e="student@demo.in" data-p="student123"><span class="lp-badge student">Student</span><div><div class="lp-demo-name">Aarav Mehta</div><div class="lp-demo-email">student@demo.in</div></div></button>
         </div>
       </div>
     </div>
@@ -146,11 +153,11 @@ function showLogin() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Invalid credentials');
       sessionStorage.setItem('rbmi_v', '5');
-      sessionStorage.setItem('rbmi_user', JSON.stringify({ ...data.user, branch }));
+      sessionStorage.setItem('rbmi_user', JSON.stringify({ ...data.user, branch: data.user.branch || branch }));
       sessionStorage.setItem('rbmi_token', data.token);
       root.classList.remove('show');
       root.innerHTML = '';
-      startApp({ ...data.user, branch });
+      startApp({ ...data.user, branch: data.user.branch || branch });
     } catch (ex) {
       err.textContent = '⚠ ' + ex.message;
       err.style.display = 'block';
@@ -167,3 +174,6 @@ setTimeout(() => {
     else showLogin();
   });
 }, 3000);
+
+
+

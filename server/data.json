@@ -162,7 +162,26 @@
       "created_at": "2026-04-30T17:46:48.053Z"
     }
   ],
-  "activities": [],
+  "activities": [
+    {
+      "id": "10abc73e-03b2-4247-bb1c-a9dccdc0109f",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-02T10:27:32.412Z"
+    },
+    {
+      "id": "ba6c4520-9aac-4c0c-bb78-a7ad9f5ebe51",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-02T10:27:07.868Z"
+    },
+    {
+      "id": "6d70c19c-6e23-4649-a5c9-a1a61803d584",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-02T10:27:03.675Z"
+    }
+  ],
   "users": [
     {
       "id": "u001-admin",
@@ -193,6 +212,16 @@
       "counselor_id": "c002-rbmi-rajesh",
       "branch": "bareilly",
       "created_at": "2026-01-01T00:00:00.000Z"
+    },
+    {
+      "id": "u004-student-demo",
+      "name": "Aarav Mehta",
+      "email": "student@demo.in",
+      "password": "student123",
+      "role": "student",
+      "counselor_id": null,
+      "branch": "bareilly",
+      "created_at": "2026-05-02T10:24:13.829Z"
     }
   ],
   "settings": {
@@ -219,5 +248,68 @@
         "phone": "+91 120 250 0000"
       }
     ]
-  }
+  },
+  "portalProfiles": {
+    "u004-student-demo": {
+      "user_id": "u004-student-demo",
+      "name": "Aarav Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "city": "Bareilly",
+      "course_id": "cr001-mba",
+      "stage": "application_submitted",
+      "counselor_name": "Priya Sharma",
+      "readiness": 78,
+      "next_step": "Callback requested with admissions counselor",
+      "fee_due": "25000",
+      "scholarship": "Fee slip generated. Payment desk will verify within 24 hours.",
+      "branch": "bareilly",
+      "updated_at": "2026-05-02T10:27:32.411Z"
+    }
+  },
+  "applications": [
+    {
+      "id": "app-demo-aarav",
+      "user_id": "u004-student-demo",
+      "student_name": "Aarav Mehta",
+      "email": "student@demo.in",
+      "course_id": "cr001-mba",
+      "status": "submitted",
+      "documents_status": "pending",
+      "counselor_name": "Priya Sharma",
+      "priority": "high",
+      "created_at": "2026-05-02T10:45:39.154Z",
+      "updated_at": "2026-05-02T10:45:39.154Z"
+    }
+  ],
+  "queries": [
+    {
+      "id": "qry-demo-aarav",
+      "user_id": "u004-student-demo",
+      "student_name": "Aarav Mehta",
+      "subject": "Document upload help",
+      "category": "Documents",
+      "status": "open",
+      "priority": "medium",
+      "message": "Need help uploading Class 12 marksheet.",
+      "response": "",
+      "created_at": "2026-05-02T10:45:39.154Z",
+      "updated_at": "2026-05-02T10:45:39.154Z"
+    }
+  ],
+  "payments": [
+    {
+      "id": "pay-demo-aarav",
+      "user_id": "u004-student-demo",
+      "student_name": "Aarav Mehta",
+      "title": "Admission confirmation fee",
+      "amount": 25000,
+      "status": "due",
+      "method": "Online",
+      "due_date": "2026-05-15",
+      "receipt_no": "",
+      "created_at": "2026-05-02T10:45:39.154Z",
+      "updated_at": "2026-05-02T10:45:39.154Z"
+    }
+  ]
 }

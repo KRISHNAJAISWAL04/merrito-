@@ -66,13 +66,50 @@ export function seedUsers() {
   saveDB(db);
 }
 
+function ensureDemoUsers() {
+  const db = getDB();
+  if (!db.users) db.users = [];
+  if (!db.users.some(u => u.email.toLowerCase() === 'student@demo.in')) {
+    db.users.push({
+      id: 'u004-student-demo',
+      name: 'Aarav Mehta',
+      email: 'student@demo.in',
+      password: 'student123',
+      role: 'student',
+      counselor_id: null,
+      branch: 'bareilly',
+      created_at: new Date().toISOString()
+    });
+  }
+  if (!db.portalProfiles) db.portalProfiles = {};
+  if (!db.portalProfiles['u004-student-demo']) {
+    db.portalProfiles['u004-student-demo'] = {
+      user_id: 'u004-student-demo',
+      name: 'Aarav Mehta',
+      email: 'student@demo.in',
+      phone: '+91 90123 45678',
+      city: 'Bareilly',
+      course_id: 'cr001-mba',
+      stage: 'application_submitted',
+      counselor_name: 'Priya Sharma',
+      readiness: 78,
+      next_step: 'Upload Class 12 marksheet',
+      fee_due: '25000',
+      scholarship: 'Merit review pending',
+      branch: 'bareilly',
+      updated_at: new Date().toISOString()
+    };
+  }
+  saveDB(db);
+}
 export function loginUser(email, password) {
+  ensureDemoUsers();
   const db = getDB();
   const users = db.users || [];
   const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
   if (!user) return null;
 
-  const payload = { id: user.id, email: user.email, name: user.name, role: user.role, counselor_id: user.counselor_id };
+  const payload = { id: user.id, email: user.email, name: user.name, role: user.role, counselor_id: user.counselor_id, branch: user.branch || 'bareilly' };
   const token = signToken(payload);
   return { user: payload, token };
 }
@@ -132,3 +169,5 @@ export function requireAdmin(req, res, next) {
     next();
   });
 }
+
+

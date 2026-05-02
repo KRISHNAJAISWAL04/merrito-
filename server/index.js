@@ -539,6 +539,165 @@ app.get('/api/pipeline', requireAuth, async (req, res) => {
 });
 
 // ============================================================
+//  APPLICATIONS, QUERIES, PAYMENTS
+// ============================================================
+
+function ensureAdmissionsModules() {
+  const dbData = getDB();
+  if (!dbData.applications) dbData.applications = [];
+  if (!dbData.queries) dbData.queries = [];
+  if (!dbData.payments) dbData.payments = [];
+  if (!dbData.applications.some(a => a.user_id === 'u004-student-demo')) {
+    dbData.applications.push({ id: 'app-demo-aarav', user_id: 'u004-student-demo', student_name: 'Aarav Mehta', email: 'student@demo.in', course_id: 'cr001-mba', status: 'submitted', documents_status: 'pending', counselor_name: 'Priya Sharma', priority: 'high', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+  }
+  if (!dbData.queries.some(q => q.user_id === 'u004-student-demo')) {
+    dbData.queries.push({ id: 'qry-demo-aarav', user_id: 'u004-student-demo', student_name: 'Aarav Mehta', subject: 'Document upload help', category: 'Documents', status: 'open', priority: 'medium', message: 'Need help uploading Class 12 marksheet.', response: '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+  }
+  if (!dbData.payments.some(p => p.user_id === 'u004-student-demo')) {
+    dbData.payments.push({ id: 'pay-demo-aarav', user_id: 'u004-student-demo', student_name: 'Aarav Mehta', title: 'Admission confirmation fee', amount: 25000, status: 'due', method: 'Online', due_date: '2026-05-15', receipt_no: '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
+  }
+  saveDB(dbData);
+  return dbData;
+}
+
+function enrichApplication(item, courses) {
+  const course = courses.find(c => c.id === item.course_id);
+  return { ...item, course_name: course?.name || 'Program not selected' };
+}
+
+app.get('/api/applications', requireAuth, async (req, res) => {
+  try {
+    const dbData = ensureAdmissionsModules();
+    const courses = await db.getCourses();
+    let items = dbData.applications || [];
+    if (req.user.role === 'student') items = items.filter(item => item.user_id === req.user.id);
+    res.json(items.map(item => enrichApplication(item, courses)).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post('/api/applications', requireAuth, async (req, res) => {
+  try {
+    const dbData = ensureAdmissionsModules();
+    const profile = req.user.role === 'student' ? getPortalProfileForUser(req.user) : null;
+    const item = { id: generateId(), user_id: req.user.role === 'student' ? req.user.id : (req.body.user_id || null), student_name: req.body.student_name || profile?.name || req.user.name, email: req.body.email || profile?.email || req.user.email, course_id: req.body.course_id || profile?.course_id || null, status: req.body.status || 'submitted', documents_status: req.body.documents_status || 'pending', counselor_name: req.body.counselor_name || profile?.counselor_name || 'Admissions team', priority: req.body.priority || 'medium', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
+    dbData.applications.unshift(item); saveDB(dbData);
+    const courses = await db.getCourses();
+    res.status(201).json(enrichApplication(item, courses));
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.put('/api/applications/:id', requireAuth, async (req, res) => {
+  try {
+    const dbData = ensureAdmissionsModules();
+    const idx = dbData.applications.findIndex(item => item.id === req.params.id);
+    if (idx === -1) return res.status(404).json({ error: 'Application not found' });
+    const item = dbData.applications[idx];
+    if (req.user.role === 'student' && item.user_id !== req.user.id) return res.status(403).json({ error: 'Access denied' });
+    const allowed = req.user.role === 'student' ? ['documents_status'] : ['status', 'documents_status', 'counselor_name', 'priority'];
+    const updates = {}; for (const key of allowed) if (Object.prototype.hasOwnProperty.call(req.body, key)) updates[key] = req.body[key];
+    dbData.applications[idx] = { ...item, ...updates, updated_at: new Date().toISOString() }; saveDB(dbData);
+    const courses = await db.getCourses();
+    res.json(enrichApplication(dbData.applications[idx], courses));
+  } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.get('/api/queries', requireAuth, (req, res) => {
+  try { const dbData = ensureAdmissionsModules(); let items = dbData.queries || []; if (req.user.role === 'student') items = items.filter(item => item.user_id === req.user.id); res.json(items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))); } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post('/api/queries', requireAuth, (req, res) => {
+  try { const dbData = ensureAdmissionsModules(); const item = { id: generateId(), user_id: req.user.role === 'student' ? req.user.id : (req.body.user_id || null), student_name: req.body.student_name || req.user.name, subject: req.body.subject || 'Admission query', category: req.body.category || 'General', status: 'open', priority: req.body.priority || 'medium', message: req.body.message || '', response: '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }; dbData.queries.unshift(item); saveDB(dbData); res.status(201).json(item); } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.put('/api/queries/:id', requireAuth, (req, res) => {
+  try { const dbData = ensureAdmissionsModules(); const idx = dbData.queries.findIndex(item => item.id === req.params.id); if (idx === -1) return res.status(404).json({ error: 'Query not found' }); const item = dbData.queries[idx]; if (req.user.role === 'student' && item.user_id !== req.user.id) return res.status(403).json({ error: 'Access denied' }); const allowed = req.user.role === 'student' ? ['message'] : ['status', 'priority', 'response']; const updates = {}; for (const key of allowed) if (Object.prototype.hasOwnProperty.call(req.body, key)) updates[key] = req.body[key]; dbData.queries[idx] = { ...item, ...updates, updated_at: new Date().toISOString() }; saveDB(dbData); res.json(dbData.queries[idx]); } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.get('/api/payments', requireAuth, (req, res) => {
+  try { const dbData = ensureAdmissionsModules(); let items = dbData.payments || []; if (req.user.role === 'student') items = items.filter(item => item.user_id === req.user.id); res.json(items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))); } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.post('/api/payments', requireAuth, (req, res) => {
+  try { if (req.user.role === 'student') return res.status(403).json({ error: 'Admin or counselor access required' }); const dbData = ensureAdmissionsModules(); const item = { id: generateId(), user_id: req.body.user_id || null, student_name: req.body.student_name || 'Student', title: req.body.title || 'Admission fee', amount: Number(req.body.amount || 0), status: req.body.status || 'due', method: req.body.method || 'Online', due_date: req.body.due_date || '', receipt_no: req.body.receipt_no || '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }; dbData.payments.unshift(item); saveDB(dbData); res.status(201).json(item); } catch (error) { res.status(500).json({ error: error.message }); }
+});
+
+app.put('/api/payments/:id', requireAuth, (req, res) => {
+  try { const dbData = ensureAdmissionsModules(); const idx = dbData.payments.findIndex(item => item.id === req.params.id); if (idx === -1) return res.status(404).json({ error: 'Payment not found' }); const item = dbData.payments[idx]; if (req.user.role === 'student' && item.user_id !== req.user.id) return res.status(403).json({ error: 'Access denied' }); const allowed = req.user.role === 'student' ? ['status', 'method'] : ['status', 'method', 'receipt_no', 'amount', 'due_date', 'title']; const updates = {}; for (const key of allowed) if (Object.prototype.hasOwnProperty.call(req.body, key)) updates[key] = req.body[key]; if (updates.status === 'paid' && !updates.receipt_no && !item.receipt_no) updates.receipt_no = `RBMI-${Date.now().toString().slice(-6)}`; dbData.payments[idx] = { ...item, ...updates, updated_at: new Date().toISOString() }; saveDB(dbData); res.json(dbData.payments[idx]); } catch (error) { res.status(500).json({ error: error.message }); }
+});
+// ============================================================
+//  STUDENT PORTAL
+// ============================================================
+
+function getPortalProfileForUser(user) {
+  const dbData = getDB();
+  if (!dbData.portalProfiles) dbData.portalProfiles = {};
+  let profile = dbData.portalProfiles[user.id];
+
+  if (!profile) {
+    profile = {
+      user_id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: '',
+      city: '',
+      course_id: null,
+      stage: 'enquiry',
+      counselor_name: 'Admissions team',
+      readiness: 35,
+      next_step: 'Complete your profile',
+      fee_due: '0',
+      scholarship: 'Not reviewed yet',
+      branch: user.branch || 'bareilly',
+      updated_at: new Date().toISOString()
+    };
+    dbData.portalProfiles[user.id] = profile;
+    saveDB(dbData);
+  }
+
+  return profile;
+}
+
+app.get('/api/portal/profile', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'student') return res.status(403).json({ error: 'Student portal access required' });
+    const profile = getPortalProfileForUser(req.user);
+    const course = profile.course_id ? await db.getCourse(profile.course_id) : null;
+    res.json({
+      ...profile,
+      course_name: course?.name || 'Program not selected'
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.put('/api/portal/profile', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role !== 'student') return res.status(403).json({ error: 'Student portal access required' });
+    const dbData = getDB();
+    if (!dbData.portalProfiles) dbData.portalProfiles = {};
+    const current = getPortalProfileForUser(req.user);
+    const allowed = ['name', 'phone', 'city', 'course_id', 'next_step', 'scholarship', 'stage'];
+    const updates = {};
+    for (const key of allowed) {
+      if (Object.prototype.hasOwnProperty.call(req.body, key)) updates[key] = req.body[key];
+    }
+    const next = { ...current, ...updates, updated_at: new Date().toISOString() };
+    dbData.portalProfiles[req.user.id] = next;
+    saveDB(dbData);
+
+    await db.createActivity({
+      type: 'student_portal',
+      message: `${next.name || req.user.name} updated student portal profile`
+    });
+
+    const course = next.course_id ? await db.getCourse(next.course_id) : null;
+    res.json({ ...next, course_name: course?.name || 'Program not selected' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+// ============================================================
 //  USERS (admin only)
 // ============================================================
 
@@ -624,3 +783,7 @@ app.listen(PORT, () => {
   console.log(`  📡 Webhook endpoint: POST http://localhost:${PORT}/api/webhook/lead`);
   console.log(`  🔑 Auth: POST http://localhost:${PORT}/api/auth/login\n`);
 });
+
+
+
+

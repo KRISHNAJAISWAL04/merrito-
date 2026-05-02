@@ -3,7 +3,6 @@ import dotenv from 'dotenv';
 import { generateId, getDB, saveDB, seedIfEmpty } from './db.js';
 
 dotenv.config();
-
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
 const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
