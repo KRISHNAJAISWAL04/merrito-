@@ -99,7 +99,7 @@ export function renderSidebar(user = null) {
           <span class="user-name">${user ? user.name : 'Admin'}</span>
           <span class="user-role">${roleLabel(role)}</span>
         </div>
-        <button class="user-menu-btn" id="logout-btn" title="Logout">Off</button>
+        <button class="user-menu-btn" id="logout-btn" title="Logout">⏻</button>
       </div>
     </div>
   `;
@@ -133,4 +133,3 @@ export function renderSidebar(user = null) {
     if (confirm('Sign out of RBMI Admission Hub?')) logout();
   });
 }
-

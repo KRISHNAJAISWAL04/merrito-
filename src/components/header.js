@@ -17,7 +17,7 @@ export function renderHeader(user = null) {
 
   header.innerHTML = `
     <div class="header-left">
-      <button class="header-menu-toggle" id="menu-toggle" title="Toggle sidebar">?</button>
+      <button class="header-menu-toggle" id="menu-toggle" title="Toggle sidebar">☰</button>
       <div class="header-breadcrumb" id="header-breadcrumb">
         <span>RBMI Hub</span>
         <span style="opacity:0.4;margin:0 4px;">/</span>
@@ -25,7 +25,7 @@ export function renderHeader(user = null) {
       </div>
     </div>
     <div class="header-right">
-      <button class="header-btn" id="btn-notifications" title="Notifications">Bell</button>
+      <button class="header-btn" id="btn-notifications" title="Notifications">🔔</button>
       <div class="header-divider"></div>
       ${canCreateLead ? `
       <button class="btn btn-primary header-add-btn" id="btn-add-lead">
@@ -147,4 +147,3 @@ export function renderHeader(user = null) {
     });
   });
 }
-

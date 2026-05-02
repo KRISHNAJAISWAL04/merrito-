@@ -1,5 +1,22 @@
 {
-  "leads": [],
+  "leads": [
+    {
+      "id": "9dc1212a-15c9-45eb-887b-e42209397ba1",
+      "first_name": "Krishna",
+      "last_name": "Jaiswal",
+      "email": "krishnajaiswal0984@gmail.com",
+      "phone": "+919359116569",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Website",
+      "stage": "enquiry",
+      "counselor_id": "c003-rbmi-anita",
+      "priority": "medium",
+      "city": "Bareilly",
+      "notes": "",
+      "created_at": "2026-05-02T16:56:39.549Z",
+      "updated_at": "2026-05-02T16:56:39.549Z"
+    }
+  ],
   "counselors": [
     {
       "id": "c001-rbmi-priya",
@@ -163,6 +180,13 @@
     }
   ],
   "activities": [
+    {
+      "id": "57a518dc-0fef-4747-8dce-776db9c22384",
+      "type": "lead_added",
+      "lead_id": "9dc1212a-15c9-45eb-887b-e42209397ba1",
+      "message": "New lead Krishna Jaiswal added via Website",
+      "created_at": "2026-05-02T16:56:39.555Z"
+    },
     {
       "id": "10abc73e-03b2-4247-bb1c-a9dccdc0109f",
       "type": "student_portal",

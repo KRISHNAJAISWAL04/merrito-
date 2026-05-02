@@ -16,7 +16,34 @@ function badge(value) {
 
 export async function renderPayments(el) {
   const role = userRole();
-  const items = await fetchPayments();
+  let items = [];
+
+  try {
+    items = await fetchPayments();
+  } catch (error) {
+    const isMissingEndpoint = /not found/i.test(error.message || '');
+    el.innerHTML = `
+      <div class="ops-shell">
+        <div class="ops-header">
+          <div>
+            <span class="eyebrow">Fee Desk</span>
+            <h1>${role === 'student' ? 'My Payments' : 'Payment Manager'}</h1>
+            <p>Track fee dues, receipts, confirmation status, and admission payments.</p>
+          </div>
+        </div>
+        <div class="error-state">
+          <h3>${isMissingEndpoint ? 'Payments API is not available' : 'Could not load payments'}</h3>
+          <p>${isMissingEndpoint ? 'The frontend is running, but the backend on port 3001 does not expose /api/payments right now. Restart the API server so the latest routes are loaded.' : error.message}</p>
+          <button class="btn btn-primary" id="payments-retry">Retry</button>
+        </div>
+      </div>`;
+
+    el.querySelector('#payments-retry')?.addEventListener('click', () => {
+      window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+    });
+    return;
+  }
+
   const due = items.filter(i => i.status === 'due').reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const paid = items.filter(i => i.status === 'paid').reduce((sum, item) => sum + Number(item.amount || 0), 0);
 

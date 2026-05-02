@@ -12,7 +12,19 @@ function badge(value) {
 
 export async function renderApplications(el) {
   const role = userRole();
-  const [items, courses] = await Promise.all([fetchApplications(), fetchCourses()]);
+  let items = [];
+  let courses = [];
+  try {
+    [items, courses] = await Promise.all([fetchApplications(), fetchCourses()]);
+  } catch (_) {
+    items = await fetchApplications();
+    try {
+      courses = await fetchCourses();
+    } catch {
+      courses = [];
+    }
+  }
+  const courseMap = Object.fromEntries(courses.map(course => [course.id, course.name]));
   const total = items.length;
   const approved = items.filter(i => i.status === 'approved').length;
   const pendingDocs = items.filter(i => i.documents_status !== 'verified').length;
@@ -26,7 +38,7 @@ export async function renderApplications(el) {
       <div class="ops-stats"><div><strong>${total}</strong><span>Total</span></div><div><strong>${approved}</strong><span>Approved</span></div><div><strong>${pendingDocs}</strong><span>Docs pending</span></div></div>
       <div class="ops-table-wrap">
         <table class="data-table"><thead><tr><th>Student</th><th>Program</th><th>Status</th><th>Documents</th><th>Counselor</th><th>Priority</th><th>Action</th></tr></thead><tbody>
-          ${items.length ? items.map(item => `<tr><td><strong>${item.student_name}</strong><small>${item.email || ''}</small></td><td>${item.course_name}</td><td>${badge(item.status)}</td><td>${badge(item.documents_status)}</td><td>${item.counselor_name}</td><td>${item.priority}</td><td><button class="btn btn-secondary btn-sm app-action" data-id="${item.id}">${role === 'student' ? 'Upload Docs' : 'Review'}</button></td></tr>`).join('') : '<tr><td colspan="7" class="ops-empty">No applications yet</td></tr>'}
+          ${items.length ? items.map(item => `<tr><td><strong>${item.student_name}</strong><small>${item.email || ''}</small></td><td>${item.course_name || courseMap[item.course_id] || 'Program not selected'}</td><td>${badge(item.status)}</td><td>${badge(item.documents_status)}</td><td>${item.counselor_name}</td><td>${item.priority}</td><td><button class="btn btn-secondary btn-sm app-action" data-id="${item.id}">${role === 'student' ? 'Upload Docs' : 'Review'}</button></td></tr>`).join('') : '<tr><td colspan="7" class="ops-empty">No applications yet</td></tr>'}
         </tbody></table>
       </div>
     </div>`;
