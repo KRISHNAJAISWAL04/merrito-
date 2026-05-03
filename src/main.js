@@ -8,6 +8,7 @@ import './styles/pipeline.css';
 import './styles/counselors.css';
 import './styles/courses.css';
 import './styles/reports.css';
+import './styles/marketing.css';
 
 import { registerRoute, initRouter } from './router.js';
 import { renderSidebar } from './components/sidebar.js';
@@ -23,6 +24,7 @@ import { renderApplications } from './pages/applications.js';
 import { renderQueries } from './pages/queries.js';
 import { renderPayments } from './pages/payments.js';
 import { renderStudentPortal } from './pages/studentPortal.js';
+import { renderMarketing } from './pages/marketing.js';
 import { getCurrentUser } from './lib/auth.js';
 import { createIcons } from './lib/icons.js';
 
@@ -43,11 +45,11 @@ registerRoute('/portal', renderStudentPortal);
 registerRoute('/formdesk', ph('FormDesk'));
 registerRoute('/calendar', ph('Calendar Pro'));
 registerRoute('/applications', renderApplications);
-registerRoute('/marketing', ph('Marketing'));
-registerRoute('/campaigns', ph('Campaign Manager'));
+registerRoute('/marketing', renderMarketing);
+registerRoute('/campaigns', renderMarketing);
 registerRoute('/queries', renderQueries);
 registerRoute('/payments', renderPayments);
-registerRoute('/templates', ph('Template Manager'));
+registerRoute('/templates', renderMarketing);
 registerRoute('/access-control', ph('User Access Control'));
 registerRoute('/download', ph('Download App'));
 
@@ -174,6 +176,5 @@ setTimeout(() => {
     else showLogin();
   });
 }, 3000);
-
 
 

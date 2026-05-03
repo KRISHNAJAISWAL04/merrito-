@@ -9,6 +9,7 @@ const adminNavItems = [
   { route: '/counselors', icon: 'headset', label: 'Counselors' },
   { route: '/courses', icon: 'book', label: 'Programs' },
   { route: '/reports', icon: 'chart', label: 'Reports' },
+  { route: '/marketing', icon: 'megaphone', label: 'Marketing' },
   { route: '/applications', icon: 'file', label: 'Applications' },
   { route: '/queries', icon: 'help', label: 'Queries' },
   { route: '/payments', icon: 'rupee', label: 'Payments' },
@@ -21,6 +22,7 @@ const counselorNavItems = [
   { route: '/pipeline', icon: 'flow', label: 'Pipeline' },
   { route: '/courses', icon: 'book', label: 'Programs' },
   { route: '/calendar', icon: 'cal', label: 'Calendar' },
+  { route: '/campaigns', icon: 'megaphone', label: 'Campaigns' },
   { route: '/queries', icon: 'help', label: 'Queries' }
 ];
 
@@ -45,7 +47,8 @@ const iconMap = {
   gear: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0-5v3m0 12v3M4.9 4.9 7 7m10 10 2.1 2.1M3 12h3m12 0h3M4.9 19.1 7 17m10-10 2.1-2.1',
   home: 'M4 11 12 4l8 7v9H6v-9',
   cal: 'M7 3v4m10-4v4M5 8h14v12H5V8Z',
-  phone: 'M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2 15h2'
+  phone: 'M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2 15h2',
+  megaphone: 'M4 11v2a1 1 0 0 0 1 1h2l3 5h2l-1-5h1l6 3V8l-6 3H5a1 1 0 0 0-1 1Z'
 };
 
 function icon(name) {

@@ -469,3 +469,104 @@ export async function updatePayment(id, data) {
     return items[idx];
   }
 }
+
+// ---- MARKETING / COMMUNICATIONS ----
+export async function fetchMarketingOverview() {
+  return request('/marketing/overview');
+}
+
+export async function fetchMarketingCampaigns() {
+  return request('/marketing/campaigns');
+}
+
+export async function createMarketingCampaign(data) {
+  return request('/marketing/campaigns', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateMarketingCampaign(id, data) {
+  return request(`/marketing/campaigns/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export async function launchMarketingCampaign(id) {
+  return request(`/marketing/campaigns/${id}/launch`, { method: 'POST' });
+}
+
+export async function fetchCommunicationTemplates() {
+  return request('/marketing/templates');
+}
+
+export async function createCommunicationTemplate(data) {
+  return request('/marketing/templates', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateCommunicationTemplate(id, data) {
+  return request(`/marketing/templates/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export async function fetchCommunicationIntegrations() {
+  return request('/marketing/integrations');
+}
+
+export async function saveCommunicationIntegrations(data) {
+  return request('/marketing/integrations', { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export async function fetchCallLogs() {
+  return request('/marketing/call-logs');
+}
+
+export async function createCallLog(data) {
+  return request('/marketing/call-logs', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function fetchFollowUps() {
+  return request('/marketing/followups');
+}
+
+export async function createFollowUp(data) {
+  return request('/marketing/followups', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function fetchBroadcasts() {
+  return request('/marketing/broadcasts');
+}
+
+export async function createBroadcast(data) {
+  return request('/marketing/broadcasts', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function sendBroadcast(id) {
+  return request(`/marketing/broadcasts/${id}/send`, { method: 'POST' });
+}
+
+export async function fetchStudentInbox() {
+  return request('/marketing/inbox');
+}
+
+export async function createStudentInboxMessage(data) {
+  return request('/marketing/inbox', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateStudentInboxMessage(id, data) {
+  return request(`/marketing/inbox/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export async function fetchChatThreads() {
+  return request('/marketing/chats');
+}
+
+export async function sendChatMessage(threadId, data) {
+  return request(`/marketing/chats/${threadId}/messages`, { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function fetchNotifications() {
+  return request('/marketing/notifications');
+}
+
+export async function createNotification(data) {
+  return request('/marketing/notifications', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateNotification(id, data) {
+  return request(`/marketing/notifications/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}

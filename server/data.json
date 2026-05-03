@@ -181,6 +181,24 @@
   ],
   "activities": [
     {
+      "id": "8c10a4e0-d69d-4183-8070-b10f16870ca4",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T10:44:31.987Z"
+    },
+    {
+      "id": "973773f6-e92f-4433-a330-115609f9f8b8",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T10:44:21.509Z"
+    },
+    {
+      "id": "b1d7221d-71f5-419a-adc2-e35d1ab8ba03",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T10:44:20.346Z"
+    },
+    {
       "id": "57a518dc-0fef-4747-8dce-776db9c22384",
       "type": "lead_added",
       "lead_id": "9dc1212a-15c9-45eb-887b-e42209397ba1",
@@ -284,11 +302,11 @@
       "stage": "application_submitted",
       "counselor_name": "Priya Sharma",
       "readiness": 78,
-      "next_step": "Callback requested with admissions counselor",
+      "next_step": "Document upload received for review",
       "fee_due": "25000",
       "scholarship": "Fee slip generated. Payment desk will verify within 24 hours.",
       "branch": "bareilly",
-      "updated_at": "2026-05-02T10:27:32.411Z"
+      "updated_at": "2026-05-03T10:44:31.985Z"
     }
   },
   "applications": [
@@ -307,6 +325,19 @@
     }
   ],
   "queries": [
+    {
+      "id": "57019f2f-1e8c-4365-a8b7-cb7d02df89de",
+      "user_id": "u004-student-demo",
+      "student_name": "Aarav Mehta",
+      "subject": "Admission query",
+      "category": "Documents",
+      "status": "open",
+      "priority": "medium",
+      "message": "",
+      "response": "",
+      "created_at": "2026-05-03T10:45:15.390Z",
+      "updated_at": "2026-05-03T10:45:15.390Z"
+    },
     {
       "id": "qry-demo-aarav",
       "user_id": "u004-student-demo",
@@ -328,12 +359,307 @@
       "student_name": "Aarav Mehta",
       "title": "Admission confirmation fee",
       "amount": 25000,
-      "status": "due",
+      "status": "paid",
       "method": "Online",
       "due_date": "2026-05-15",
-      "receipt_no": "",
+      "receipt_no": "RBMI-800120",
       "created_at": "2026-05-02T10:45:39.154Z",
-      "updated_at": "2026-05-02T10:45:39.154Z"
+      "updated_at": "2026-05-03T10:40:04.258Z"
+    }
+  ],
+  "communicationIntegrations": {
+    "email": {
+      "enabled": true,
+      "provider": "SMTP relay",
+      "sender": "admissions@rbmi.edu.in"
+    },
+    "sms": {
+      "enabled": true,
+      "provider": "MSG91",
+      "sender": "RBMIAD"
+    },
+    "whatsapp": {
+      "enabled": true,
+      "provider": "WhatsApp Business Cloud",
+      "sender": "+91 581 250 0000"
+    },
+    "ivr": {
+      "enabled": true,
+      "provider": "Exotel",
+      "sender": "IVR Queue A"
+    },
+    "push": {
+      "enabled": true,
+      "provider": "Firebase Cloud Messaging",
+      "sender": "RBMI Hub App"
+    }
+  },
+  "communicationTemplates": [
+    {
+      "id": "96a8c092-ccbb-4f86-a12a-93cf4a732de0",
+      "name": "Open House Invite",
+      "channel": "email",
+      "category": "campaign",
+      "subject": "Join RBMI open house this Saturday",
+      "content": "Hi {{name}}, visit {{campus}} this Saturday for our open house and course guidance session.",
+      "variables": [
+        "name",
+        "campus"
+      ],
+      "active": true,
+      "created_at": "2026-05-03T10:49:47.512Z",
+      "updated_at": "2026-05-03T10:49:47.512Z"
+    },
+    {
+      "id": "044e57f6-45e4-4f00-bd4e-73e1574301e4",
+      "name": "Callback Reminder",
+      "channel": "sms",
+      "category": "follow_up",
+      "subject": "",
+      "content": "Hi {{name}}, our counselor will call you today regarding {{course}} admission.",
+      "variables": [
+        "name",
+        "course"
+      ],
+      "active": true,
+      "created_at": "2026-05-03T10:49:47.512Z",
+      "updated_at": "2026-05-03T10:49:47.512Z"
+    },
+    {
+      "id": "05e38dc9-f74e-4364-bad8-c14c6260d5db",
+      "name": "Document Nudge",
+      "channel": "whatsapp",
+      "category": "drip",
+      "subject": "",
+      "content": "Hello {{name}}, please upload your pending documents to keep your admission moving.",
+      "variables": [
+        "name"
+      ],
+      "active": true,
+      "created_at": "2026-05-03T10:49:47.512Z",
+      "updated_at": "2026-05-03T10:49:47.512Z"
+    }
+  ],
+  "communicationCampaigns": [
+    {
+      "id": "026aedb0-ad00-4b61-9143-5ca2e191dcf0",
+      "name": "MBA Priority Outreach",
+      "channel": "email",
+      "category": "campaign",
+      "status": "draft",
+      "audience": "MBA prospects",
+      "audience_count": 1,
+      "template_id": "96a8c092-ccbb-4f86-a12a-93cf4a732de0",
+      "subject": "Admissions guidance for MBA applicants",
+      "message": "Shortlist warm MBA leads for a counselor callback.",
+      "auto_followup": true,
+      "owner_id": "u001-admin",
+      "metrics": {
+        "delivered": 0,
+        "opened": 0,
+        "clicked": 0,
+        "replied": 0,
+        "failed": 0
+      },
+      "created_at": "2026-05-03T10:49:47.512Z",
+      "updated_at": "2026-05-03T10:49:47.512Z",
+      "sent_at": null
+    },
+    {
+      "id": "8ce72251-444c-491d-bf72-536ea5be57c6",
+      "name": "Application Deadline SMS",
+      "channel": "sms",
+      "category": "broadcast",
+      "status": "sent",
+      "audience": "All active leads",
+      "audience_count": 1,
+      "template_id": "044e57f6-45e4-4f00-bd4e-73e1574301e4",
+      "subject": "",
+      "message": "Send deadline reminders for pending applicants.",
+      "auto_followup": false,
+      "owner_id": "u001-admin",
+      "metrics": {
+        "delivered": 1,
+        "opened": 0,
+        "clicked": 0,
+        "replied": 0,
+        "failed": 0
+      },
+      "created_at": "2026-05-03T10:49:47.512Z",
+      "updated_at": "2026-05-03T11:07:16.518Z",
+      "sent_at": "2026-05-03T11:07:16.518Z"
+    },
+    {
+      "id": "d53ae186-9714-4c05-87cf-e69def758602",
+      "name": "Document Completion Drip",
+      "channel": "whatsapp",
+      "category": "drip",
+      "status": "active",
+      "audience": "Document pending students",
+      "audience_count": 1,
+      "template_id": "05e38dc9-f74e-4364-bad8-c14c6260d5db",
+      "subject": "",
+      "message": "Automated nudges for pending document uploads.",
+      "auto_followup": true,
+      "owner_id": "u001-admin",
+      "metrics": {
+        "delivered": 12,
+        "opened": 10,
+        "clicked": 6,
+        "replied": 4,
+        "failed": 1
+      },
+      "created_at": "2026-05-03T10:49:47.512Z",
+      "updated_at": "2026-05-03T10:49:47.512Z",
+      "sent_at": "2026-05-03T10:49:47.512Z"
+    }
+  ],
+  "callLogs": [
+    {
+      "id": "3aa7486e-cbe6-4050-905f-7909f55d944a",
+      "student_name": "Krishna Jaiswal",
+      "phone": "+919359116569",
+      "direction": "outbound",
+      "provider": "Exotel",
+      "duration_seconds": 412,
+      "recording_url": "https://recordings.rbmi.local/call-demo-001",
+      "summary": "Discussed MBA admission process and scheduled callback.",
+      "status": "completed",
+      "created_at": "2026-05-03T10:49:47.512Z"
+    }
+  ],
+  "autoFollowUps": [
+    {
+      "id": "fd743bc2-8f0c-42d6-af94-ce9fbe91ea52",
+      "title": "No response in 24 hours",
+      "trigger": "lead_created",
+      "channel": "sms",
+      "delay_hours": 24,
+      "status": "active",
+      "template_id": "044e57f6-45e4-4f00-bd4e-73e1574301e4",
+      "created_at": "2026-05-03T10:49:47.512Z",
+      "updated_at": "2026-05-03T10:49:47.512Z"
+    }
+  ],
+  "broadcastMessages": [
+    {
+      "id": "88552cc7-0075-4f4b-b1a5-19298a62f7d2",
+      "title": "Broadcast",
+      "channel": "whatsapp",
+      "audience": "All leads",
+      "message": "",
+      "status": "draft",
+      "metrics": {
+        "reached": 0,
+        "engaged": 0
+      },
+      "created_at": "2026-05-03T10:54:04.378Z",
+      "updated_at": "2026-05-03T10:54:04.378Z"
+    },
+    {
+      "id": "6fc152df-5cae-4b77-b31a-9916c52b8d91",
+      "title": "Scholarship Webinar Alert",
+      "channel": "whatsapp",
+      "audience": "All scholarship leads",
+      "message": "Scholarship webinar starts at 5 PM. Join using the portal link.",
+      "status": "sent",
+      "metrics": {
+        "reached": 1,
+        "engaged": 1
+      },
+      "created_at": "2026-05-03T10:49:47.512Z",
+      "updated_at": "2026-05-03T10:49:47.512Z"
+    }
+  ],
+  "studentInbox": [
+    {
+      "id": "d0bca6ba-66e7-45b9-b729-a8bb2e76041a",
+      "student_name": "Campaign audience",
+      "channel": "sms",
+      "subject": "Application Deadline SMS",
+      "message": "Application Deadline SMS was delivered to 1 recipients.",
+      "status": "open",
+      "priority": "medium",
+      "created_at": "2026-05-03T11:07:16.518Z",
+      "updated_at": "2026-05-03T11:07:16.518Z"
+    },
+    {
+      "id": "8c60a2d3-18e8-4deb-a8c9-bf28096b00fd",
+      "student_name": "Krishna Jaiswal",
+      "channel": "email",
+      "subject": "Admission help required",
+      "message": "Can I switch from BBA to MBA after counseling?",
+      "status": "closed",
+      "priority": "high",
+      "created_at": "2026-05-03T10:49:47.512Z",
+      "updated_at": "2026-05-03T11:02:25.735Z"
+    }
+  ],
+  "chatThreads": [
+    {
+      "id": "f2a4f183-c7fb-4a6f-84a2-64d55182213d",
+      "student_name": "Krishna Jaiswal",
+      "counselor_name": "Priya Sharma",
+      "status": "active",
+      "last_message_at": "2026-05-03T11:06:00.701Z",
+      "messages": [
+        {
+          "id": "75b18eff-1d6b-4367-9e87-1ae8e9817245",
+          "sender": "student",
+          "text": "Hello, I need the fee structure for MBA.",
+          "created_at": "2026-05-03T10:49:47.512Z"
+        },
+        {
+          "id": "39ff95da-b9f0-44de-b066-f30d2141a58f",
+          "sender": "counselor",
+          "text": "Sharing the updated fee structure and scholarship slab now.",
+          "created_at": "2026-05-03T10:49:47.512Z"
+        },
+        {
+          "id": "1a8cd7dd-c7df-439d-ac15-c0c8ce1a09b1",
+          "sender": "counselor",
+          "text": "hii",
+          "created_at": "2026-05-03T11:06:00.701Z"
+        }
+      ]
+    }
+  ],
+  "notificationCenter": [
+    {
+      "id": "f5c6cd5a-5bda-48c9-a13c-132b3e59e57c",
+      "title": "Campaign launched",
+      "message": "Application Deadline SMS was sent over sms.",
+      "channel": "email",
+      "target_type": "campaign",
+      "status": "unread",
+      "created_at": "2026-05-03T11:07:16.518Z"
+    },
+    {
+      "id": "8122a571-a424-47fb-9d15-95fb7526382b",
+      "title": "Chat updated",
+      "message": "New counselor-student chat message in Krishna Jaiswal's thread.",
+      "channel": "push",
+      "target_type": "chat",
+      "status": "unread",
+      "created_at": "2026-05-03T11:06:00.701Z"
+    },
+    {
+      "id": "a295564a-d7be-4f75-8468-724bb05aa3ce",
+      "title": "Broadcast delivered",
+      "message": "Scholarship webinar broadcast reached active leads.",
+      "channel": "push",
+      "target_type": "marketing",
+      "status": "unread",
+      "created_at": "2026-05-03T10:49:47.512Z"
+    },
+    {
+      "id": "59aa742e-dc32-4da8-8f9c-88f76996dbbc",
+      "title": "Inbox waiting",
+      "message": "Krishna Jaiswal is waiting for a counselor response.",
+      "channel": "email",
+      "target_type": "student_inbox",
+      "status": "unread",
+      "created_at": "2026-05-03T10:49:47.512Z"
     }
   ]
 }
