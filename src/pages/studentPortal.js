@@ -169,14 +169,75 @@ export async function renderStudentPortal(el) {
     window.dispatchEvent(new CustomEvent('rbmi:refresh'));
   });
 
-  el.querySelector('#portal-pay-btn')?.addEventListener('click', async () => {
-    await updatePortalProfile({ scholarship: 'Fee slip generated. Payment desk will verify within 24 hours.' });
-    window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+  el.querySelector('#portal-upload-btn')?.addEventListener('click', async () => {
+    openModal('Upload Document', `
+      <div class="form-group">
+        <label class="form-label">Select Document Type</label>
+        <select class="form-select" id="upload-type">
+          ${checklist.filter(i => i.status === 'missing' || i.status === 'pending').map(i => `<option value="${i.name}">${i.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:12px;">
+        <label class="form-label">File</label>
+        <input type="file" class="form-input" id="upload-file" accept=".pdf,.jpg,.jpeg,.png" />
+        <p class="portal-muted" style="font-size:11px;margin-top:4px;">Max size: 5MB. Formats: PDF, JPG, PNG.</p>
+      </div>
+    `, {
+      submitLabel: 'Upload & Submit',
+      onSubmit: async (body) => {
+        const fileInput = body.querySelector('#upload-file');
+        const type = body.querySelector('#upload-type').value;
+        if (!fileInput.files[0]) {
+          alert('Please select a file');
+          return false;
+        }
+        
+        // Simulate upload delay
+        const btn = body.parentElement.querySelector('#modal-submit-btn');
+        btn.disabled = true;
+        btn.innerText = 'Uploading...';
+        
+        await new Promise(r => setTimeout(r, 1500));
+        
+        await updatePortalProfile({ next_step: `Reviewing ${type} upload` });
+        alert(`${type} has been uploaded successfully and sent for verification.`);
+        window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+      }
+    });
   });
 
-  el.querySelector('#portal-upload-btn')?.addEventListener('click', async () => {
-    await updatePortalProfile({ next_step: 'Document upload received for review' });
-    window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+  el.querySelector('#portal-pay-btn')?.addEventListener('click', async () => {
+    const amount = profile.fee_due || '25000';
+    openModal('RBMI Secure Pay', `
+      <div class="payment-gateway-sim" style="text-align:center;padding:12px;">
+        <div style="font-size:24px;font-weight:800;margin-bottom:12px;color:var(--color-primary);">₹${Number(amount).toLocaleString('en-IN')}</div>
+        <p class="portal-muted">Admission Fee Installment</p>
+        <hr style="margin:16px 0;border:none;border-top:1px solid var(--color-border);">
+        <div class="form-group" style="text-align:left;">
+          <label class="form-label">Payment Method</label>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px;">
+            <button class="btn btn-secondary btn-sm" style="background:var(--color-bg-alt);">UPI / QR</button>
+            <button class="btn btn-secondary btn-sm">Card</button>
+            <button class="btn btn-secondary btn-sm">Net Banking</button>
+            <button class="btn btn-secondary btn-sm">Wallet</button>
+          </div>
+        </div>
+        <div style="margin-top:20px;padding:12px;background:#fef9c3;border-radius:8px;font-size:12px;color:#854d0e;">
+          This is a secure sandbox environment. Real payment gateway (Razorpay/Stripe) integration is ready for production credentials.
+        </div>
+      </div>
+    `, {
+      submitLabel: 'Complete Payment (Mock)',
+      onSubmit: async () => {
+        await new Promise(r => setTimeout(r, 2000));
+        await updatePortalProfile({ 
+          fee_due: '0', 
+          scholarship: 'Payment successful! Receipt #RBMI-' + Date.now().toString().slice(-6) 
+        });
+        alert('Payment successful! Your admission seat is now reserved.');
+        window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+      }
+    });
   });
 
   el.querySelector('#portal-apply-btn')?.addEventListener('click', async () => {

@@ -1,4 +1,4 @@
-import { randomBytes, createHmac } from 'crypto';
+import { randomBytes, createHmac, scryptSync } from 'crypto';
 import { getDB, saveDB, generateId } from './db.js';
 import { USE_SUPABASE, getServerSupabase } from './supabase.js';
 
@@ -13,6 +13,20 @@ function signToken(payload) {
   const body = Buffer.from(JSON.stringify({ ...payload, iat: Date.now() })).toString('base64url');
   const sig = createHmac('sha256', JWT_SECRET).update(`${header}.${body}`).digest('base64url');
   return `${header}.${body}.${sig}`;
+}
+
+// --- PASSWORD HASHING ---
+function hashPassword(password) {
+  const salt = randomBytes(16).toString('hex');
+  const hash = scryptSync(password, salt, 64).toString('hex');
+  return `${salt}:${hash}`;
+}
+
+function verifyPassword(password, storedHash) {
+  if (!storedHash || !storedHash.includes(':')) return password === storedHash; // Fallback for old plain text
+  const [salt, hash] = storedHash.split(':');
+  const key = scryptSync(password, salt, 64).toString('hex');
+  return key === hash;
 }
 
 export function verifyToken(token) {
@@ -115,7 +129,7 @@ function seedLegacyUsers() {
     id: generateId(),
     name: u.name,
     email: u.email,
-    password: u.password,
+    password: hashPassword(u.password),
     role: u.role,
     counselor_id: u.counselor_id,
     branch: u.branch,
@@ -164,8 +178,8 @@ export async function loginUser(email, password, branch) {
   ensureDemoStudentPortal(getDB());
   const db = getDB();
   const users = db.users || [];
-  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
-  if (!user) return null;
+  const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (!user || !verifyPassword(password, user.password)) return null;
 
   const payload = {
     id: user.id,
@@ -243,7 +257,7 @@ export async function signupStudent(email, password, name, phone, branch) {
     id: generateId(),
     name,
     email,
-    password,
+    password: hashPassword(password),
     role,
     counselor_id: null,
     branch: branch || 'bareilly',
@@ -346,7 +360,7 @@ export async function createUser(data) {
   const user = {
     id: generateId(),
     ...data,
-    password: data.password || 'changeme123',
+    password: hashPassword(data.password || 'changeme123'),
     created_at: new Date().toISOString()
   };
   db.users.push(user);

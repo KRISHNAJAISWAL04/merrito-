@@ -125,7 +125,14 @@ export function renderSidebar(user = null) {
       </div>
       <div class="logo-text">
         <span class="logo-name">RBMI Hub</span>
-        <span class="logo-sub">${branchLabel} - ${roleLabel(role)}</span>
+        ${role === 'admin' ? `
+          <select id="campus-switcher" class="campus-select">
+            <option value="bareilly" ${user?.branch === 'bareilly' ? 'selected' : ''}>Bareilly Campus</option>
+            <option value="greater_noida" ${user?.branch === 'greater_noida' ? 'selected' : ''}>Greater Noida</option>
+          </select>
+        ` : `
+          <span class="logo-sub">${branchLabel} - ${roleLabel(role)}</span>
+        `}
       </div>
     </div>
 
@@ -245,7 +252,17 @@ export function renderSidebar(user = null) {
     if (confirm('Sign out of RBMI Admission Hub?')) logout();
   });
 
+<<<<<<< HEAD
   // Render Lucide icons
+=======
+  document.getElementById('campus-switcher')?.addEventListener('change', (e) => {
+    const branch = e.target.value;
+    const currentUser = JSON.parse(sessionStorage.getItem('rbmi_user') || '{}');
+    sessionStorage.setItem('rbmi_user', JSON.stringify({ ...currentUser, branch }));
+    window.location.reload();
+  });
+
+>>>>>>> 612f8ff (modified)
   if (window.renderIcons) {
     window.renderIcons();
   }

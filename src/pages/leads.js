@@ -61,6 +61,7 @@ function updateBulkBar(tableWrap, container) {
     <span style="font-weight:600;">${checked.length} selected</span>
     <button id="bulk-delete-btn" style="background:#ef4444;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Delete Selected</button>
     <button id="bulk-stage-btn" style="background:#6366f1;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Change Stage</button>
+    <button id="bulk-counselor-btn" style="background:#10b981;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Change Counselor</button>
     <button id="bulk-cancel-btn" style="background:rgba(255,255,255,0.15);color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;">Cancel</button>
   `;
   bar.querySelector('#bulk-cancel-btn').addEventListener('click', () => {
@@ -91,6 +92,26 @@ function updateBulkBar(tableWrap, container) {
       onSubmit: async (body) => {
         const stage = body.querySelector('#bulk-stage-select').value;
         await Promise.all(ids.map(id => updateLead(id, { stage })));
+        bar.remove();
+        loadLeads(container);
+      }
+    });
+  });
+  bar.querySelector('#bulk-counselor-btn').addEventListener('click', async () => {
+    const ids = checked.map(cb => cb.dataset.id);
+    if (counselorsCache.length === 0) counselorsCache = await fetchCounselors();
+    openModal('Assign Counselor to ' + ids.length + ' leads', `
+      <div class="form-group">
+        <label class="form-label">New Counselor</label>
+        <select class="form-select" id="bulk-counselor-select">
+          ${counselorsCache.map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+        </select>
+      </div>
+    `, {
+      submitLabel: 'Reassign All',
+      onSubmit: async (body) => {
+        const cid = body.querySelector('#bulk-counselor-select').value;
+        await Promise.all(ids.map(id => updateLead(id, { counselor_id: cid })));
         bar.remove();
         loadLeads(container);
       }
@@ -232,49 +253,101 @@ function showLeadDetails(lead) {
   const stage = getStageInfo(lead.stage);
   const stageOrder = ['enquiry','counseling_scheduled','counseling_done','application_submitted','documents_verified','admitted','enrolled'];
   const stageIdx = stageOrder.indexOf(lead.stage);
+  
   const timelineHtml = stageOrder.map((s, i) => {
     const info = getStageInfo(s);
     const done = i <= stageIdx;
-    return `<div class="timeline-step ${done ? 'done' : ''}">
-      <div class="timeline-dot" style="background:${done ? info.color : '#e2e8f0'};"></div>
-      <span style="font-size:12px;color:${done ? info.color : '#94a3b8'};font-weight:${done ? '600' : '400'}">${info.label}</span>
-    </div>`;
-  }).join('<div class="timeline-line"></div>');
-
-  openModal(`Lead — ${lead.name}`, `
-    <div class="lead-detail-grid">
-      <div class="detail-section">
-        <h4 class="detail-section-title">Personal Information</h4>
-        <div class="detail-row"><span class="detail-label">Full Name</span><span class="detail-value">${lead.name}</span></div>
-        <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${lead.email || '—'}</span></div>
-        <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${lead.phone}</span></div>
-        <div class="detail-row"><span class="detail-label">City</span><span class="detail-value">${lead.city || '—'}</span></div>
-        <div style="display:flex;gap:8px;margin-top:12px;">
-          <a href="tel:${lead.phone}" class="btn btn-secondary btn-sm" style="text-decoration:none;">📞 Call</a>
-          <a href="https://wa.me/${lead.phone.replace(/[^0-9]/g,'')}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">💬 WhatsApp</a>
-          ${lead.email ? `<a href="mailto:${lead.email}" class="btn btn-secondary btn-sm" style="text-decoration:none;">✉ Email</a>` : ''}
+    return `
+      <div class="profile-timeline-item ${done ? 'done' : ''}">
+        <div class="timeline-dot" style="background:${done ? info.color : '#e2e8f0'}"></div>
+        <div class="timeline-content">
+          <div class="timeline-label">${info.label}</div>
+          <div class="timeline-time">${done ? 'Completed' : 'Pending'}</div>
         </div>
       </div>
-      <div class="detail-section">
-        <h4 class="detail-section-title">Application Details</h4>
-        <div class="detail-row"><span class="detail-label">Course</span><span class="detail-value">${lead.course_name}</span></div>
-        <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value">${lead.source}</span></div>
-        <div class="detail-row"><span class="detail-label">Stage</span><span class="detail-value"><span class="stage-badge" style="background:${stage.bg};color:${stage.color};">${stage.label}</span></span></div>
-        <div class="detail-row"><span class="detail-label">Priority</span><span class="detail-value" style="text-transform:capitalize">${lead.priority}</span></div>
-        <div class="detail-row"><span class="detail-label">Lead Score</span><span class="detail-value" style="font-weight:700;color:${(lead.lead_score||0)>60?'#10b981':'#f59e0b'}">${lead.lead_score || 10}/100</span></div>
-        <div class="detail-row"><span class="detail-label">Counselor</span><span class="detail-value">${lead.counselor_name}</span></div>
-        <div class="detail-row"><span class="detail-label">Added</span><span class="detail-value">${formatDate(lead.created_at)}</span></div>
-      </div>
-      <div class="detail-section detail-full">
-        <h4 class="detail-section-title">Admission Journey</h4>
-        <div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:12px 0;">${timelineHtml}</div>
-      </div>
-      <div class="detail-section detail-full">
-        <h4 class="detail-section-title">Notes</h4>
-        <p class="detail-notes">${lead.notes || 'No notes added yet.'}</p>
+    `;
+  }).join('');
+
+  const commsHtml = [
+    { type: 'call', date: '2026-05-01 10:30', msg: 'Callback done. Interested in MBA Finance.' },
+    { type: 'whatsapp', date: '2026-05-02 14:15', msg: 'Shared course brochure and fee structure.' },
+    { type: 'email', date: '2026-05-03 09:00', msg: 'Sent application link and instructions.' }
+  ].map(c => `
+    <div class="comm-log-item">
+      <div class="comm-icon ${c.type}"><i data-lucide="${c.type === 'call' ? 'phone' : c.type === 'whatsapp' ? 'message-square' : 'mail'}"></i></div>
+      <div class="comm-body">
+        <div class="comm-msg">${c.msg}</div>
+        <div class="comm-meta">${c.date}</div>
       </div>
     </div>
-  `, { width: '700px', showFooter: false });
+  `).join('');
+
+  const docsHtml = [
+    { name: 'Class 10 Marksheet', status: 'verified' },
+    { name: 'Class 12 Marksheet', status: 'pending' },
+    { name: 'ID Proof (Aadhar)', status: 'verified' }
+  ].map(d => `
+    <div class="doc-row-mini">
+      <span>${d.name}</span>
+      <span class="doc-status ${d.status}">${d.status}</span>
+    </div>
+  `).join('');
+
+  openModal(`Student 360 — ${lead.name}`, `
+    <div class="s360-container">
+      <div class="s360-sidebar">
+        <div class="s360-user-card">
+          <div class="avatar-lg" style="background:${getAvatarColor(lead.name)}">${lead.name.split(' ').map(n => n[0]).join('')}</div>
+          <h3>${lead.name}</h3>
+          <div class="stage-badge" style="background:${stage.bg};color:${stage.color}">${stage.label}</div>
+          <div class="score-meter" style="--score:${lead.lead_score || 15}%">
+            <span>Intent Score</span>
+            <strong>${lead.lead_score || 15}</strong>
+          </div>
+        </div>
+        <div class="s360-info-list">
+          <div class="info-item"><label>Phone</label><span>${lead.phone}</span></div>
+          <div class="info-item"><label>Email</label><span>${lead.email || '—'}</span></div>
+          <div class="info-item"><label>Source</label><span>${lead.source}</span></div>
+          <div class="info-item"><label>Course</label><span>${lead.course_name}</span></div>
+          <div class="info-item"><label>Counselor</label><span>${lead.counselor_name}</span></div>
+        </div>
+        <div class="s360-actions">
+          <button class="btn btn-primary btn-full">📞 Start Call</button>
+          <button class="btn btn-secondary btn-full">💬 WhatsApp</button>
+        </div>
+      </div>
+      <div class="s360-main">
+        <div class="s360-tabs">
+          <button class="tab-btn active" data-tab="timeline">Journey</button>
+          <button class="tab-btn" data-tab="comm">Communication</button>
+          <button class="tab-btn" data-tab="docs">Documents</button>
+        </div>
+        <div class="tab-pane active" id="pane-timeline">
+          <div class="profile-timeline">${timelineHtml}</div>
+        </div>
+        <div class="tab-pane" id="pane-comm">
+          <div class="comm-logs">${commsHtml}</div>
+        </div>
+        <div class="tab-pane" id="pane-docs">
+          <div class="docs-list-mini">${docsHtml}</div>
+        </div>
+      </div>
+    </div>
+  `, { 
+    width: '900px', 
+    showFooter: false,
+    onOpen: (body) => {
+      window.renderIcons();
+      body.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.onclick = () => {
+          body.querySelectorAll('.tab-btn, .tab-pane').forEach(el => el.classList.remove('active'));
+          btn.classList.add('active');
+          body.querySelector('#pane-' + btn.dataset.tab).classList.add('active');
+        };
+      });
+    }
+  });
 }
 
 function showStageChangeModal(lead, container) {

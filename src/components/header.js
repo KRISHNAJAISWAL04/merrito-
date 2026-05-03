@@ -1,6 +1,6 @@
-// ===== HEADER COMPONENT - RBMI Admission Hub =====
 import { openModal } from './modal.js';
-import { createLead, fetchCounselors, fetchCourses } from '../lib/api.js';
+import { createLead, fetchCounselors, fetchCourses, fetchLeads } from '../lib/api.js';
+import { debounce, getAvatarColor } from './utils.js';
 
 function roleLabel(role) {
   if (role === 'admin') return 'Admin';
@@ -18,6 +18,11 @@ export function renderHeader(user = null) {
   header.innerHTML = `
     <div class="header-left">
       <button class="header-menu-toggle" id="menu-toggle" title="Toggle sidebar"><i data-lucide="menu" style="width:18px;height:18px;"></i></button>
+      <div class="header-search-wrap">
+        <i data-lucide="search" class="header-search-icon"></i>
+        <input type="text" placeholder="Search leads, applications, students..." class="header-search-input" id="global-search" />
+        <div id="search-results" class="search-results-overlay"></div>
+      </div>
       <div class="header-breadcrumb" id="header-breadcrumb">
         <span>RBMI Hub</span>
         <span style="opacity:0.4;margin:0 4px;">/</span>
@@ -66,6 +71,59 @@ export function renderHeader(user = null) {
     document.getElementById('sidebar')?.classList.toggle('collapsed');
     document.getElementById('main-wrapper')?.classList.toggle('sidebar-collapsed');
   });
+
+  const searchInput = document.getElementById('global-search');
+  const searchResults = document.getElementById('search-results');
+
+  if (searchInput && searchResults) {
+    searchInput.addEventListener('input', debounce(async (e) => {
+      const query = e.target.value.trim();
+      if (query.length < 2) {
+        searchResults.classList.remove('active');
+        return;
+      }
+
+      try {
+        const res = await fetchLeads({ search: query, limit: 5 });
+        const leads = res.data || [];
+        
+        if (leads.length === 0) {
+          searchResults.innerHTML = '<div style="padding:16px;text-align:center;color:var(--color-text-muted);font-size:13px;">No results found</div>';
+        } else {
+          searchResults.innerHTML = leads.map(l => `
+            <div class="search-result-item" data-id="${l.id}">
+              <div class="avatar-sm" style="background:${getAvatarColor(l.name)};width:30px;height:30px;font-size:10px;">
+                ${l.name.split(' ').map(n => n[0]).join('')}
+              </div>
+              <div class="search-result-info">
+                <div class="search-result-name">${l.name}</div>
+                <div class="search-result-meta">${l.course_name} • ${l.stage}</div>
+              </div>
+            </div>
+          `).join('');
+        }
+        searchResults.classList.add('active');
+
+        searchResults.querySelectorAll('.search-result-item').forEach(item => {
+          item.addEventListener('click', () => {
+            const id = item.dataset.id;
+            // For demo, we'll just redirect to leads page or show a toast
+            window.location.hash = '/leads';
+            searchResults.classList.remove('active');
+            searchInput.value = '';
+          });
+        });
+      } catch (err) {
+        console.error('Search error:', err);
+      }
+    }, 300));
+
+    document.addEventListener('click', (e) => {
+      if (!searchInput.contains(e.target) && !searchResults.contains(e.target)) {
+        searchResults.classList.remove('active');
+      }
+    });
+  }
 
   document.getElementById('btn-notifications')?.addEventListener('click', () => {
     const studentContent = `
