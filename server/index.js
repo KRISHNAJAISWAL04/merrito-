@@ -3,6 +3,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import * as db from './supabase.js';
+import { generateId, getDB, saveDB } from './db.js';
 import {
   loginUser,
   loginWithSupabaseAccessToken,
@@ -23,6 +24,29 @@ const PORT = Number(process.env.PORT) || 3001;
 
 app.use(cors());
 app.use(express.json());
+
+// --- LEAD SCORING LOGIC ---
+function calculateLeadScore(lead) {
+  let score = 20; // Base score
+  
+  // Source weight
+  const sourceScores = { 'Website': 20, 'Google Ads': 25, 'Walk-in': 30, 'Referral': 25, 'Social Media': 15 };
+  score += sourceScores[lead.source] || 10;
+  
+  // Priority weight
+  const priorityScores = { 'high': 30, 'medium': 15, 'low': 5 };
+  score += priorityScores[lead.priority] || 15;
+  
+  // Stage weight
+  const stageScores = { 
+    'enquiry': 0, 'counseling_scheduled': 10, 'counseling_done': 20, 
+    'application_submitted': 40, 'documents_verified': 60, 'admitted': 80, 'enrolled': 100 
+  };
+  score += stageScores[lead.stage] || 0;
+  
+  // Cap at 100
+  return Math.min(100, score);
+}
 
 // Health check
 app.get('/api/health', (req, res) => res.json({ ok: true }));
@@ -128,22 +152,12 @@ app.get('/api/leads', requireAuth, async (req, res) => {
     const courseMap = Object.fromEntries(courses.map(c => [c.id, c]));
 
     const enriched = paged.map(l => {
-      let score = 10; // Base score
-      // Priority points
-      if (l.priority === 'high') score += 30;
-      else if (l.priority === 'medium') score += 15;
-      // Stage points
-      if (l.stage === 'admitted' || l.stage === 'enrolled') score += 40;
-      else if (l.stage === 'documents_verified') score += 30;
-      else if (l.stage === 'application_submitted') score += 20;
-      else if (l.stage === 'counseling_done') score += 15;
-      
       return {
         ...l,
         name: `${l.first_name} ${l.last_name}`,
         counselor_name: counselorMap[l.counselor_id]?.name || 'Unassigned',
         course_name: courseMap[l.course_id]?.name || 'N/A',
-        lead_score: score
+        lead_score: l.lead_score || 10
       };
     });
 
@@ -267,7 +281,15 @@ app.put('/api/leads/:id', requireAuth, async (req, res) => {
       return res.status(403).json({ error: 'Access denied' });
     }
 
-    const updated = await db.updateLead(req.params.id, req.body);
+    const current = await db.getLead(req.params.id);
+    if (!current) return res.status(404).json({ error: 'Lead not found' });
+
+    const updatedData = { ...req.body };
+    if (updatedData.stage || updatedData.priority || updatedData.source) {
+      updatedData.lead_score = calculateLeadScore({ ...current, ...updatedData });
+    }
+
+    const updated = await db.updateLead(req.params.id, updatedData);
 
     if (req.body.stage && req.body.stage !== old.stage) {
       const stageLabels = {
@@ -1637,6 +1659,5 @@ app.listen(PORT, () => {
   if (db.USE_SUPABASE) console.log(`  Supabase session: POST http://localhost:${PORT}/api/auth/supabase`);
   console.log('');
 });
-
 
 

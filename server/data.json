@@ -1,6 +1,118 @@
 {
   "leads": [
     {
+      "id": "9cfc054b-0566-43b3-b014-0bbccd0f5735",
+      "first_name": "Krishna",
+      "last_name": "Jaiswal",
+      "email": "krishnajaiswal0984@gmail.com",
+      "phone": "+919359116569",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Walk-in",
+      "stage": "counseling_done",
+      "counselor_id": "c001-rbmi-priya",
+      "priority": "medium",
+      "city": "Bareilly",
+      "notes": "",
+      "created_at": "2026-05-03T17:14:52.964Z",
+      "updated_at": "2026-05-03T17:15:31.751Z"
+    },
+    {
+      "id": "1d0f8df1-2426-4d89-acea-3f74629f6677",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T15:38:14.569Z",
+      "updated_at": "2026-05-03T15:38:14.569Z"
+    },
+    {
+      "id": "d3208ced-9dfb-4579-a501-f82a8c24a25e",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T15:38:14.337Z",
+      "updated_at": "2026-05-03T17:06:50.783Z"
+    },
+    {
+      "id": "18c349d3-b299-448c-ab15-dd43c7baea6c",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T15:38:14.160Z",
+      "updated_at": "2026-05-03T15:38:14.160Z"
+    },
+    {
+      "id": "5589f55d-a75a-4551-945d-ea2e25bb2266",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T15:38:13.964Z",
+      "updated_at": "2026-05-03T15:38:13.964Z"
+    },
+    {
+      "id": "bc0b4316-e033-4bdf-8771-2e987a7fe025",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T15:38:13.340Z",
+      "updated_at": "2026-05-03T17:06:46.745Z"
+    },
+    {
+      "id": "2d3abeaf-c9b0-4778-9e6c-baf6c1fe313e",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T15:38:12.435Z",
+      "updated_at": "2026-05-03T15:38:12.435Z"
+    },
+    {
       "id": "9dc1212a-15c9-45eb-887b-e42209397ba1",
       "first_name": "Krishna",
       "last_name": "Jaiswal",
@@ -181,6 +293,98 @@
   ],
   "activities": [
     {
+      "id": "f44e392c-030a-44f1-b9b6-450a6bc3f012",
+      "type": "stage_change",
+      "lead_id": "9cfc054b-0566-43b3-b014-0bbccd0f5735",
+      "message": "Krishna Jaiswal moved to Counseling Done",
+      "created_at": "2026-05-03T17:15:31.754Z"
+    },
+    {
+      "id": "2c3decca-80e5-49e9-aeec-c55230a60a5b",
+      "type": "lead_added",
+      "lead_id": "9cfc054b-0566-43b3-b014-0bbccd0f5735",
+      "message": "New lead Krishna Jaiswal added via Walk-in and auto-assigned",
+      "created_at": "2026-05-03T17:14:52.969Z"
+    },
+    {
+      "id": "ea06959b-266f-45d4-a421-8b495a990bcd",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T15:38:14.589Z"
+    },
+    {
+      "id": "a7d01caa-66fb-44d5-a95c-e745059860c1",
+      "type": "lead_added",
+      "lead_id": "1d0f8df1-2426-4d89-acea-3f74629f6677",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T15:38:14.571Z"
+    },
+    {
+      "id": "1fe2137d-e2cc-4274-97a6-98a2542fe58d",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T15:38:14.357Z"
+    },
+    {
+      "id": "82c59113-cf1d-4d72-9d1e-73506cb6e891",
+      "type": "lead_added",
+      "lead_id": "d3208ced-9dfb-4579-a501-f82a8c24a25e",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T15:38:14.340Z"
+    },
+    {
+      "id": "f8693aea-7e86-4b65-a99a-5eb39e2310c6",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T15:38:14.183Z"
+    },
+    {
+      "id": "cc20be18-74fb-48d7-b93c-7929c534d0ff",
+      "type": "lead_added",
+      "lead_id": "18c349d3-b299-448c-ab15-dd43c7baea6c",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T15:38:14.163Z"
+    },
+    {
+      "id": "ae25adc0-8f86-40a8-8b29-1994d3f9a0a1",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T15:38:13.983Z"
+    },
+    {
+      "id": "03ccbe60-8f9a-4a0a-8c62-e47127fdc652",
+      "type": "lead_added",
+      "lead_id": "5589f55d-a75a-4551-945d-ea2e25bb2266",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T15:38:13.967Z"
+    },
+    {
+      "id": "05222446-d193-4be7-ba68-0810de47435c",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T15:38:13.364Z"
+    },
+    {
+      "id": "844f1f76-c0ef-48d0-bdc1-adb8aa58e1b9",
+      "type": "lead_added",
+      "lead_id": "bc0b4316-e033-4bdf-8771-2e987a7fe025",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T15:38:13.343Z"
+    },
+    {
+      "id": "e7e3da6b-98f7-4977-8ca8-a9e5c6b76bd2",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T15:38:12.458Z"
+    },
+    {
+      "id": "5cbc39ef-685e-4791-a4c4-7496976ff4be",
+      "type": "lead_added",
+      "lead_id": "2d3abeaf-c9b0-4778-9e6c-baf6c1fe313e",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T15:38:12.438Z"
+    },
+    {
       "id": "8c10a4e0-d69d-4183-8070-b10f16870ca4",
       "type": "student_portal",
       "message": "Aarav Mehta updated student portal profile",
@@ -302,11 +506,11 @@
       "stage": "application_submitted",
       "counselor_name": "Priya Sharma",
       "readiness": 78,
-      "next_step": "Document upload received for review",
+      "next_step": "New course request sent to admissions team",
       "fee_due": "25000",
       "scholarship": "Fee slip generated. Payment desk will verify within 24 hours.",
       "branch": "bareilly",
-      "updated_at": "2026-05-03T10:44:31.985Z"
+      "updated_at": "2026-05-03T15:38:14.585Z"
     }
   },
   "applications": [
@@ -486,8 +690,8 @@
         "failed": 0
       },
       "created_at": "2026-05-03T10:49:47.512Z",
-      "updated_at": "2026-05-03T11:07:16.518Z",
-      "sent_at": "2026-05-03T11:07:16.518Z"
+      "updated_at": "2026-05-03T15:57:36.058Z",
+      "sent_at": "2026-05-03T15:57:36.058Z"
     },
     {
       "id": "d53ae186-9714-4c05-87cf-e69def758602",
@@ -515,6 +719,18 @@
     }
   ],
   "callLogs": [
+    {
+      "id": "2f731e33-4a3c-4f55-a418-21af88035d16",
+      "student_name": "jai",
+      "phone": "79839 77881",
+      "direction": "outbound",
+      "provider": "Exotel",
+      "duration_seconds": 180,
+      "recording_url": "",
+      "summary": "Manual call note added.",
+      "status": "completed",
+      "created_at": "2026-05-03T15:52:20.179Z"
+    },
     {
       "id": "3aa7486e-cbe6-4050-905f-7909f55d944a",
       "student_name": "Krishna Jaiswal",
@@ -548,13 +764,13 @@
       "channel": "whatsapp",
       "audience": "All leads",
       "message": "",
-      "status": "draft",
+      "status": "sent",
       "metrics": {
-        "reached": 0,
-        "engaged": 0
+        "reached": 7,
+        "engaged": 4
       },
       "created_at": "2026-05-03T10:54:04.378Z",
-      "updated_at": "2026-05-03T10:54:04.378Z"
+      "updated_at": "2026-05-03T15:57:19.505Z"
     },
     {
       "id": "6fc152df-5cae-4b77-b31a-9916c52b8d91",
@@ -572,6 +788,17 @@
     }
   ],
   "studentInbox": [
+    {
+      "id": "328938f5-fdd7-4891-8df0-fe985a8f2678",
+      "student_name": "Campaign audience",
+      "channel": "sms",
+      "subject": "Application Deadline SMS",
+      "message": "Application Deadline SMS was delivered to 1 recipients.",
+      "status": "open",
+      "priority": "medium",
+      "created_at": "2026-05-03T15:57:36.058Z",
+      "updated_at": "2026-05-03T15:57:36.058Z"
+    },
     {
       "id": "d0bca6ba-66e7-45b9-b729-a8bb2e76041a",
       "student_name": "Campaign audience",
@@ -626,6 +853,24 @@
   ],
   "notificationCenter": [
     {
+      "id": "bd6046ca-7b4e-42ff-a950-d92ad86939d6",
+      "title": "Campaign launched",
+      "message": "Application Deadline SMS was sent over sms.",
+      "channel": "email",
+      "target_type": "campaign",
+      "status": "unread",
+      "created_at": "2026-05-03T15:57:36.058Z"
+    },
+    {
+      "id": "7e594fcf-00e8-445f-8fc6-e52d315301cc",
+      "title": "Broadcast sent",
+      "message": "Broadcast reached 7 recipients.",
+      "channel": "push",
+      "target_type": "broadcast",
+      "status": "unread",
+      "created_at": "2026-05-03T15:57:19.505Z"
+    },
+    {
       "id": "f5c6cd5a-5bda-48c9-a13c-132b3e59e57c",
       "title": "Campaign launched",
       "message": "Application Deadline SMS was sent over sms.",
@@ -661,5 +906,7 @@
       "status": "unread",
       "created_at": "2026-05-03T10:49:47.512Z"
     }
-  ]
+  ],
+  "form_templates": [],
+  "campaigns": []
 }
