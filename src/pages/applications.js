@@ -1,4 +1,4 @@
-import { createApplication, fetchApplications, fetchCourses, updateApplication } from '../lib/api.js';
+import { createApplication, fetchApplications, fetchCourses, updateApplication, exportApplicationsCSV } from '../lib/api.js';
 import { openModal } from '../components/modal.js';
 
 function userRole() {
@@ -33,7 +33,11 @@ export async function renderApplications(el) {
     <div class="ops-shell">
       <div class="ops-header">
         <div><span class="eyebrow">Applications</span><h1>${role === 'student' ? 'My Applications' : 'Application Manager'}</h1><p>Track applications, documents, review status, and counselor ownership.</p></div>
-        <button class="btn btn-primary" id="new-application">${role === 'student' ? 'Start Application' : 'Add Application'}</button>
+        <div class="ops-actions">
+          ${role !== 'student' ? '<button class="btn btn-secondary" id="export-apps-btn"><i data-lucide="download"></i> Export CSV</button>' : ''}
+          ${role !== 'student' ? '<button class="btn btn-warn" id="filter-pending-docs"><i data-lucide="alert-circle"></i> Pending Docs (' + pendingDocs + ')</button>' : ''}
+          <button class="btn btn-primary" id="new-application">${role === 'student' ? 'Start Application' : 'Add Application'}</button>
+        </div>
       </div>
       <div class="ops-stats"><div><strong>${total}</strong><span>Total</span></div><div><strong>${approved}</strong><span>Approved</span></div><div><strong>${pendingDocs}</strong><span>Docs pending</span></div></div>
       <div class="ops-table-wrap">
@@ -42,6 +46,18 @@ export async function renderApplications(el) {
         </tbody></table>
       </div>
     </div>`;
+
+  window.renderIcons();
+
+  el.querySelector('#export-apps-btn')?.addEventListener('click', exportApplicationsCSV);
+
+  el.querySelector('#filter-pending-docs')?.addEventListener('click', () => {
+    const rows = el.querySelectorAll('tbody tr');
+    rows.forEach(row => {
+      const docStatus = row.children[3].textContent.toLowerCase();
+      row.style.display = docStatus.includes('verified') ? 'none' : '';
+    });
+  });
 
   el.querySelector('#new-application')?.addEventListener('click', () => {
     openModal('Start Application', `
@@ -56,7 +72,17 @@ export async function renderApplications(el) {
   el.querySelectorAll('.app-action').forEach(button => button.addEventListener('click', async () => {
     const id = button.dataset.id;
     if (role === 'student') await updateApplication(id, { documents_status: 'verified' });
-    else await updateApplication(id, { status: 'approved', documents_status: 'verified' });
-    window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+    else {
+      openModal('Review Application', `
+        <p>Approve and verify documents for this application?</p>
+      `, {
+        submitLabel: 'Verify & Approve',
+        onSubmit: async () => {
+          await updateApplication(id, { status: 'approved', documents_status: 'verified' });
+          window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+        }
+      });
+    }
   }));
 }
+

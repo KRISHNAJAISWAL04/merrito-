@@ -1,4 +1,4 @@
-// ===== RBMI CRM =====
+// ===== RBMI Admission Hub =====
 import './styles/index.css';
 import './styles/sidebar.css';
 import './styles/components.css';
@@ -8,7 +8,7 @@ import './styles/pipeline.css';
 import './styles/counselors.css';
 import './styles/courses.css';
 import './styles/reports.css';
-import './styles/marketing.css';
+import './styles/login.css';
 
 import { registerRoute, initRouter } from './router.js';
 import { renderSidebar } from './components/sidebar.js';
@@ -24,34 +24,40 @@ import { renderApplications } from './pages/applications.js';
 import { renderQueries } from './pages/queries.js';
 import { renderPayments } from './pages/payments.js';
 import { renderStudentPortal } from './pages/studentPortal.js';
-import { renderMarketing } from './pages/marketing.js';
-import { getCurrentUser } from './lib/auth.js';
+import { renderAccessControl, renderAiAssistant, renderCalendar, renderCampaigns, renderFormDesk, renderIntegrations, renderMarketing, renderMobileApp, renderTemplates } from './pages/platformSections.js';
+import { renderAuditLog } from './pages/auditLog.js';
+import { getCurrentUser, getToken, logout } from './lib/auth.js';
+import { API_BASE } from './lib/api.js';
+import { showLogin, showSignup } from './pages/login.js';
 import { createIcons } from './lib/icons.js';
+import { getSupabase } from './lib/supabase.js';
 
-// Setup global icon renderer
 window.renderIcons = () => createIcons(document);
 
-// Routes
-const ph = (t) => (el) => { el.innerHTML = `<div class="page-header"><div><h1 class="page-title">${t}</h1><p class="page-subtitle">Coming soon.</p></div></div><div style="background:#fff;border-radius:12px;border:1px solid #e2e8f0;padding:60px;text-align:center;"><div style="font-size:40px;margin-bottom:12px">🚧</div><h3>${t} — Coming Soon</h3></div>`; };
-
-registerRoute('/dashboard', renderDashboard);
-registerRoute('/leads', renderLeads);
-registerRoute('/pipeline', renderPipeline);
-registerRoute('/counselors', renderCounselors);
-registerRoute('/courses', renderCourses);
-registerRoute('/reports', renderReports);
-registerRoute('/settings', renderSettings);
-registerRoute('/portal', renderStudentPortal);
-registerRoute('/formdesk', ph('FormDesk'));
-registerRoute('/calendar', ph('Calendar Pro'));
-registerRoute('/applications', renderApplications);
-registerRoute('/marketing', renderMarketing);
-registerRoute('/campaigns', renderMarketing);
-registerRoute('/queries', renderQueries);
-registerRoute('/payments', renderPayments);
-registerRoute('/templates', renderMarketing);
-registerRoute('/access-control', ph('User Access Control'));
-registerRoute('/download', ph('Download App'));
+const routes = [
+  ['/dashboard', renderDashboard],
+  ['/leads', renderLeads],
+  ['/pipeline', renderPipeline],
+  ['/counselors', renderCounselors],
+  ['/courses', renderCourses],
+  ['/reports', renderReports],
+  ['/settings', renderSettings],
+  ['/portal', renderStudentPortal],
+  ['/formdesk', renderFormDesk],
+  ['/calendar', renderCalendar],
+  ['/applications', renderApplications],
+  ['/marketing', renderMarketing],
+  ['/campaigns', renderCampaigns],
+  ['/queries', renderQueries],
+  ['/payments', renderPayments],
+  ['/templates', renderTemplates],
+  ['/access-control', renderAccessControl],
+  ['/download', renderMobileApp],
+  ['/ai-assistant', renderAiAssistant],
+  ['/integrations', renderIntegrations],
+  ['/audit-log', renderAuditLog]
+];
+routes.forEach(([path, fn]) => registerRoute(path, fn));
 
 function hideBoot(cb) {
   const el = document.getElementById('boot');
@@ -65,116 +71,90 @@ function startApp(user) {
   document.getElementById('app').classList.add('show');
   renderSidebar(user);
   renderHeader(user);
-  // Run lucide after sidebar+header render
   window.renderIcons();
   initRouter();
 }
 
-function showLogin() {
-  const root = document.getElementById('login-root');
-  root.classList.add('show');
-  root.innerHTML = `
-  <div class="lp">
-    <div class="lp-left">
-      <div class="lp-brand">
-        <div class="lp-logo">R</div>
-        <div><div class="lp-brand-name">RBMI Admission Hub</div><div class="lp-brand-sub">Admissions, applications and student journeys</div></div>
-      </div>
-      <div class="lp-hero">
-        <h1>Admissions<br/>That Move</h1>
-        <p>Run leads, applications, fee checkpoints and student communication from one focused enrollment workspace.</p>
-        <div class="lp-stats">
-          <div class="lp-stat"><span class="ls-n">2</span><span class="ls-l">Campuses</span></div>
-          <div class="lp-stat"><span class="ls-n">500+</span><span class="ls-l">Leads/Year</span></div>
-          <div class="lp-stat"><span class="ls-n">95%</span><span class="ls-l">Follow-up Rate</span></div>
-        </div>
-      </div>
-      <div class="lp-branches">
-        <div class="lp-branch"><span>📍</span><div><strong>Bareilly Campus</strong><small>Pilibhit Bypass Road, Bareilly, UP</small></div></div>
-        <div class="lp-branch"><span>📍</span><div><strong>Greater Noida Campus</strong><small>Knowledge Park, Greater Noida, UP</small></div></div>
-      </div>
-    </div>
-    <div class="lp-right">
-      <div class="lp-card">
-        <div class="lp-card-logo">
-          <div class="lp-card-icon">R</div>
-          <div><div style="font-weight:700;font-size:17px">RBMI Admission Hub</div><div style="font-size:12px;color:#64748b">Admin, counselor and student panels</div></div>
-        </div>
-        <h2 class="lp-title">Sign in to your account</h2>
-        <div id="lerr" class="lp-err"></div>
-        <form id="lform" class="lp-form">
-          <div class="lp-group">
-            <label>Campus</label>
-            <select id="lbranch" class="lp-input">
-              <option value="bareilly">📍 Bareilly Campus</option>
-              <option value="greater_noida">📍 Greater Noida Campus</option>
-            </select>
-          </div>
-          <div class="lp-group">
-            <label>Email</label>
-            <input type="email" id="lemail" class="lp-input" placeholder="admin@rbmi.edu.in" required/>
-          </div>
-          <div class="lp-group">
-            <label>Password</label>
-            <input type="password" id="lpass" class="lp-input" placeholder="Enter password" required/>
-          </div>
-          <button type="submit" class="lp-btn" id="lbtn">Sign In</button>
-        </form>
-        <div class="lp-div"><span>Demo Accounts</span></div>
-        <div class="lp-demos">
-          <button class="lp-demo" data-e="admin@rbmi.edu.in" data-p="admin123"><span class="lp-badge admin">Admin</span><div><div class="lp-demo-name">Admin RBMI</div><div class="lp-demo-email">admin@rbmi.edu.in</div></div></button>
-          <button class="lp-demo" data-e="priya@rbmi.edu.in" data-p="counselor123"><span class="lp-badge counselor">Counselor</span><div><div class="lp-demo-name">Priya Sharma</div><div class="lp-demo-email">priya@rbmi.edu.in</div></div></button>
-          <button class="lp-demo" data-e="rajesh@rbmi.edu.in" data-p="counselor123"><span class="lp-badge counselor">Counselor</span><div><div class="lp-demo-name">Rajesh Kumar</div><div class="lp-demo-email">rajesh@rbmi.edu.in</div></div></button>
-          <button class="lp-demo" data-e="student@demo.in" data-p="student123"><span class="lp-badge student">Student</span><div><div class="lp-demo-name">Aarav Mehta</div><div class="lp-demo-email">student@demo.in</div></div></button>
-        </div>
-      </div>
-    </div>
-  </div>`;
-
-  root.querySelectorAll('.lp-demo').forEach(b => {
-    b.addEventListener('click', () => {
-      document.getElementById('lemail').value = b.dataset.e;
-      document.getElementById('lpass').value = b.dataset.p;
-    });
-  });
-
-  document.getElementById('lform').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    const email = document.getElementById('lemail').value.trim();
-    const pass = document.getElementById('lpass').value;
-    const branch = document.getElementById('lbranch').value;
-    const err = document.getElementById('lerr');
-    const btn = document.getElementById('lbtn');
-    err.style.display = 'none';
-    btn.disabled = true; btn.textContent = 'Signing in...';
-    try {
-      const res = await fetch('http://localhost:3001/api/auth/login', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password: pass })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Invalid credentials');
-      sessionStorage.setItem('rbmi_v', '5');
-      sessionStorage.setItem('rbmi_user', JSON.stringify({ ...data.user, branch: data.user.branch || branch }));
-      sessionStorage.setItem('rbmi_token', data.token);
-      root.classList.remove('show');
-      root.innerHTML = '';
-      startApp({ ...data.user, branch: data.user.branch || branch });
-    } catch (ex) {
-      err.textContent = '⚠ ' + ex.message;
-      err.style.display = 'block';
-      btn.disabled = false; btn.textContent = 'Sign In';
-    }
-  });
+function saveSession(payload, branch) {
+  sessionStorage.setItem('rbmi_v', '5');
+  sessionStorage.setItem('rbmi_user', JSON.stringify({ ...payload.user, branch: payload.user.branch || branch }));
+  sessionStorage.setItem('rbmi_token', payload.token);
 }
 
-// Wait for 3s boot, then show login or app
+function clearAuth() {
+  sessionStorage.removeItem('rbmi_v');
+  sessionStorage.removeItem('rbmi_user');
+  sessionStorage.removeItem('rbmi_token');
+}
+
+// Handle Google OAuth callback
+async function handleAuthCallback() {
+  const hash = window.location.hash.slice(1);
+  if (!hash) return false;
+  
+  try {
+    const supabase = getSupabase();
+    
+    if (supabase) {
+      const { data, error } = await supabase.auth.getSessionFromUrl();
+      if (error) throw error;
+      
+      if (data?.session?.access_token) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const branch = urlParams.get('branch') || 'bareilly';
+        
+        // Exchange the Supabase token with our backend
+        const res = await fetch(`${API_BASE}/auth/supabase`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ access_token: data.session.access_token })
+        });
+        const payload = await res.json();
+        if (!res.ok) throw new Error(payload.error || 'Authentication failed');
+        
+        saveSession(payload, branch);
+        window.location.hash = payload.user.role === 'student' ? '/portal' : '/dashboard';
+        window.history.replaceState({}, document.title, window.location.pathname);
+        startApp({ ...payload.user, branch: payload.user.branch || branch });
+        return true;
+      }
+    }
+  } catch (err) {
+    console.error('Auth callback error:', err);
+  }
+  return false;
+}
+
+function handleLoginSuccess(payload, branch) {
+  saveSession(payload, branch);
+  startApp({ ...payload.user, branch: payload.user.branch || branch });
+}
+
+function showSignupPage() {
+  showSignup({ onSuccess: handleLoginSuccess, onLoginClick: showLoginPage });
+}
+
+function showLoginPage() {
+  showLogin({ onSuccess: handleLoginSuccess, onSignupClick: showSignupPage });
+}
+
 setTimeout(() => {
-  hideBoot(() => {
+  hideBoot(async () => {
+    const hash = window.location.hash.slice(1);
+    const params = new URLSearchParams(hash);
+    
+    if (params.get('access_token')) {
+      handleAuthCallback();
+      return;
+    }
+    
     const user = getCurrentUser();
-    if (user) startApp(user);
-    else showLogin();
+    if (user) {
+      startApp(user);
+    } else if (window.location.hash === '#/signup') {
+      showSignupPage();
+    } else {
+      showLoginPage();
+    }
   });
 }, 3000);
-
-

@@ -1,5 +1,5 @@
 // ===== LEADS MANAGEMENT PAGE — API-connected =====
-import { fetchLeads, createLead, updateLead, deleteLead, fetchCounselors, fetchCourses, exportLeadsCSV } from '../lib/api.js';
+import { fetchLeads, createLead, updateLead, deleteLead, bulkDeleteLeads, fetchCounselors, fetchCourses, exportLeadsCSV } from '../lib/api.js';
 import { getStageInfo, getPriorityInfo, formatDate, getAvatarColor, debounce } from '../components/utils.js';
 import { openModal } from '../components/modal.js';
 
@@ -44,6 +44,60 @@ async function loadLeads(container) {
   }
 }
 
+function updateBulkBar(tableWrap, container) {
+  const checked = [...tableWrap.querySelectorAll('.lead-check:checked')];
+  let bar = container.querySelector('#bulk-action-bar');
+  if (checked.length === 0) {
+    if (bar) bar.remove();
+    return;
+  }
+  if (!bar) {
+    bar = document.createElement('div');
+    bar.id = 'bulk-action-bar';
+    bar.style.cssText = 'position:sticky;top:0;z-index:10;background:#1e1b4b;color:white;padding:10px 16px;display:flex;align-items:center;gap:12px;border-radius:8px;margin-bottom:8px;';
+    container.querySelector('#leads-table-wrap').before(bar);
+  }
+  bar.innerHTML = `
+    <span style="font-weight:600;">${checked.length} selected</span>
+    <button id="bulk-delete-btn" style="background:#ef4444;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Delete Selected</button>
+    <button id="bulk-stage-btn" style="background:#6366f1;color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:600;">Change Stage</button>
+    <button id="bulk-cancel-btn" style="background:rgba(255,255,255,0.15);color:white;border:none;padding:6px 14px;border-radius:6px;cursor:pointer;font-size:13px;">Cancel</button>
+  `;
+  bar.querySelector('#bulk-cancel-btn').addEventListener('click', () => {
+    tableWrap.querySelectorAll('.lead-check').forEach(cb => cb.checked = false);
+    tableWrap.querySelector('#select-all').checked = false;
+    bar.remove();
+  });
+  bar.querySelector('#bulk-delete-btn').addEventListener('click', async () => {
+    const ids = checked.map(cb => cb.dataset.id);
+    if (!confirm(`Delete ${ids.length} leads? This cannot be undone.`)) return;
+    try {
+      await bulkDeleteLeads(ids);
+      bar.remove();
+      loadLeads(container);
+    } catch (err) { alert('Failed: ' + err.message); }
+  });
+  bar.querySelector('#bulk-stage-btn').addEventListener('click', () => {
+    const ids = checked.map(cb => cb.dataset.id);
+    openModal('Change Stage for ' + ids.length + ' leads', `
+      <div class="form-group">
+        <label class="form-label">New Stage</label>
+        <select class="form-select" id="bulk-stage-select">
+          ${STAGES.map(s => `<option value="${s.id}">${s.label}</option>`).join('')}
+        </select>
+      </div>
+    `, {
+      submitLabel: 'Update All',
+      onSubmit: async (body) => {
+        const stage = body.querySelector('#bulk-stage-select').value;
+        await Promise.all(ids.map(id => updateLead(id, { stage })));
+        bar.remove();
+        loadLeads(container);
+      }
+    });
+  });
+}
+
 function renderLeadsTable(tableWrap, result, container) {
   const { data: leads, total, page, totalPages } = result;
 
@@ -57,17 +111,19 @@ function renderLeadsTable(tableWrap, result, container) {
           <th>Source</th>
           <th class="sortable" data-sort="stage">Stage <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i></th>
           <th>Counselor</th>
+          <th class="sortable" data-sort="lead_score">Score <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i></th>
           <th class="sortable" data-sort="created_at">Date <i data-lucide="arrow-up-down" style="width:12px;height:12px;"></i></th>
           <th>Priority</th>
           <th>Actions</th>
         </tr>
       </thead>
       <tbody>
-        ${leads.length === 0 ? '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--color-text-muted);">No leads found</td></tr>' : ''}
+        ${leads.length === 0 ? '<tr><td colspan="10" style="text-align:center;padding:2rem;color:var(--color-text-muted);">No leads found</td></tr>' : ''}
         ${leads.map(l => {
           const stage = getStageInfo(l.stage);
           const priority = getPriorityInfo(l.priority);
           const initials = l.name.split(' ').map(n => n[0]).join('');
+          const scoreColor = (l.lead_score || 0) > 60 ? 'var(--color-success)' : (l.lead_score || 0) > 40 ? 'var(--color-warning)' : 'var(--color-text-muted)';
           return `
           <tr class="lead-row" data-id="${l.id}">
             <td><input type="checkbox" class="lead-check" data-id="${l.id}" /></td>
@@ -81,6 +137,7 @@ function renderLeadsTable(tableWrap, result, container) {
             <td><span class="source-label">${l.source}</span></td>
             <td><span class="stage-badge" style="background:${stage.bg};color:${stage.color};">${stage.label}</span></td>
             <td><span class="counselor-name">${l.counselor_name}</span></td>
+            <td><span class="score-cell" style="color:${scoreColor};font-weight:700;">${l.lead_score || 10}</span></td>
             <td><span class="date-cell">${formatDate(l.created_at)}</span></td>
             <td><span class="priority-dot" style="background:${priority.color};" title="${priority.label}"></span></td>
             <td>
@@ -112,6 +169,15 @@ function renderLeadsTable(tableWrap, result, container) {
   `;
 
   window.renderIcons();
+
+  // Bulk select
+  tableWrap.querySelector('#select-all')?.addEventListener('change', (e) => {
+    tableWrap.querySelectorAll('.lead-check').forEach(cb => cb.checked = e.target.checked);
+    updateBulkBar(tableWrap, container);
+  });
+  tableWrap.querySelectorAll('.lead-check').forEach(cb => {
+    cb.addEventListener('change', () => updateBulkBar(tableWrap, container));
+  });
 
   // Sort
   tableWrap.querySelectorAll('.sortable').forEach(th => {
@@ -164,14 +230,30 @@ function renderLeadsTable(tableWrap, result, container) {
 }
 function showLeadDetails(lead) {
   const stage = getStageInfo(lead.stage);
-  openModal(`Lead Details — ${lead.name}`, `
+  const stageOrder = ['enquiry','counseling_scheduled','counseling_done','application_submitted','documents_verified','admitted','enrolled'];
+  const stageIdx = stageOrder.indexOf(lead.stage);
+  const timelineHtml = stageOrder.map((s, i) => {
+    const info = getStageInfo(s);
+    const done = i <= stageIdx;
+    return `<div class="timeline-step ${done ? 'done' : ''}">
+      <div class="timeline-dot" style="background:${done ? info.color : '#e2e8f0'};"></div>
+      <span style="font-size:12px;color:${done ? info.color : '#94a3b8'};font-weight:${done ? '600' : '400'}">${info.label}</span>
+    </div>`;
+  }).join('<div class="timeline-line"></div>');
+
+  openModal(`Lead — ${lead.name}`, `
     <div class="lead-detail-grid">
       <div class="detail-section">
         <h4 class="detail-section-title">Personal Information</h4>
         <div class="detail-row"><span class="detail-label">Full Name</span><span class="detail-value">${lead.name}</span></div>
-        <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${lead.email}</span></div>
+        <div class="detail-row"><span class="detail-label">Email</span><span class="detail-value">${lead.email || '—'}</span></div>
         <div class="detail-row"><span class="detail-label">Phone</span><span class="detail-value">${lead.phone}</span></div>
-        <div class="detail-row"><span class="detail-label">City</span><span class="detail-value">${lead.city || 'N/A'}</span></div>
+        <div class="detail-row"><span class="detail-label">City</span><span class="detail-value">${lead.city || '—'}</span></div>
+        <div style="display:flex;gap:8px;margin-top:12px;">
+          <a href="tel:${lead.phone}" class="btn btn-secondary btn-sm" style="text-decoration:none;">📞 Call</a>
+          <a href="https://wa.me/${lead.phone.replace(/[^0-9]/g,'')}" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">💬 WhatsApp</a>
+          ${lead.email ? `<a href="mailto:${lead.email}" class="btn btn-secondary btn-sm" style="text-decoration:none;">✉ Email</a>` : ''}
+        </div>
       </div>
       <div class="detail-section">
         <h4 class="detail-section-title">Application Details</h4>
@@ -179,15 +261,20 @@ function showLeadDetails(lead) {
         <div class="detail-row"><span class="detail-label">Source</span><span class="detail-value">${lead.source}</span></div>
         <div class="detail-row"><span class="detail-label">Stage</span><span class="detail-value"><span class="stage-badge" style="background:${stage.bg};color:${stage.color};">${stage.label}</span></span></div>
         <div class="detail-row"><span class="detail-label">Priority</span><span class="detail-value" style="text-transform:capitalize">${lead.priority}</span></div>
+        <div class="detail-row"><span class="detail-label">Lead Score</span><span class="detail-value" style="font-weight:700;color:${(lead.lead_score||0)>60?'#10b981':'#f59e0b'}">${lead.lead_score || 10}/100</span></div>
         <div class="detail-row"><span class="detail-label">Counselor</span><span class="detail-value">${lead.counselor_name}</span></div>
-        <div class="detail-row"><span class="detail-label">Created</span><span class="detail-value">${formatDate(lead.created_at)}</span></div>
+        <div class="detail-row"><span class="detail-label">Added</span><span class="detail-value">${formatDate(lead.created_at)}</span></div>
+      </div>
+      <div class="detail-section detail-full">
+        <h4 class="detail-section-title">Admission Journey</h4>
+        <div style="display:flex;align-items:center;gap:0;overflow-x:auto;padding:12px 0;">${timelineHtml}</div>
       </div>
       <div class="detail-section detail-full">
         <h4 class="detail-section-title">Notes</h4>
-        <p class="detail-notes">${lead.notes || 'No notes'}</p>
+        <p class="detail-notes">${lead.notes || 'No notes added yet.'}</p>
       </div>
     </div>
-  `, { width: '640px', showFooter: false });
+  `, { width: '700px', showFooter: false });
 }
 
 function showStageChangeModal(lead, container) {
@@ -275,11 +362,23 @@ async function showAddLeadModal(container) {
       const lname = body.querySelector('#lead-lname').value;
       if (!fname || !lname) return;
 
+      // Duplicate check by phone
+      const phone = body.querySelector('#lead-phone').value.trim();
+      if (phone) {
+        try {
+          const existing = await fetchLeads({ search: phone, limit: 1 });
+          if (existing.total > 0) {
+            const dup = existing.data[0];
+            if (!confirm(`⚠ A lead with this phone already exists: "${dup.name}" (${dup.stage}). Add anyway?`)) return false;
+          }
+        } catch (e) { /* ignore duplicate check errors */ }
+      }
+
       await createLead({
         first_name: fname,
         last_name: lname,
         email: body.querySelector('#lead-email').value,
-        phone: body.querySelector('#lead-phone').value,
+        phone,
         course_id: body.querySelector('#lead-course').value,
         source: body.querySelector('#lead-source').value,
         counselor_id: body.querySelector('#lead-counselor').value,
@@ -307,16 +406,15 @@ export async function renderLeads(container) {
     <div class="leads-page">
       <div class="page-header">
         <div>
-          <h1 class="page-title">Leads Management</h1>
-          <p class="page-subtitle">Track and manage all student enquiries and applications.</p>
+          <h1 class="page-title">Leads</h1>
+          <p class="page-subtitle">Manage and track student enquiries.</p>
         </div>
         <div class="header-actions">
-          <button class="btn btn-secondary" id="export-leads-btn">
-            <i data-lucide="download" style="width:16px;height:16px;"></i> Export CSV
+          <button class="btn btn-secondary" id="export-leads-btn" style="display:flex;align-items:center;gap:6px;">
+            ⬇ Export CSV
           </button>
-          <button class="btn btn-primary" id="add-lead-btn">
-            <i data-lucide="plus" style="width:18px;height:18px;"></i>
-            Add New Lead
+          <button class="btn btn-primary" id="add-lead-btn" style="display:flex;align-items:center;gap:6px;">
+            + Add New Lead
           </button>
         </div>
       </div>
@@ -324,8 +422,7 @@ export async function renderLeads(container) {
       <div class="filters-bar animate-fade-in">
         <div class="filter-group">
           <div class="search-filter">
-            <i data-lucide="search" style="width:16px;height:16px;color:var(--color-text-muted);"></i>
-            <input type="text" placeholder="Search by name, email, phone..." class="filter-search" id="filter-search" />
+            <input type="text" placeholder="Search by name, email, phone..." class="filter-search" id="filter-search" style="padding-left:12px;" />
           </div>
         </div>
         <div class="filter-group">
