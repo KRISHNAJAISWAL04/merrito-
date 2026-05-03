@@ -97,6 +97,16 @@ Object.entries(allIcons).forEach(([name, data]) => {
   if (data) iconMap[toKebab(name)] = data;
 });
 
+const iconAliases = {
+  'file-input': 'file-text',
+  'shield-check': 'shield',
+  'scroll-text': 'file-text',
+  'bar-chart-3': 'bar-chart',
+  'headset': 'headphones',
+  'puzzle': 'grid',
+  'sparkles': 'star'
+};
+
 // Build SVG string from lucide icon data
 function buildSvg(data, w, h, extraStyle) {
   const inner = data.map(([tag, props]) => {
@@ -111,7 +121,7 @@ export function createIcons(root) {
   const el = root || document;
   el.querySelectorAll('i[data-lucide]').forEach(i => {
     const name = i.getAttribute('data-lucide');
-    const data = iconMap[name];
+    const data = iconMap[name] || iconMap[iconAliases[name]] || iconMap.activity;
     if (!data) return;
     const style = i.getAttribute('style') || '';
     const wm = style.match(/width:\s*([\d.]+)px/);

@@ -1,7 +1,7 @@
 import { getToken } from '../lib/auth.js';
 
 // ===== API CLIENT — RBMI CRM =====
-const API_BASE = 'http://localhost:3001/api';
+export const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
 async function request(path, options = {}) {
   const token = getToken();
   const res = await fetch(`${API_BASE}${path}`, {
@@ -176,6 +176,22 @@ export async function updateApplication(id, data) {
   return request(`/applications/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 }
 
+export function exportApplicationsCSV() {
+  const token = getToken();
+  const url = `${API_BASE}/applications/export/csv`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'applications.csv';
+  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    .then(r => r.blob())
+    .then(blob => {
+      const blobUrl = URL.createObjectURL(blob);
+      a.href = blobUrl;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    });
+}
+
 // ---- QUERIES ----
 export async function fetchQueries() {
   return request('/queries');
@@ -200,4 +216,38 @@ export async function createPayment(data) {
 
 export async function updatePayment(id, data) {
   return request(`/payments/${id}`, { method: 'PUT', body: JSON.stringify(data) });
+}
+
+export function exportPaymentsCSV() {
+  const token = getToken();
+  const url = `${API_BASE}/payments/export/csv`;
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'payments.csv';
+  fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    .then(r => r.blob())
+    .then(blob => {
+      const blobUrl = URL.createObjectURL(blob);
+      a.href = blobUrl;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    });
+}
+
+// ---- FORM TEMPLATES (FormDesk) ----
+export async function fetchFormTemplates() {
+  return request('/form-templates');
+}
+
+export async function createFormTemplate(data) {
+  return request('/form-templates', { method: 'POST', body: JSON.stringify(data) });
+}
+
+// ---- CAMPAIGNS ----
+export async function fetchCampaigns() {
+  return request('/campaigns');
+}
+
+export async function createCampaign(data) {
+  return request('/campaigns', { method: 'POST', body: JSON.stringify(data) });
 }

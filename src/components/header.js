@@ -17,7 +17,7 @@ export function renderHeader(user = null) {
 
   header.innerHTML = `
     <div class="header-left">
-      <button class="header-menu-toggle" id="menu-toggle" title="Toggle sidebar">?</button>
+      <button class="header-menu-toggle" id="menu-toggle" title="Toggle sidebar"><i data-lucide="menu" style="width:18px;height:18px;"></i></button>
       <div class="header-breadcrumb" id="header-breadcrumb">
         <span>RBMI Hub</span>
         <span style="opacity:0.4;margin:0 4px;">/</span>
@@ -25,7 +25,7 @@ export function renderHeader(user = null) {
       </div>
     </div>
     <div class="header-right">
-      <button class="header-btn" id="btn-notifications" title="Notifications">Bell</button>
+      <button class="header-btn" id="btn-notifications" title="Notifications">Alerts</button>
       <div class="header-divider"></div>
       ${canCreateLead ? `
       <button class="btn btn-primary header-add-btn" id="btn-add-lead">
@@ -49,6 +49,7 @@ export function renderHeader(user = null) {
     '/counselors': 'Counselors', '/courses': 'Programs', '/reports': 'Reports', '/settings': 'Settings',
     '/formdesk': 'FormDesk', '/calendar': 'Calendar', '/applications': 'Applications', '/marketing': 'Marketing',
     '/campaigns': 'Campaigns', '/queries': 'Help Desk', '/payments': 'Fee Desk', '/templates': 'Templates',
+    '/ai-assistant': 'Asha AI', '/integrations': 'Integrations', '/access-control': 'Access Control',
     '/portal': 'My Application', '/download': 'Mobile App'
   };
 
@@ -147,4 +148,5 @@ export function renderHeader(user = null) {
     });
   });
 }
+
 

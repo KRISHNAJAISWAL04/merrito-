@@ -3,6 +3,10 @@ import { fetchDashboardStats, fetchActivities } from '../lib/api.js';
 import { createLineChart, createDoughnutChart, createBarChart } from '../components/charts.js';
 import { getAvatarColor } from '../components/utils.js';
 
+let dashboardDataCache = null;
+let dashboardDataCacheTime = 0;
+const DASHBOARD_CACHE_MS = 12000;
+
 const STAGE_META = [
   { id: 'enquiry', label: 'Enquiry', color: '#8b5cf6' },
   { id: 'counseling_scheduled', label: 'Counseling Scheduled', color: '#3b82f6' },
@@ -37,10 +41,20 @@ export async function renderDashboard(container) {
   container.innerHTML = renderSkeleton();
 
   try {
-    const [stats, activities] = await Promise.all([
-      fetchDashboardStats(),
-      fetchActivities(7)
-    ]);
+    const now = Date.now();
+    let stats;
+    let activities;
+    if (dashboardDataCache && now - dashboardDataCacheTime < DASHBOARD_CACHE_MS) {
+      stats = dashboardDataCache.stats;
+      activities = dashboardDataCache.activities;
+    } else {
+      [stats, activities] = await Promise.all([
+        fetchDashboardStats(),
+        fetchActivities(7)
+      ]);
+      dashboardDataCache = { stats, activities };
+      dashboardDataCacheTime = now;
+    }
 
     const activityIcons = {
       lead_added: 'user-plus', stage_change: 'arrow-right-circle', counseling: 'message-circle',
@@ -117,10 +131,10 @@ export async function renderDashboard(container) {
           </div>
           <div class="chart-card animate-fade-in stagger-4">
             <div class="chart-header">
-              <h3 class="chart-title">Lead Sources</h3>
-              <span class="chart-subtitle">Distribution by channel</span>
+              <h3 class="chart-title">Lead Funnel</h3>
+              <span class="chart-subtitle">Conversion journey</span>
             </div>
-            <div class="chart-body chart-body-doughnut"><canvas id="chart-sources"></canvas></div>
+            <div class="chart-body chart-body-doughnut"><canvas id="chart-funnel"></canvas></div>
           </div>
         </div>
 
@@ -211,15 +225,10 @@ export async function renderDashboard(container) {
         { label: 'Enrollments', data: stats.monthly.enrollments, color: '#f59e0b', bgColor: 'rgba(245,158,11,0.08)', fill: true }
       ]);
 
-      const srcLabels = Object.keys(stats.sourceDistribution);
-      const srcValues = Object.values(stats.sourceDistribution);
-      const srcColors = ['#6366f1', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4'];
-      createDoughnutChart('chart-sources', srcLabels, srcValues, srcColors);
-
       const stageLabels = STAGE_META.map(s => s.label);
       const stageValues = STAGE_META.map(s => stats.stageDistribution[s.id] || 0);
       const stageColors = STAGE_META.map(s => s.color);
-      createBarChart('chart-pipeline', stageLabels, stageValues, stageColors);
+      createBarChart('chart-funnel', stageLabels, stageValues, stageColors);
     }, 100);
 
   } catch (err) {

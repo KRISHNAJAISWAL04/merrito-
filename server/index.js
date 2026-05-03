@@ -1,12 +1,25 @@
 // ===== EXPRESS API SERVER — RBMI CRM =====
+import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import * as db from './supabase.js';
-import { loginUser, seedUsers, getUsers, createUser, updateUser, deleteUser, requireAuth, requireAdmin } from './auth.js';
-import { getDB, saveDB, generateId } from './db.js';
+import {
+  loginUser,
+  loginWithSupabaseAccessToken,
+  signupStudent,
+  seedDemoUsers,
+  getUsers,
+  createUser,
+  updateUser,
+  deleteUser,
+  requireAuth,
+  requireAdmin
+} from './auth.js';
+import * as appStore from './appStore.js';
+import { assertLeadPayload, assertRequired } from './validate.js';
 
 const app = express();
-const PORT = 3001;
+const PORT = Number(process.env.PORT) || 3001;
 
 app.use(cors());
 app.use(express.json());
@@ -15,19 +28,37 @@ app.use(express.json());
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.post('/api/health', (req, res) => res.json({ ok: true, body: req.body }));
 
-// Seed users on startup
-seedUsers();
+// Seed demo users on startup
+await seedDemoUsers();
 
 // ============================================================
 //  AUTH
 // ============================================================
 
-app.post('/api/auth/login', (req, res) => {
+app.post('/api/auth/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { email, password, branch } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
-    const result = loginUser(email, password);
-    if (!result) return res.status(401).json({ error: 'Invalid email or password' });
+    const result = await loginUser(email, password, branch);
+    if (!result) {
+      return res.status(401).json({
+        error: db.USE_SUPABASE
+          ? 'Invalid credentials. Contact admin to create your account.'
+          : 'Invalid email or password'
+      });
+    }
+    res.json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/auth/supabase', async (req, res) => {
+  try {
+    const access_token = req.body?.access_token;
+    if (!access_token) return res.status(400).json({ error: 'access_token required' });
+    const result = await loginWithSupabaseAccessToken(access_token);
+    if (!result) return res.status(401).json({ error: 'Invalid or expired Supabase session' });
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: err.message });
@@ -36,6 +67,18 @@ app.post('/api/auth/login', (req, res) => {
 
 app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json(req.user);
+});
+
+app.post('/api/auth/signup', async (req, res) => {
+  try {
+    const { email, password, name, phone, branch } = req.body;
+    if (!email || !password || !name) return res.status(400).json({ error: 'Name, email and password required' });
+    const result = await signupStudent(email, password, name, phone, branch || 'bareilly');
+    if (result.error) return res.status(400).json({ error: result.error });
+    res.status(201).json(result);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ============================================================
@@ -84,12 +127,25 @@ app.get('/api/leads', requireAuth, async (req, res) => {
     const counselorMap = Object.fromEntries(counselors.map(c => [c.id, c]));
     const courseMap = Object.fromEntries(courses.map(c => [c.id, c]));
 
-    const enriched = paged.map(l => ({
-      ...l,
-      name: `${l.first_name} ${l.last_name}`,
-      counselor_name: counselorMap[l.counselor_id]?.name || 'Unassigned',
-      course_name: courseMap[l.course_id]?.name || 'N/A'
-    }));
+    const enriched = paged.map(l => {
+      let score = 10; // Base score
+      // Priority points
+      if (l.priority === 'high') score += 30;
+      else if (l.priority === 'medium') score += 15;
+      // Stage points
+      if (l.stage === 'admitted' || l.stage === 'enrolled') score += 40;
+      else if (l.stage === 'documents_verified') score += 30;
+      else if (l.stage === 'application_submitted') score += 20;
+      else if (l.stage === 'counseling_done') score += 15;
+      
+      return {
+        ...l,
+        name: `${l.first_name} ${l.last_name}`,
+        counselor_name: counselorMap[l.counselor_id]?.name || 'Unassigned',
+        course_name: courseMap[l.course_id]?.name || 'N/A',
+        lead_score: score
+      };
+    });
 
     res.json({ data: enriched, total, page: pg, totalPages: Math.ceil(total / lim) });
   } catch (error) {
@@ -151,6 +207,23 @@ app.get('/api/leads/:id', requireAuth, async (req, res) => {
 
 app.post('/api/leads', requireAuth, async (req, res) => {
   try {
+    assertLeadPayload(req.body);
+    
+    // Auto-assignment logic: if no counselor_id, assign to the one with least active leads
+    let assignedCounselorId = req.body.counselor_id;
+    if (!assignedCounselorId && req.user.role === 'admin') {
+      const allCounselors = await db.getCounselors();
+      if (allCounselors.length > 0) {
+        const allLeads = await db.getLeads({});
+        const workloads = allCounselors.map(c => ({
+          id: c.id,
+          active: allLeads.filter(l => l.counselor_id === c.id && !['admitted', 'enrolled'].includes(l.stage)).length
+        }));
+        workloads.sort((a, b) => a.active - b.active);
+        assignedCounselorId = workloads[0].id;
+      }
+    }
+
     const lead = await db.createLead({
       first_name: req.body.first_name || '',
       last_name: req.body.last_name || '',
@@ -159,7 +232,7 @@ app.post('/api/leads', requireAuth, async (req, res) => {
       course_id: req.body.course_id || null,
       source: req.body.source || 'Website',
       stage: req.body.stage || 'enquiry',
-      counselor_id: req.body.counselor_id || null,
+      counselor_id: assignedCounselorId || null,
       priority: req.body.priority || 'medium',
       city: req.body.city || '',
       notes: req.body.notes || ''
@@ -168,7 +241,7 @@ app.post('/api/leads', requireAuth, async (req, res) => {
     await db.createActivity({
       lead_id: lead.id,
       type: 'lead_added',
-      message: `New lead ${lead.first_name} ${lead.last_name} added via ${lead.source}`
+      message: `New lead ${lead.first_name} ${lead.last_name} added via ${lead.source}${assignedCounselorId ? ' and auto-assigned' : ''}`
     });
 
     const counselor = lead.counselor_id ? await db.getCounselor(lead.counselor_id) : null;
@@ -264,7 +337,7 @@ app.post('/api/webhook/lead', async (req, res) => {
       lname = parts.slice(1).join(' ');
     }
 
-    if (!fname || !phone) {
+    if (!String(fname || '').trim() || !String(phone || '').trim()) {
       return res.status(400).json({ error: 'name and phone are required' });
     }
 
@@ -387,47 +460,29 @@ app.get('/api/counselors/:id', requireAuth, async (req, res) => {
 
 app.post('/api/counselors', requireAdmin, async (req, res) => {
   try {
-    const dbData = getDB();
-    if (!dbData.counselors) dbData.counselors = [];
-    const counselor = {
-      id: generateId(),
-      name: req.body.name,
-      email: req.body.email || '',
-      phone: req.body.phone || '',
-      role: req.body.role || 'Counselor',
-      department: req.body.department || 'General',
-      rating: parseFloat(req.body.rating) || 4.0,
-      created_at: new Date().toISOString()
-    };
-    dbData.counselors.push(counselor);
-    saveDB(dbData);
+    assertRequired(req.body, ['name']);
+    const counselor = await db.createCounselor(req.body);
     res.status(201).json(counselor);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 
 app.put('/api/counselors/:id', requireAdmin, async (req, res) => {
   try {
-    const dbData = getDB();
-    const idx = (dbData.counselors || []).findIndex(c => c.id === req.params.id);
-    if (idx === -1) return res.status(404).json({ error: 'Counselor not found' });
-    dbData.counselors[idx] = { ...dbData.counselors[idx], ...req.body };
-    saveDB(dbData);
-    res.json(dbData.counselors[idx]);
+    const updated = await db.updateCounselor(req.params.id, req.body);
+    res.json(updated);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(error.message === 'Counselor not found' ? 404 : 400).json({ error: error.message });
   }
 });
 
 app.delete('/api/counselors/:id', requireAdmin, async (req, res) => {
   try {
-    const dbData = getDB();
-    dbData.counselors = (dbData.counselors || []).filter(c => c.id !== req.params.id);
-    saveDB(dbData);
+    await db.deleteCounselor(req.params.id);
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -448,25 +503,11 @@ app.get('/api/courses', requireAuth, async (req, res) => {
 
 app.post('/api/courses', requireAdmin, async (req, res) => {
   try {
-    const dbData = getDB();
-    if (!dbData.courses) dbData.courses = [];
-    const course = {
-      id: generateId(),
-      name: req.body.name,
-      code: req.body.code || '',
-      department: req.body.department || '',
-      duration: req.body.duration || '',
-      total_seats: parseInt(req.body.total_seats) || 0,
-      filled_seats: parseInt(req.body.filled_seats) || 0,
-      fee: req.body.fee || '',
-      status: req.body.status || 'Active',
-      created_at: new Date().toISOString()
-    };
-    dbData.courses.push(course);
-    saveDB(dbData);
+    assertRequired(req.body, ['name']);
+    const course = await db.createCourse(req.body);
     res.status(201).json(course);
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -481,24 +522,29 @@ app.put('/api/courses/:id', requireAdmin, async (req, res) => {
 
 app.delete('/api/courses/:id', requireAdmin, async (req, res) => {
   try {
-    const dbData = getDB();
-    dbData.courses = (dbData.courses || []).filter(c => c.id !== req.params.id);
-    saveDB(dbData);
+    await db.deleteCourse(req.params.id);
     res.json({ success: true });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    res.status(400).json({ error: error.message });
   }
 });
 
 // ============================================================
-//  ACTIVITIES
+//  ACTIVITIES (Audit Log)
 // ============================================================
 
 app.get('/api/activities', requireAuth, async (req, res) => {
   try {
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit) || 50;
     const activities = await db.getActivities(limit);
-    res.json(activities);
+    const users = await getUsers();
+    const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    const enriched = activities.map(a => ({
+      ...a,
+      user_name: userMap[a.user_id]?.name || 'System',
+      user_role: userMap[a.user_id]?.role || 'system'
+    }));
+    res.json(enriched);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -542,125 +588,135 @@ app.get('/api/pipeline', requireAuth, async (req, res) => {
 //  APPLICATIONS, QUERIES, PAYMENTS
 // ============================================================
 
-function ensureAdmissionsModules() {
-  const dbData = getDB();
-  if (!dbData.applications) dbData.applications = [];
-  if (!dbData.queries) dbData.queries = [];
-  if (!dbData.payments) dbData.payments = [];
-  if (!dbData.applications.some(a => a.user_id === 'u004-student-demo')) {
-    dbData.applications.push({ id: 'app-demo-aarav', user_id: 'u004-student-demo', student_name: 'Aarav Mehta', email: 'student@demo.in', course_id: 'cr001-mba', status: 'submitted', documents_status: 'pending', counselor_name: 'Priya Sharma', priority: 'high', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-  }
-  if (!dbData.queries.some(q => q.user_id === 'u004-student-demo')) {
-    dbData.queries.push({ id: 'qry-demo-aarav', user_id: 'u004-student-demo', student_name: 'Aarav Mehta', subject: 'Document upload help', category: 'Documents', status: 'open', priority: 'medium', message: 'Need help uploading Class 12 marksheet.', response: '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-  }
-  if (!dbData.payments.some(p => p.user_id === 'u004-student-demo')) {
-    dbData.payments.push({ id: 'pay-demo-aarav', user_id: 'u004-student-demo', student_name: 'Aarav Mehta', title: 'Admission confirmation fee', amount: 25000, status: 'due', method: 'Online', due_date: '2026-05-15', receipt_no: '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() });
-  }
-  saveDB(dbData);
-  return dbData;
-}
-
-function enrichApplication(item, courses) {
-  const course = courses.find(c => c.id === item.course_id);
-  return { ...item, course_name: course?.name || 'Program not selected' };
-}
-
 app.get('/api/applications', requireAuth, async (req, res) => {
   try {
-    const dbData = ensureAdmissionsModules();
-    const courses = await db.getCourses();
-    let items = dbData.applications || [];
-    if (req.user.role === 'student') items = items.filter(item => item.user_id === req.user.id);
-    res.json(items.map(item => enrichApplication(item, courses)).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at)));
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    const items = await appStore.listApplications(req.user);
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/applications/export/csv', requireAuth, async (req, res) => {
+  try {
+    const items = await appStore.listApplications(req.user);
+    const headers = ['Student', 'Email', 'Course', 'Status', 'Docs', 'Counselor', 'Priority', 'Date'];
+    const rows = items.map(i => [
+      i.student_name, i.email || '', i.course_name || '',
+      i.status, i.documents_status, i.counselor_name,
+      i.priority, new Date(i.created_at).toLocaleDateString('en-IN')
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="applications.csv"');
+    res.send(csv);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.post('/api/applications', requireAuth, async (req, res) => {
   try {
-    const dbData = ensureAdmissionsModules();
-    const profile = req.user.role === 'student' ? getPortalProfileForUser(req.user) : null;
-    const item = { id: generateId(), user_id: req.user.role === 'student' ? req.user.id : (req.body.user_id || null), student_name: req.body.student_name || profile?.name || req.user.name, email: req.body.email || profile?.email || req.user.email, course_id: req.body.course_id || profile?.course_id || null, status: req.body.status || 'submitted', documents_status: req.body.documents_status || 'pending', counselor_name: req.body.counselor_name || profile?.counselor_name || 'Admissions team', priority: req.body.priority || 'medium', created_at: new Date().toISOString(), updated_at: new Date().toISOString() };
-    dbData.applications.unshift(item); saveDB(dbData);
-    const courses = await db.getCourses();
-    res.status(201).json(enrichApplication(item, courses));
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    const item = await appStore.insertApplication(req.user, req.body);
+    res.status(201).json(item);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 app.put('/api/applications/:id', requireAuth, async (req, res) => {
   try {
-    const dbData = ensureAdmissionsModules();
-    const idx = dbData.applications.findIndex(item => item.id === req.params.id);
-    if (idx === -1) return res.status(404).json({ error: 'Application not found' });
-    const item = dbData.applications[idx];
-    if (req.user.role === 'student' && item.user_id !== req.user.id) return res.status(403).json({ error: 'Access denied' });
-    const allowed = req.user.role === 'student' ? ['documents_status'] : ['status', 'documents_status', 'counselor_name', 'priority'];
-    const updates = {}; for (const key of allowed) if (Object.prototype.hasOwnProperty.call(req.body, key)) updates[key] = req.body[key];
-    dbData.applications[idx] = { ...item, ...updates, updated_at: new Date().toISOString() }; saveDB(dbData);
-    const courses = await db.getCourses();
-    res.json(enrichApplication(dbData.applications[idx], courses));
-  } catch (error) { res.status(500).json({ error: error.message }); }
+    const item = await appStore.patchApplication(req.user, req.params.id, req.body);
+    res.json(item);
+  } catch (error) {
+    const code = error.message === 'Application not found' ? 404 : error.message === 'Access denied' ? 403 : 500;
+    res.status(code).json({ error: error.message });
+  }
 });
 
-app.get('/api/queries', requireAuth, (req, res) => {
-  try { const dbData = ensureAdmissionsModules(); let items = dbData.queries || []; if (req.user.role === 'student') items = items.filter(item => item.user_id === req.user.id); res.json(items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))); } catch (error) { res.status(500).json({ error: error.message }); }
+app.get('/api/queries', requireAuth, async (req, res) => {
+  try {
+    const items = await appStore.listQueries(req.user);
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.post('/api/queries', requireAuth, (req, res) => {
-  try { const dbData = ensureAdmissionsModules(); const item = { id: generateId(), user_id: req.user.role === 'student' ? req.user.id : (req.body.user_id || null), student_name: req.body.student_name || req.user.name, subject: req.body.subject || 'Admission query', category: req.body.category || 'General', status: 'open', priority: req.body.priority || 'medium', message: req.body.message || '', response: '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }; dbData.queries.unshift(item); saveDB(dbData); res.status(201).json(item); } catch (error) { res.status(500).json({ error: error.message }); }
+app.post('/api/queries', requireAuth, async (req, res) => {
+  try {
+    const item = await appStore.insertQuery(req.user, req.body);
+    res.status(201).json(item);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.put('/api/queries/:id', requireAuth, (req, res) => {
-  try { const dbData = ensureAdmissionsModules(); const idx = dbData.queries.findIndex(item => item.id === req.params.id); if (idx === -1) return res.status(404).json({ error: 'Query not found' }); const item = dbData.queries[idx]; if (req.user.role === 'student' && item.user_id !== req.user.id) return res.status(403).json({ error: 'Access denied' }); const allowed = req.user.role === 'student' ? ['message'] : ['status', 'priority', 'response']; const updates = {}; for (const key of allowed) if (Object.prototype.hasOwnProperty.call(req.body, key)) updates[key] = req.body[key]; dbData.queries[idx] = { ...item, ...updates, updated_at: new Date().toISOString() }; saveDB(dbData); res.json(dbData.queries[idx]); } catch (error) { res.status(500).json({ error: error.message }); }
+app.put('/api/queries/:id', requireAuth, async (req, res) => {
+  try {
+    const item = await appStore.patchQuery(req.user, req.params.id, req.body);
+    res.json(item);
+  } catch (error) {
+    const code = error.message === 'Query not found' ? 404 : error.message === 'Access denied' ? 403 : 500;
+    res.status(code).json({ error: error.message });
+  }
 });
 
-app.get('/api/payments', requireAuth, (req, res) => {
-  try { const dbData = ensureAdmissionsModules(); let items = dbData.payments || []; if (req.user.role === 'student') items = items.filter(item => item.user_id === req.user.id); res.json(items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at))); } catch (error) { res.status(500).json({ error: error.message }); }
+app.get('/api/payments', requireAuth, async (req, res) => {
+  try {
+    const items = await appStore.listPayments(req.user);
+    res.json(items);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.post('/api/payments', requireAuth, (req, res) => {
-  try { if (req.user.role === 'student') return res.status(403).json({ error: 'Admin or counselor access required' }); const dbData = ensureAdmissionsModules(); const item = { id: generateId(), user_id: req.body.user_id || null, student_name: req.body.student_name || 'Student', title: req.body.title || 'Admission fee', amount: Number(req.body.amount || 0), status: req.body.status || 'due', method: req.body.method || 'Online', due_date: req.body.due_date || '', receipt_no: req.body.receipt_no || '', created_at: new Date().toISOString(), updated_at: new Date().toISOString() }; dbData.payments.unshift(item); saveDB(dbData); res.status(201).json(item); } catch (error) { res.status(500).json({ error: error.message }); }
+app.get('/api/payments/export/csv', requireAuth, async (req, res) => {
+  try {
+    const items = await appStore.listPayments(req.user);
+    const headers = ['Student', 'Title', 'Amount', 'Status', 'Method', 'Due Date', 'Receipt No', 'Date'];
+    const rows = items.map(i => [
+      i.student_name, i.title, i.amount, i.status,
+      i.method || '', i.due_date || '', i.receipt_no || '',
+      new Date(i.created_at).toLocaleDateString('en-IN')
+    ].map(v => `"${String(v).replace(/"/g, '""')}"`).join(','));
+    const csv = [headers.join(','), ...rows].join('\n');
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="payments.csv"');
+    res.send(csv);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
-app.put('/api/payments/:id', requireAuth, (req, res) => {
-  try { const dbData = ensureAdmissionsModules(); const idx = dbData.payments.findIndex(item => item.id === req.params.id); if (idx === -1) return res.status(404).json({ error: 'Payment not found' }); const item = dbData.payments[idx]; if (req.user.role === 'student' && item.user_id !== req.user.id) return res.status(403).json({ error: 'Access denied' }); const allowed = req.user.role === 'student' ? ['status', 'method'] : ['status', 'method', 'receipt_no', 'amount', 'due_date', 'title']; const updates = {}; for (const key of allowed) if (Object.prototype.hasOwnProperty.call(req.body, key)) updates[key] = req.body[key]; if (updates.status === 'paid' && !updates.receipt_no && !item.receipt_no) updates.receipt_no = `RBMI-${Date.now().toString().slice(-6)}`; dbData.payments[idx] = { ...item, ...updates, updated_at: new Date().toISOString() }; saveDB(dbData); res.json(dbData.payments[idx]); } catch (error) { res.status(500).json({ error: error.message }); }
+app.post('/api/payments', requireAuth, async (req, res) => {
+  try {
+    if (req.user.role === 'student') return res.status(403).json({ error: 'Admin or counselor access required' });
+    const item = await appStore.insertPayment(req.user, req.body);
+    res.status(201).json(item);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
+
+app.put('/api/payments/:id', requireAuth, async (req, res) => {
+  try {
+    const item = await appStore.patchPayment(req.user, req.params.id, req.body);
+    res.json(item);
+  } catch (error) {
+    const code = error.message === 'Payment not found' ? 404 : error.message === 'Access denied' ? 403 : 500;
+    res.status(code).json({ error: error.message });
+  }
+});
+
 // ============================================================
 //  STUDENT PORTAL
 // ============================================================
 
-function getPortalProfileForUser(user) {
-  const dbData = getDB();
-  if (!dbData.portalProfiles) dbData.portalProfiles = {};
-  let profile = dbData.portalProfiles[user.id];
-
-  if (!profile) {
-    profile = {
-      user_id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: '',
-      city: '',
-      course_id: null,
-      stage: 'enquiry',
-      counselor_name: 'Admissions team',
-      readiness: 35,
-      next_step: 'Complete your profile',
-      fee_due: '0',
-      scholarship: 'Not reviewed yet',
-      branch: user.branch || 'bareilly',
-      updated_at: new Date().toISOString()
-    };
-    dbData.portalProfiles[user.id] = profile;
-    saveDB(dbData);
-  }
-
-  return profile;
-}
-
 app.get('/api/portal/profile', requireAuth, async (req, res) => {
   try {
     if (req.user.role !== 'student') return res.status(403).json({ error: 'Student portal access required' });
-    const profile = getPortalProfileForUser(req.user);
+    const profile = await appStore.getPortalProfileForUser(req.user);
     const course = profile.course_id ? await db.getCourse(profile.course_id) : null;
     res.json({
       ...profile,
@@ -674,62 +730,47 @@ app.get('/api/portal/profile', requireAuth, async (req, res) => {
 app.put('/api/portal/profile', requireAuth, async (req, res) => {
   try {
     if (req.user.role !== 'student') return res.status(403).json({ error: 'Student portal access required' });
-    const dbData = getDB();
-    if (!dbData.portalProfiles) dbData.portalProfiles = {};
-    const current = getPortalProfileForUser(req.user);
-    const allowed = ['name', 'phone', 'city', 'course_id', 'next_step', 'scholarship', 'stage'];
-    const updates = {};
-    for (const key of allowed) {
-      if (Object.prototype.hasOwnProperty.call(req.body, key)) updates[key] = req.body[key];
-    }
-    const next = { ...current, ...updates, updated_at: new Date().toISOString() };
-    dbData.portalProfiles[req.user.id] = next;
-    saveDB(dbData);
-
-    await db.createActivity({
-      type: 'student_portal',
-      message: `${next.name || req.user.name} updated student portal profile`
-    });
-
-    const course = next.course_id ? await db.getCourse(next.course_id) : null;
-    res.json({ ...next, course_name: course?.name || 'Program not selected' });
+    const next = await appStore.updatePortalProfile(req.user, req.body);
+    res.json(next);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
+
 // ============================================================
 //  USERS (admin only)
 // ============================================================
 
-app.get('/api/users', requireAdmin, (req, res) => {
+app.get('/api/users', requireAdmin, async (req, res) => {
   try {
-    res.json(getUsers());
+    res.json(await getUsers());
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.post('/api/users', requireAdmin, (req, res) => {
+app.post('/api/users', requireAdmin, async (req, res) => {
   try {
-    const user = createUser(req.body);
+    assertRequired(req.body, ['email', 'name', 'role']);
+    const user = await createUser(req.body);
     res.status(201).json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
 
-app.put('/api/users/:id', requireAdmin, (req, res) => {
+app.put('/api/users/:id', requireAdmin, async (req, res) => {
   try {
-    const user = updateUser(req.params.id, req.body);
+    const user = await updateUser(req.params.id, req.body);
     res.json(user);
   } catch (error) {
     res.status(400).json({ error: error.message });
   }
 });
 
-app.delete('/api/users/:id', requireAdmin, (req, res) => {
+app.delete('/api/users/:id', requireAdmin, async (req, res) => {
   try {
-    deleteUser(req.params.id);
+    await deleteUser(req.params.id);
     res.json({ success: true });
   } catch (error) {
     res.status(400).json({ error: error.message });
@@ -740,48 +781,72 @@ app.delete('/api/users/:id', requireAdmin, (req, res) => {
 //  SETTINGS (institute profile)
 // ============================================================
 
-app.get('/api/settings', requireAuth, (req, res) => {
+app.get('/api/settings', requireAuth, async (req, res) => {
   try {
-    const dbData = getDB();
-    res.json(dbData.settings || getDefaultSettings());
+    const settings = await appStore.loadSettings();
+    res.json(settings);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-app.put('/api/settings', requireAdmin, (req, res) => {
+app.put('/api/settings', requireAdmin, async (req, res) => {
   try {
-    const dbData = getDB();
-    dbData.settings = { ...getDefaultSettings(), ...req.body };
-    saveDB(dbData);
-    res.json(dbData.settings);
+    const settings = await appStore.storeSettings(req.body);
+    res.json(settings);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
 
-function getDefaultSettings() {
-  return {
-    institute_name: 'Ram Babu Mahavidyalaya Institute (RBMI)',
-    short_name: 'RBMI',
-    email: 'admissions@rbmi.edu.in',
-    phone: '+91 581 250 0000',
-    address: 'Pilibhit Bypass Road, Bareilly, Uttar Pradesh - 243006',
-    website: 'https://www.rbmi.edu.in',
-    academic_year: '2025-2026',
-    city: 'Bareilly',
-    state: 'Uttar Pradesh'
-  };
-}
+// ============================================================
+//  FORMS & CAMPAIGNS (FormDesk / Campaign manager persistence)
+// ============================================================
+
+app.get('/api/form-templates', requireAuth, async (req, res) => {
+  try {
+    res.json(await appStore.listFormTemplates());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/form-templates', requireAdmin, async (req, res) => {
+  try {
+    const row = await appStore.insertFormTemplate(req.body);
+    res.status(201).json(row);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.get('/api/campaigns', requireAuth, async (req, res) => {
+  try {
+    res.json(await appStore.listCampaigns());
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/campaigns', requireAdmin, async (req, res) => {
+  try {
+    const row = await appStore.insertCampaign(req.body);
+    res.status(201).json(row);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
 // ============================================================
 //  START
 // ============================================================
 
 app.listen(PORT, () => {
-  console.log(`\n  🚀 RBMI CRM API Server running at http://localhost:${PORT}`);
-  console.log(`  📡 Webhook endpoint: POST http://localhost:${PORT}/api/webhook/lead`);
-  console.log(`  🔑 Auth: POST http://localhost:${PORT}/api/auth/login\n`);
+  console.log(`\n  RBMI CRM API Server running at http://localhost:${PORT}`);
+  console.log(`  Webhook: POST http://localhost:${PORT}/api/webhook/lead`);
+  console.log(`  Auth: POST http://localhost:${PORT}/api/auth/login`);
+  if (db.USE_SUPABASE) console.log(`  Supabase session: POST http://localhost:${PORT}/api/auth/supabase`);
+  console.log('');
 });
 
 

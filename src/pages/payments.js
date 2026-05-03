@@ -1,4 +1,4 @@
-import { createPayment, fetchPayments, updatePayment } from '../lib/api.js';
+import { createPayment, fetchPayments, updatePayment, exportPaymentsCSV } from '../lib/api.js';
 import { openModal } from '../components/modal.js';
 
 function userRole() {
@@ -24,7 +24,10 @@ export async function renderPayments(el) {
     <div class="ops-shell">
       <div class="ops-header">
         <div><span class="eyebrow">Fee Desk</span><h1>${role === 'student' ? 'My Payments' : 'Payment Manager'}</h1><p>Track fee dues, receipts, confirmation status, and admission payments.</p></div>
-        ${role === 'student' ? '' : '<button class="btn btn-primary" id="new-payment">Add Fee</button>'}
+        <div class="ops-actions">
+          ${role !== 'student' ? '<button class="btn btn-secondary" id="export-pay-btn"><i data-lucide="download"></i> Export CSV</button>' : ''}
+          ${role !== 'student' ? '<button class="btn btn-primary" id="new-payment">Add Fee</button>' : ''}
+        </div>
       </div>
       <div class="ops-stats"><div><strong>${money(due)}</strong><span>Due</span></div><div><strong>${money(paid)}</strong><span>Collected</span></div><div><strong>${items.length}</strong><span>Records</span></div></div>
       <div class="ops-table-wrap">
@@ -33,6 +36,10 @@ export async function renderPayments(el) {
         </tbody></table>
       </div>
     </div>`;
+
+  window.renderIcons();
+
+  el.querySelector('#export-pay-btn')?.addEventListener('click', exportPaymentsCSV);
 
   el.querySelector('#new-payment')?.addEventListener('click', () => {
     openModal('Add Fee Record', `
@@ -51,3 +58,4 @@ export async function renderPayments(el) {
     window.dispatchEvent(new CustomEvent('rbmi:refresh'));
   }));
 }
+
