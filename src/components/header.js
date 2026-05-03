@@ -17,7 +17,7 @@ export function renderHeader(user = null) {
 
   header.innerHTML = `
     <div class="header-left">
-      <button class="header-menu-toggle" id="menu-toggle" title="Toggle sidebar">☰</button>
+      <button class="header-menu-toggle" id="menu-toggle" title="Toggle sidebar"><i data-lucide="menu" style="width:18px;height:18px;"></i></button>
       <div class="header-breadcrumb" id="header-breadcrumb">
         <span>RBMI Hub</span>
         <span style="opacity:0.4;margin:0 4px;">/</span>
@@ -25,7 +25,7 @@ export function renderHeader(user = null) {
       </div>
     </div>
     <div class="header-right">
-      <button class="header-btn" id="btn-notifications" title="Notifications">🔔</button>
+      <button class="header-btn" id="btn-notifications" title="Notifications"><i data-lucide="bell" style="width:18px;height:18px;"></i></button>
       <div class="header-divider"></div>
       ${canCreateLead ? `
       <button class="btn btn-primary header-add-btn" id="btn-add-lead">
@@ -37,7 +37,7 @@ export function renderHeader(user = null) {
       </button>
       `}
       <div class="header-user-chip">
-        <div class="header-avatar">${user ? user.name.split(' ').map(n=>n[0]).join('').slice(0,2).toUpperCase() : 'AD'}</div>
+        <div class="header-avatar">${user ? user.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'AD'}</div>
         <span class="header-username">${user ? user.name.split(' ')[0] : 'Admin'}</span>
         <span class="header-role-badge ${role}">${roleLabel(role)}</span>
       </div>
@@ -45,11 +45,27 @@ export function renderHeader(user = null) {
   `;
 
   const breadcrumbMap = {
-    '/dashboard': 'Command Center', '/leads': 'Leads Manager', '/pipeline': 'Admission Pipeline',
-    '/counselors': 'Counselors', '/courses': 'Programs', '/reports': 'Reports', '/settings': 'Settings',
-    '/formdesk': 'FormDesk', '/calendar': 'Calendar', '/applications': 'Applications', '/marketing': 'Marketing',
-    '/campaigns': 'Campaigns', '/queries': 'Help Desk', '/payments': 'Fee Desk', '/templates': 'Templates',
-    '/portal': 'My Application', '/download': 'Mobile App'
+    '/dashboard': 'Command Center',
+    '/leads': 'Leads Manager',
+    '/pipeline': 'Admission Pipeline',
+    '/counselors': 'Counselors',
+    '/courses': 'Programs',
+    '/reports': 'Reports',
+    '/settings': 'Settings',
+    '/formdesk': 'FormDesk',
+    '/calendar': 'Calendar',
+    '/applications': 'Applications',
+    '/marketing': 'Marketing',
+    '/campaigns': 'Campaigns',
+    '/queries': 'Help Desk',
+    '/payments': 'Fee Desk',
+    '/templates': 'Templates',
+    '/ai-assistant': 'Asha AI',
+    '/integrations': 'Integrations',
+    '/access-control': 'Access Control',
+    '/audit-log': 'Audit Log',
+    '/portal': 'My Application',
+    '/download': 'Mobile App'
   };
 
   function updateBreadcrumb() {
@@ -90,10 +106,13 @@ export function renderHeader(user = null) {
   });
 
   document.getElementById('btn-add-lead')?.addEventListener('click', async () => {
-    let counselors = [], courses = [];
+    let counselors = [];
+    let courses = [];
     try {
       [counselors, courses] = await Promise.all([fetchCounselors(), fetchCourses()]);
-    } catch (e) { /* keep modal usable even if lookups fail */ }
+    } catch (e) {
+      // Keep modal usable even if lookups fail.
+    }
 
     const sources = ['Website', 'Walk-in', 'Referral', 'Social Media', 'Education Fair', 'Google Ads', 'Phone Inquiry', 'JustDial', 'Shiksha', 'CollegeDekho'];
     const content = `

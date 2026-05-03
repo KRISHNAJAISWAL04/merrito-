@@ -1,4 +1,4 @@
-/* ===== LOGIN PAGE ===== */
+/* ===== LOGIN / SIGNUP PAGE ===== */
 
 #login-root {
   position: fixed;
@@ -7,14 +7,14 @@
   overflow: auto;
 }
 
-.login-page {
+.lp {
   display: flex;
   min-height: 100vh;
   width: 100%;
 }
 
 /* ── Left panel ── */
-.login-left {
+.lp-left {
   flex: 1;
   background: linear-gradient(160deg, #1e1b4b 0%, #312e81 45%, #4338ca 100%);
   display: flex;
@@ -26,7 +26,7 @@
   overflow: hidden;
 }
 
-.login-left::after {
+.lp-left::after {
   content: '';
   position: absolute;
   bottom: -120px; right: -120px;
@@ -36,7 +36,7 @@
   pointer-events: none;
 }
 
-.login-brand {
+.lp-brand {
   display: flex;
   align-items: center;
   gap: 14px;
@@ -44,33 +44,33 @@
   z-index: 1;
 }
 
-.login-logo {
+.lp-logo {
   width: 48px; height: 48px;
   background: rgba(255,255,255,0.15);
   border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 24px; font-weight: 800; color: white;
+  font-size: 20px; font-weight: 800; color: white;
   border: 1px solid rgba(255,255,255,0.2);
 }
 
-.login-brand-name {
+.lp-brand-name {
   font-size: 20px;
   font-weight: 800;
   letter-spacing: -0.3px;
 }
 
-.login-brand-sub {
+.lp-brand-sub {
   font-size: 11px;
   opacity: 0.65;
   margin-top: 2px;
 }
 
-.login-hero {
+.lp-hero {
   position: relative;
   z-index: 1;
 }
 
-.login-hero h1 {
+.lp-hero h1 {
   font-size: 42px;
   font-weight: 800;
   line-height: 1.15;
@@ -78,7 +78,7 @@
   letter-spacing: -1.5px;
 }
 
-.login-hero p {
+.lp-hero p {
   font-size: 15px;
   opacity: 0.75;
   line-height: 1.7;
@@ -86,17 +86,17 @@
   max-width: 400px;
 }
 
-.login-stats {
+.lp-stats {
   display: flex;
   gap: 36px;
   margin-bottom: 32px;
 }
 
-.login-stat { display: flex; flex-direction: column; gap: 2px; }
-.ls-num { font-size: 30px; font-weight: 800; letter-spacing: -1px; }
-.ls-lbl { font-size: 12px; opacity: 0.6; }
+.lp-stat { display: flex; flex-direction: column; gap: 2px; }
+.ls-n { font-size: 30px; font-weight: 800; letter-spacing: -1px; }
+.ls-l { font-size: 12px; opacity: 0.6; }
 
-.login-branches {
+.lp-branches {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -104,7 +104,7 @@
   z-index: 1;
 }
 
-.branch-card {
+.lp-branch {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -115,11 +115,11 @@
   font-size: 13px;
 }
 
-.branch-card strong { display: block; font-weight: 600; }
-.branch-card small { opacity: 0.65; font-size: 11px; }
+.lp-branch strong { display: block; font-weight: 600; }
+.lp-branch small { opacity: 0.65; font-size: 11px; }
 
 /* ── Right panel ── */
-.login-right {
+.lp-right {
   width: 500px;
   background: #ffffff;
   display: flex;
@@ -128,24 +128,24 @@
   padding: 48px 44px;
 }
 
-.login-card { width: 100%; max-width: 400px; }
+.lp-card { width: 100%; max-width: 400px; }
 
-.login-card-logo {
+.lp-card-logo {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 32px;
+  margin-bottom: 28px;
 }
 
-.login-logo-sm {
+.lp-card-icon {
   width: 40px; height: 40px;
   background: linear-gradient(135deg, #818cf8, #6366f1);
   border-radius: 10px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 20px; font-weight: 800; color: white;
+  font-size: 18px; font-weight: 800; color: white;
 }
 
-.login-title {
+.lp-title {
   font-size: 22px;
   font-weight: 700;
   color: #0f172a;
@@ -153,7 +153,7 @@
   letter-spacing: -0.3px;
 }
 
-.login-error-box {
+.lp-err {
   background: #fef2f2;
   border: 1px solid #fecaca;
   color: #dc2626;
@@ -161,15 +161,16 @@
   border-radius: 8px;
   font-size: 13px;
   margin-bottom: 16px;
+  display: none;
 }
 
 /* ── Form ── */
-#login-form { display: flex; flex-direction: column; gap: 16px; }
+.lp-form { display: flex; flex-direction: column; gap: 16px; }
 
-.lf-group { display: flex; flex-direction: column; gap: 6px; }
-.lf-group label { font-size: 13px; font-weight: 600; color: #374151; }
+.lp-group { display: flex; flex-direction: column; gap: 6px; }
+.lp-group label { font-size: 13px; font-weight: 600; color: #374151; }
 
-.lf-input {
+.lp-input {
   padding: 10px 14px;
   border: 1.5px solid #e2e8f0;
   border-radius: 8px;
@@ -182,13 +183,13 @@
   width: 100%;
 }
 
-.lf-input:focus {
+.lp-input:focus {
   border-color: #6366f1;
   background: #fff;
   box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
 }
 
-.lf-btn {
+.lp-btn {
   padding: 12px;
   background: #6366f1;
   color: white;
@@ -202,16 +203,16 @@
   margin-top: 4px;
 }
 
-.lf-btn:hover { background: #4f46e5; }
-.lf-btn:active { transform: scale(0.99); }
-.lf-btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.lp-btn:hover { background: #4f46e5; }
+.lp-btn:active { transform: scale(0.99); }
+.lp-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 /* ── Divider ── */
-.login-divider {
+.lp-div {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 24px 0 16px;
+  margin: 20px 0 14px;
   color: #94a3b8;
   font-size: 12px;
   font-weight: 600;
@@ -219,8 +220,8 @@
   letter-spacing: 0.5px;
 }
 
-.login-divider::before,
-.login-divider::after {
+.lp-div::before,
+.lp-div::after {
   content: '';
   flex: 1;
   height: 1px;
@@ -228,9 +229,9 @@
 }
 
 /* ── Demo accounts ── */
-.demo-accounts { display: flex; flex-direction: column; gap: 8px; }
+.lp-demos { display: flex; flex-direction: column; gap: 8px; }
 
-.demo-acc {
+.lp-demo {
   display: flex;
   align-items: center;
   gap: 12px;
@@ -245,12 +246,15 @@
   width: 100%;
 }
 
-.demo-acc:hover {
+.lp-demo:hover {
   background: #f1f5f9;
   border-color: #6366f1;
 }
 
-.da-badge {
+.lp-demo-name { font-weight: 600; font-size: 13px; }
+.lp-demo-email { font-size: 12px; color: #64748b; }
+
+.lp-badge {
   font-size: 10px;
   font-weight: 700;
   padding: 3px 8px;
@@ -260,10 +264,77 @@
   white-space: nowrap;
 }
 
-.da-badge.admin { background: #ede9fe; color: #7c3aed; }
-.da-badge.counselor { background: #dcfce7; color: #16a34a; }
+.lp-badge.admin { background: #ede9fe; color: #7c3aed; }
+.lp-badge.counselor { background: #dcfce7; color: #16a34a; }
+.lp-badge.student { background: #ccfbf1; color: #0f766e; }
+
+/* ── Footer link (signup/login toggle) ── */
+.lp-footer-link {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.lp-footer-link a {
+  color: #6366f1;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.lp-footer-link a:hover {
+  text-decoration: underline;
+}
+
+/* ── Google Sign-In Button ── */
+.lp-btn-google {
+  background: #fff !important;
+  color: #374151 !important;
+  border: 1.5px solid #e2e8f0 !important;
+  margin-bottom: 16px;
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.lp-btn-google:hover {
+  background: #f8fafc !important;
+  border-color: #6366f1 !important;
+  box-shadow: 0 0 0 3px rgba(99,102,241,0.12);
+}
+
+.lp-btn-google img {
+  flex-shrink: 0;
+}
 
 @media (max-width: 900px) {
-  .login-left { display: none; }
-  .login-right { width: 100%; padding: 32px 24px; }
+  .lp-left { display: none; }
+  .lp-right { width: 100%; padding: 32px 24px; }
+}
+
+/* ── Improved Hero Section ── */
+.lp-hero h1 {
+  background: linear-gradient(135deg, #fff 0%, rgba(255,255,255,0.85) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* ── Enhanced Card Shadow ── */
+.lp-card {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

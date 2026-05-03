@@ -5,14 +5,25 @@ import { generateId, getDB, saveDB, seedIfEmpty } from './db.js';
 dotenv.config();
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
-const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_KEY = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
+export const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_KEY);
 
 if (!USE_SUPABASE) {
   console.warn('Supabase credentials missing. Using local JSON database fallback.');
   seedIfEmpty();
+} else if (!SUPABASE_SERVICE_ROLE_KEY) {
+  console.warn(
+    'Supabase: server using anon key. If Row Level Security blocks reads/writes, set SUPABASE_SERVICE_ROLE_KEY in .env (server-only, never expose to the browser).'
+  );
 }
 
-const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+const supabase = USE_SUPABASE ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } }) : null;
+
+/** Server-side Supabase client (service role preferred). */
+export function getServerSupabase() {
+  return supabase;
+}
 
 function sortByDateDesc(items, key = 'created_at') {
   return [...items].sort((a, b) => new Date(b[key] || 0) - new Date(a[key] || 0));
@@ -149,6 +160,59 @@ export async function getCounselor(id) {
   return (db.counselors || []).find(c => c.id === id) || null;
 }
 
+export async function createCounselor(row) {
+  const now = nowIso();
+  const counselor = {
+    id: generateId(),
+    name: row.name,
+    email: row.email || '',
+    phone: row.phone || '',
+    role: row.role || 'Counselor',
+    department: row.department || 'General',
+    branch: row.branch || null,
+    rating: parseFloat(row.rating) || 4.0,
+    created_at: now
+  };
+  if (USE_SUPABASE) {
+    const { data, error } = await supabase.from('counselors').insert([counselor]).select().single();
+    if (error) throw error;
+    return data;
+  }
+  const db = getDB();
+  if (!db.counselors) db.counselors = [];
+  db.counselors.push(counselor);
+  saveDB(db);
+  return counselor;
+}
+
+export async function updateCounselor(id, updates) {
+  if (USE_SUPABASE) {
+    const { data, error } = await supabase.from('counselors').update(updates).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+  const db = getDB();
+  const idx = (db.counselors || []).findIndex(c => c.id === id);
+  if (idx === -1) throw new Error('Counselor not found');
+  db.counselors[idx] = { ...db.counselors[idx], ...updates };
+  saveDB(db);
+  return db.counselors[idx];
+}
+
+export async function deleteCounselor(id) {
+  if (USE_SUPABASE) {
+    const { error } = await supabase.from('counselors').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+  const db = getDB();
+  const before = (db.counselors || []).length;
+  db.counselors = (db.counselors || []).filter(c => c.id !== id);
+  if (db.counselors.length === before) throw new Error('Counselor not found');
+  saveDB(db);
+  return true;
+}
+
 // ===== COURSES =====
 export async function getCourses() {
   if (USE_SUPABASE) {
@@ -199,6 +263,47 @@ export async function updateCourse(id, courseData) {
   return db.courses[idx];
 }
 
+export async function createCourse(row) {
+  const now = nowIso();
+  const course = {
+    id: generateId(),
+    name: row.name,
+    code: row.code || '',
+    department: row.department || '',
+    duration: row.duration || '',
+    total_seats: parseInt(row.total_seats, 10) || 0,
+    filled_seats: parseInt(row.filled_seats, 10) || 0,
+    fee: row.fee || '',
+    status: row.status || 'Active',
+    branch: row.branch || null,
+    created_at: now
+  };
+  if (USE_SUPABASE) {
+    const { data, error } = await supabase.from('courses').insert([course]).select().single();
+    if (error) throw error;
+    return data;
+  }
+  const db = getDB();
+  if (!db.courses) db.courses = [];
+  db.courses.push(course);
+  saveDB(db);
+  return course;
+}
+
+export async function deleteCourse(id) {
+  if (USE_SUPABASE) {
+    const { error } = await supabase.from('courses').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+  const db = getDB();
+  const before = (db.courses || []).length;
+  db.courses = (db.courses || []).filter(c => c.id !== id);
+  if (db.courses.length === before) throw new Error('Course not found');
+  saveDB(db);
+  return true;
+}
+
 // ===== ACTIVITIES =====
 export async function getActivities(limit = 10) {
   if (USE_SUPABASE) {
@@ -219,6 +324,7 @@ export async function createActivity(activityData) {
   if (USE_SUPABASE) {
     const payload = {
       ...activityData,
+      lead_id: activityData.lead_id ?? null,
       message: activityData.message || activityData.description || '',
       created_at: nowIso()
     };

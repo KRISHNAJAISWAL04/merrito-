@@ -22,13 +22,86 @@
 #sidebar.collapsed .sidebar-label,
 #sidebar.collapsed .user-info,
 #sidebar.collapsed .user-menu-btn,
-#sidebar.collapsed .search-kbd {
+#sidebar.collapsed .search-kbd,
+#sidebar.collapsed .sidebar-search-box input {
   display: none;
 }
 
 #sidebar.collapsed .nav-item {
   justify-content: center;
   padding: 0.75rem;
+}
+
+#sidebar.collapsed .sidebar-logo {
+  justify-content: center;
+  padding: var(--spacing-lg) 0;
+  margin-bottom: 0;
+}
+
+#sidebar.collapsed .logo-icon {
+  width: 48px;
+  height: 48px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+}
+
+#sidebar.collapsed .logo-icon img,
+#sidebar.collapsed .logo-icon svg {
+  width: 38px !important;
+  height: 38px !important;
+}
+
+#sidebar.collapsed .sidebar-search {
+  padding: 0 10px 12px;
+}
+
+#sidebar.collapsed .sidebar-search-box {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  padding: 8px 0;
+}
+
+#sidebar.collapsed .sidebar-search-box span {
+  display: none;
+}
+
+#sidebar.collapsed .sidebar-search-box i,
+#sidebar.collapsed .sidebar-search-box svg {
+  width: 18px;
+  height: 18px;
+}
+
+#sidebar.collapsed .sidebar-nav {
+  padding: 0 8px 12px;
+}
+
+#sidebar.collapsed .nav-item i,
+#sidebar.collapsed .nav-item svg {
+  width: 22px;
+  height: 22px;
+  color: #dbe4ff;
+}
+
+#sidebar.collapsed .nav-item.active i,
+#sidebar.collapsed .nav-item.active svg,
+#sidebar.collapsed .nav-item:hover i,
+#sidebar.collapsed .nav-item:hover svg {
+  color: #ffffff;
+}
+
+#sidebar.collapsed .sidebar-footer {
+  padding: var(--spacing-md) 0;
+}
+
+#sidebar.collapsed .sidebar-user {
+  justify-content: center;
+}
+
+#sidebar.collapsed .user-avatar-sm {
+  margin: 0 auto;
 }
 
 /* Logo */
@@ -239,4 +312,21 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* Expanded product navigation needs its own scroll area. */
+.sidebar-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding-bottom: 16px;
+  scrollbar-width: thin;
+}
+
+.sidebar-nav::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar-nav::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.32);
+  border-radius: 999px;
 }

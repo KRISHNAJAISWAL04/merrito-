@@ -1,10 +1,13 @@
-// ===== AUTH MODULE =====
-import { getDB, saveDB, generateId } from './db.js';
 import { randomBytes, createHmac } from 'crypto';
+import { getDB, saveDB, generateId } from './db.js';
+import { USE_SUPABASE, getServerSupabase } from './supabase.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'rbmi-crm-secret-2026';
 
-// Simple JWT-like token (base64 encoded, HMAC signed)
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
+  console.warn('JWT_SECRET is not set; set a strong secret in production.');
+}
+
 function signToken(payload) {
   const header = Buffer.from(JSON.stringify({ alg: 'HS256', typ: 'JWT' })).toString('base64url');
   const body = Buffer.from(JSON.stringify({ ...payload, iat: Date.now() })).toString('base64url');
@@ -24,113 +27,377 @@ export function verifyToken(token) {
     const payload = JSON.parse(Buffer.from(body, 'base64url').toString());
     if (!payload || !payload.id) return null;
     return payload;
-  } catch { return null; }
+  } catch {
+    return null;
+  }
 }
 
-// Seed default users if none exist
-export function seedUsers() {
+function buildAppPayload(user, branch) {
+  const meta = user.user_metadata || {};
+  return {
+    id: user.id,
+    email: user.email || '',
+    name: meta.name || user.email?.split('@')[0] || 'User',
+    role: meta.role || 'student',
+    counselor_id: meta.counselor_id ?? null,
+    branch: meta.branch || branch || 'bareilly'
+  };
+}
+
+function buildTokenResult(user, branch) {
+  const payload = buildAppPayload(user, branch);
+  const token = signToken(payload);
+  return { user: payload, token };
+}
+
+// ===== DEMO USERS (seeded into Supabase Auth on startup) =====
+const DEMO_USERS = [
+  { email: 'admin@rbmi.edu.in', password: 'admin123', name: 'Admin RBMI', role: 'admin', counselor_id: null, branch: 'bareilly' },
+  { email: 'priya@rbmi.edu.in', password: 'counselor123', name: 'Priya Sharma', role: 'counselor', counselor_id: null, branch: 'bareilly' },
+  { email: 'rajesh@rbmi.edu.in', password: 'counselor123', name: 'Rajesh Kumar', role: 'counselor', counselor_id: null, branch: 'bareilly' },
+  { email: 'student@demo.in', password: 'student123', name: 'Aarav Mehta', role: 'student', counselor_id: null, branch: 'bareilly' }
+];
+
+export async function seedDemoUsers() {
+  if (!USE_SUPABASE) {
+    seedLegacyUsers();
+    return;
+  }
+
+  const supabase = getServerSupabase();
+  if (!supabase) return;
+
+  const { data: allUsers } = await supabase.auth.admin.listUsers();
+  const existingMap = Object.fromEntries((allUsers?.users || []).map(u => [u.email, u]));
+
+  for (const demo of DEMO_USERS) {
+    const existing = existingMap[demo.email];
+    if (existing) {
+      const meta = existing.user_metadata || {};
+      if (!meta.role || meta.name !== demo.name) {
+        await supabase.auth.admin.updateUserById(existing.id, {
+          password: demo.password,
+          email_confirm: true,
+          user_metadata: {
+            name: demo.name,
+            role: demo.role,
+            counselor_id: demo.counselor_id,
+            branch: demo.branch
+          }
+        });
+        console.log(`  [Supabase] Updated existing user: ${demo.email} (${demo.role})`);
+      }
+      continue;
+    }
+
+    await supabase.auth.admin.createUser({
+      email: demo.email,
+      password: demo.password,
+      email_confirm: true,
+      user_metadata: {
+        name: demo.name,
+        role: demo.role,
+        counselor_id: demo.counselor_id,
+        branch: demo.branch
+      }
+    });
+    console.log(`  [Supabase] Seeded demo user: ${demo.email} (${demo.role})`);
+  }
+}
+
+function seedLegacyUsers() {
   const db = getDB();
   if (!db.users) db.users = [];
   if (db.users.length > 0) return;
 
   const now = new Date().toISOString();
-  db.users = [
-    {
-      id: generateId(),
-      name: 'Admin RBMI',
-      email: 'admin@rbmi.edu.in',
-      password: 'admin123',
-      role: 'admin',
-      counselor_id: null,
-      created_at: now
-    },
-    {
-      id: generateId(),
-      name: 'Priya Sharma',
-      email: 'priya@rbmi.edu.in',
-      password: 'counselor123',
-      role: 'counselor',
-      counselor_id: null, // linked after counselors seeded
-      created_at: now
-    },
-    {
-      id: generateId(),
-      name: 'Rajesh Kumar',
-      email: 'rajesh@rbmi.edu.in',
-      password: 'counselor123',
-      role: 'counselor',
-      counselor_id: null,
-      created_at: now
-    }
-  ];
+  db.users = DEMO_USERS.map(u => ({
+    id: generateId(),
+    name: u.name,
+    email: u.email,
+    password: u.password,
+    role: u.role,
+    counselor_id: u.counselor_id,
+    branch: u.branch,
+    created_at: now
+  }));
+  ensureDemoStudentPortal(db);
   saveDB(db);
 }
 
-function ensureDemoUsers() {
-  const db = getDB();
-  if (!db.users) db.users = [];
-  if (!db.users.some(u => u.email.toLowerCase() === 'student@demo.in')) {
-    db.users.push({
-      id: 'u004-student-demo',
-      name: 'Aarav Mehta',
-      email: 'student@demo.in',
-      password: 'student123',
-      role: 'student',
-      counselor_id: null,
-      branch: 'bareilly',
-      created_at: new Date().toISOString()
-    });
-  }
+function ensureDemoStudentPortal(db) {
   if (!db.portalProfiles) db.portalProfiles = {};
-  if (!db.portalProfiles['u004-student-demo']) {
-    db.portalProfiles['u004-student-demo'] = {
-      user_id: 'u004-student-demo',
-      name: 'Aarav Mehta',
-      email: 'student@demo.in',
-      phone: '+91 90123 45678',
-      city: 'Bareilly',
-      course_id: 'cr001-mba',
-      stage: 'application_submitted',
-      counselor_name: 'Priya Sharma',
-      readiness: 78,
-      next_step: 'Upload Class 12 marksheet',
-      fee_due: '25000',
-      scholarship: 'Merit review pending',
-      branch: 'bareilly',
-      updated_at: new Date().toISOString()
-    };
-  }
-  saveDB(db);
+  const student = db.users.find(u => u.email === 'student@demo.in');
+  if (!student) return;
+  const uid = student.id;
+  if (db.portalProfiles[uid]) return;
+  db.portalProfiles[uid] = {
+    user_id: uid,
+    name: 'Aarav Mehta',
+    email: 'student@demo.in',
+    phone: '+91 90123 45678',
+    city: 'Bareilly',
+    course_id: 'cr001-mba',
+    stage: 'application_submitted',
+    counselor_name: 'Priya Sharma',
+    readiness: 78,
+    next_step: 'Upload Class 12 marksheet',
+    fee_due: '25000',
+    scholarship: 'Merit review pending',
+    branch: 'bareilly',
+    updated_at: new Date().toISOString()
+  };
 }
-export function loginUser(email, password) {
-  ensureDemoUsers();
+
+// ===== LOGIN (Supabase email/password or legacy JSON) =====
+export async function loginUser(email, password, branch) {
+  if (USE_SUPABASE) {
+    const supabase = getServerSupabase();
+    if (!supabase) return null;
+
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error || !data?.user) return null;
+
+    return buildTokenResult(data.user, branch);
+  }
+
+  ensureDemoStudentPortal(getDB());
   const db = getDB();
   const users = db.users || [];
   const user = users.find(u => u.email.toLowerCase() === email.toLowerCase() && u.password === password);
   if (!user) return null;
 
-  const payload = { id: user.id, email: user.email, name: user.name, role: user.role, counselor_id: user.counselor_id, branch: user.branch || 'bareilly' };
+  const payload = {
+    id: user.id,
+    email: user.email,
+    name: user.name,
+    role: user.role,
+    counselor_id: user.counselor_id,
+    branch: user.branch || branch || 'bareilly'
+  };
   const token = signToken(payload);
   return { user: payload, token };
 }
 
-export function getUsers() {
+// ===== SUPABASE OAUTH TOKEN EXCHANGE =====
+export async function loginWithSupabaseAccessToken(accessToken) {
+  if (!USE_SUPABASE || !accessToken) return null;
+
+  const supabase = getServerSupabase();
+  const { data, error } = await supabase.auth.getUser(accessToken);
+  if (error || !data?.user) return null;
+
+  return buildTokenResult(data.user, data.user.user_metadata?.branch);
+}
+
+// ===== SIGNUP (students only) =====
+export async function signupStudent(email, password, name, phone, branch) {
+  const role = 'student';
+
+  if (USE_SUPABASE) {
+    const supabase = getServerSupabase();
+    if (!supabase) return { error: 'Supabase not configured' };
+
+    const { data, error: authErr } = await supabase.auth.admin.createUser({
+      email,
+      password,
+      email_confirm: true,
+      user_metadata: {
+        name,
+        role,
+        counselor_id: null,
+        branch: branch || 'bareilly',
+        phone: phone || ''
+      }
+    });
+    if (authErr) return { error: authErr.message };
+
+    const meta = data.user.user_metadata || {};
+    const profile = {
+      user_id: data.user.id,
+      name: name,
+      email: email,
+      phone: phone || '',
+      city: '',
+      course_id: null,
+      stage: 'enquiry',
+      counselor_name: 'Admissions team',
+      readiness: 35,
+      next_step: 'Complete your profile',
+      fee_due: '0',
+      scholarship: 'Not reviewed yet',
+      branch: branch || 'bareilly',
+      updated_at: new Date().toISOString()
+    };
+    await supabase.from('portal_profiles').insert([profile]);
+
+    return buildTokenResult(data.user, branch);
+  }
+
+  const db = getDB();
+  if (!db.users) db.users = [];
+  const existing = db.users.find(u => u.email.toLowerCase() === email.toLowerCase());
+  if (existing) return { error: 'Email already registered' };
+
+  const user = {
+    id: generateId(),
+    name,
+    email,
+    password,
+    role,
+    counselor_id: null,
+    branch: branch || 'bareilly',
+    created_at: new Date().toISOString()
+  };
+  db.users.push(user);
+
+  if (!db.portalProfiles) db.portalProfiles = {};
+  db.portalProfiles[user.id] = {
+    user_id: user.id,
+    name,
+    email,
+    phone: phone || '',
+    city: '',
+    course_id: null,
+    stage: 'enquiry',
+    counselor_name: 'Admissions team',
+    readiness: 35,
+    next_step: 'Complete your profile',
+    fee_due: '0',
+    scholarship: 'Not reviewed yet',
+    branch: branch || 'bareilly',
+    updated_at: new Date().toISOString()
+  };
+  saveDB(db);
+
+  return buildTokenResult(user, branch);
+}
+
+// ===== USER CRUD (Admin — creates in Supabase Auth) =====
+export async function getUsers() {
+  if (USE_SUPABASE) {
+    const supabase = getServerSupabase();
+    const { data, error } = await supabase.from('profiles').select('*').order('updated_at', { ascending: false });
+    if (error) {
+      if (error.code === '42P01' || error.message?.includes('does not exist')) return [];
+      throw error;
+    }
+    return (data || []).map(p => ({
+      id: p.id,
+      name: p.full_name || p.name || p.email,
+      email: p.email,
+      role: p.role,
+      counselor_id: p.counselor_id,
+      branch: p.branch || 'bareilly',
+      created_at: p.created_at,
+      phone: p.phone,
+      password: undefined
+    }));
+  }
+
   const db = getDB();
   return (db.users || []).map(u => ({ ...u, password: undefined }));
 }
 
-export function createUser(data) {
+export async function createUser(data) {
+  if (USE_SUPABASE) {
+    const supabase = getServerSupabase();
+    const pw = data.password || randomBytes(12).toString('base64url');
+    const { data: created, error } = await supabase.auth.admin.createUser({
+      email: data.email,
+      password: pw,
+      email_confirm: true,
+      user_metadata: {
+        name: data.name,
+        role: data.role || 'counselor',
+        counselor_id: data.counselor_id ?? null,
+        branch: data.branch || 'bareilly',
+        phone: data.phone || ''
+      }
+    });
+    if (error) throw new Error(error.message);
+
+    const uid = created.user.id;
+    await supabase.from('profiles').upsert({
+      id: uid,
+      email: data.email,
+      full_name: data.name,
+      role: data.role || 'counselor',
+      counselor_id: data.counselor_id ?? null,
+      branch: data.branch || 'bareilly',
+      phone: data.phone || '',
+      updated_at: new Date().toISOString()
+    }, { onConflict: 'id' });
+
+    return {
+      id: uid,
+      email: data.email,
+      name: data.name,
+      role: data.role || 'counselor',
+      counselor_id: data.counselor_id ?? null,
+      branch: data.branch || 'bareilly'
+    };
+  }
+
   const db = getDB();
   if (!db.users) db.users = [];
   const existing = db.users.find(u => u.email.toLowerCase() === data.email.toLowerCase());
   if (existing) throw new Error('Email already exists');
-  const user = { id: generateId(), ...data, created_at: new Date().toISOString() };
+  const user = {
+    id: generateId(),
+    ...data,
+    password: data.password || 'changeme123',
+    created_at: new Date().toISOString()
+  };
   db.users.push(user);
   saveDB(db);
   return { ...user, password: undefined };
 }
 
-export function updateUser(id, data) {
+export async function updateUser(id, data) {
+  if (USE_SUPABASE) {
+    const supabase = getServerSupabase();
+    const { data: authData, error: guErr } = await supabase.auth.admin.getUserById(id);
+    if (guErr || !authData?.user) throw new Error('User not found');
+
+    const prevMeta = authData.user.user_metadata || {};
+    const meta = { ...prevMeta };
+    if (data.name != null) meta.name = data.name;
+    if (data.role != null) meta.role = data.role;
+    if (data.counselor_id !== undefined) meta.counselor_id = data.counselor_id;
+    if (data.branch != null) meta.branch = data.branch;
+    if (data.phone !== undefined) meta.phone = data.phone;
+
+    const { error: upErr } = await supabase.auth.admin.updateUserById(id, {
+      ...(data.email != null ? { email: data.email } : {}),
+      ...(data.password != null ? { password: data.password } : {}),
+      user_metadata: meta
+    });
+    if (upErr) throw new Error(upErr.message);
+
+    const patch = { updated_at: new Date().toISOString() };
+    if (data.name != null) patch.full_name = data.name;
+    if (data.email != null) patch.email = data.email;
+    if (data.role != null) patch.role = data.role;
+    if (data.counselor_id !== undefined) patch.counselor_id = data.counselor_id;
+    if (data.branch != null) patch.branch = data.branch;
+    if (data.phone !== undefined) patch.phone = data.phone;
+
+    await supabase.from('profiles').update(patch).eq('id', id);
+
+    const { data: rows } = await supabase.from('profiles').select('*').eq('id', id).maybeSingle();
+    if (!rows) throw new Error('User not found');
+    return {
+      id: rows.id,
+      name: rows.full_name,
+      email: rows.email,
+      role: rows.role,
+      counselor_id: rows.counselor_id,
+      branch: rows.branch,
+      phone: rows.phone
+    };
+  }
+
   const db = getDB();
   const idx = (db.users || []).findIndex(u => u.id === id);
   if (idx === -1) throw new Error('User not found');
@@ -139,13 +406,21 @@ export function updateUser(id, data) {
   return { ...db.users[idx], password: undefined };
 }
 
-export function deleteUser(id) {
+export async function deleteUser(id) {
+  if (USE_SUPABASE) {
+    const supabase = getServerSupabase();
+    await supabase.from('profiles').delete().eq('id', id);
+    const { error } = await supabase.auth.admin.deleteUser(id);
+    if (error) throw new Error(error.message);
+    return;
+  }
+
   const db = getDB();
   db.users = (db.users || []).filter(u => u.id !== id);
   saveDB(db);
 }
 
-// Auth middleware
+// ===== MIDDLEWARE =====
 export function requireAuth(req, res, next) {
   const auth = req.headers.authorization || '';
   if (!auth.startsWith('Bearer ')) {
@@ -169,5 +444,3 @@ export function requireAdmin(req, res, next) {
     next();
   });
 }
-
-

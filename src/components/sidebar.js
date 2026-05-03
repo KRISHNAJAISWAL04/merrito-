@@ -3,57 +3,50 @@ import { navigateTo } from '../router.js';
 import { logout } from '../lib/auth.js';
 
 const adminNavItems = [
-  { route: '/dashboard', icon: 'grid', label: 'Command Center' },
+  { route: '/dashboard', icon: 'layout-dashboard', label: 'Command Center' },
   { route: '/leads', icon: 'users', label: 'Leads Manager' },
-  { route: '/pipeline', icon: 'flow', label: 'Admission Pipeline' },
-  { route: '/counselors', icon: 'headset', label: 'Counselors' },
-  { route: '/courses', icon: 'book', label: 'Programs' },
-  { route: '/reports', icon: 'chart', label: 'Reports' },
+  { route: '/pipeline', icon: 'git-branch', label: 'Admission Pipeline' },
+  { route: '/counselors', icon: 'headphones', label: 'Counselors' },
+  { route: '/courses', icon: 'book-open', label: 'Programs' },
+  { route: '/reports', icon: 'bar-chart-3', label: 'Reports' },
+  { route: '/formdesk', icon: 'file-text', label: 'FormDesk' },
+  { route: '/calendar', icon: 'calendar', label: 'Calendar Pro' },
+  { route: '/applications', icon: 'file-input', label: 'Applications' },
+  { route: '/payments', icon: 'indian-rupee', label: 'Payments' },
+  { route: '/queries', icon: 'help-circle', label: 'Queries' },
   { route: '/marketing', icon: 'megaphone', label: 'Marketing' },
-  { route: '/applications', icon: 'file', label: 'Applications' },
-  { route: '/queries', icon: 'help', label: 'Queries' },
-  { route: '/payments', icon: 'rupee', label: 'Payments' },
-  { route: '/settings', icon: 'gear', label: 'Settings' }
+  { route: '/campaigns', icon: 'target', label: 'Campaigns' },
+  { route: '/templates', icon: 'layout-template', label: 'Templates' },
+  { route: '/ai-assistant', icon: 'sparkles', label: 'Asha AI' },
+  { route: '/integrations', icon: 'puzzle', label: 'Integrations' },
+  { route: '/access-control', icon: 'shield-check', label: 'Access Control' },
+  { route: '/audit-log', icon: 'scroll-text', label: 'Audit Log' },
+  { route: '/download', icon: 'smartphone', label: 'Download App' },
+  { route: '/settings', icon: 'settings', label: 'Settings' }
 ];
 
 const counselorNavItems = [
-  { route: '/dashboard', icon: 'grid', label: 'My Desk' },
+  { route: '/dashboard', icon: 'layout-dashboard', label: 'My Desk' },
   { route: '/leads', icon: 'users', label: 'My Leads' },
-  { route: '/pipeline', icon: 'flow', label: 'Pipeline' },
-  { route: '/courses', icon: 'book', label: 'Programs' },
-  { route: '/calendar', icon: 'cal', label: 'Calendar' },
-  { route: '/campaigns', icon: 'megaphone', label: 'Campaigns' },
-  { route: '/queries', icon: 'help', label: 'Queries' }
+  { route: '/pipeline', icon: 'git-branch', label: 'Pipeline' },
+  { route: '/applications', icon: 'file-input', label: 'Applications' },
+  { route: '/courses', icon: 'book-open', label: 'Programs' },
+  { route: '/calendar', icon: 'calendar', label: 'Calendar' },
+  { route: '/queries', icon: 'help-circle', label: 'Queries' },
+  { route: '/marketing', icon: 'megaphone', label: 'Engagement' },
+  { route: '/ai-assistant', icon: 'sparkles', label: 'Asha AI' },
+  { route: '/download', icon: 'smartphone', label: 'Mobile App' }
 ];
 
 const studentNavItems = [
   { route: '/portal', icon: 'home', label: 'My Application' },
-  { route: '/courses', icon: 'book', label: 'Explore Programs' },
-  { route: '/queries', icon: 'help', label: 'Help Desk' },
-  { route: '/payments', icon: 'rupee', label: 'Fee Desk' },
-  { route: '/download', icon: 'phone', label: 'Mobile App' }
+  { route: '/applications', icon: 'file-input', label: 'Applications' },
+  { route: '/courses', icon: 'book-open', label: 'Explore Programs' },
+  { route: '/queries', icon: 'help-circle', label: 'Help Desk' },
+  { route: '/payments', icon: 'indian-rupee', label: 'Fee Desk' },
+  { route: '/ai-assistant', icon: 'sparkles', label: 'Asha AI' },
+  { route: '/download', icon: 'smartphone', label: 'Mobile App' }
 ];
-
-const iconMap = {
-  grid: 'M4 4h7v7H4V4Zm9 0h7v7h-7V4ZM4 13h7v7H4v-7Zm9 0h7v7h-7v-7Z',
-  users: 'M16 11a4 4 0 1 0-8 0 4 4 0 0 0 8 0ZM4 20c.8-3.2 3.4-5 8-5s7.2 1.8 8 5',
-  flow: 'M5 6h5v5H5V6Zm9 7h5v5h-5v-5ZM10 8h4a3 3 0 0 1 3 3v2',
-  headset: 'M5 12a7 7 0 0 1 14 0v5a2 2 0 0 1-2 2h-2v-6h4M5 17a2 2 0 0 0 2 2h2v-6H5v4Z',
-  book: 'M5 4h10a4 4 0 0 1 4 4v12H8a3 3 0 0 1-3-3V4Zm3 13h11',
-  chart: 'M5 19V5m0 14h14M9 16v-5m4 5V8m4 8v-3',
-  file: 'M7 3h7l5 5v13H7V3Zm7 0v6h5',
-  help: 'M12 18h.01M9.2 9a3 3 0 1 1 4.6 2.5c-1 .6-1.8 1.3-1.8 2.5',
-  rupee: 'M7 5h10M7 9h10M8 5c6 0 6 8 0 8l7 6',
-  gear: 'M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Zm0-5v3m0 12v3M4.9 4.9 7 7m10 10 2.1 2.1M3 12h3m12 0h3M4.9 19.1 7 17m10-10 2.1-2.1',
-  home: 'M4 11 12 4l8 7v9H6v-9',
-  cal: 'M7 3v4m10-4v4M5 8h14v12H5V8Z',
-  phone: 'M9 3h6a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Zm2 15h2',
-  megaphone: 'M4 11v2a1 1 0 0 0 1 1h2l3 5h2l-1-5h1l6 3V8l-6 3H5a1 1 0 0 0-1 1Z'
-};
-
-function icon(name) {
-  return `<svg class="nav-svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="${iconMap[name] || iconMap.grid}"/></svg>`;
-}
 
 function roleLabel(role) {
   if (role === 'admin') return 'Administrator';
@@ -67,12 +60,19 @@ export function renderSidebar(user = null) {
 
   const role = user?.role || 'admin';
   const navItems = role === 'student' ? studentNavItems : role === 'admin' ? adminNavItems : counselorNavItems;
-  const initials = user ? user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) : 'AD';
+
+  let initials = 'AD';
+  if (user && user.name) {
+    initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  }
+
   const branchLabel = user?.branch === 'greater_noida' ? 'Greater Noida' : 'Bareilly';
 
   sidebar.innerHTML = `
     <div class="sidebar-logo">
-      <div class="logo-icon"><span>M</span></div>
+      <div class="logo-icon">
+        <img src="/logo.png" alt="RBMI Logo" style="width:64px;height:64px;object-fit:contain;border-radius:50%;background:transparent;transform:scale(1.06);" onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<div style=\'width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#14b8a6,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;\'>RBMI</div>';" />
+      </div>
       <div class="logo-text">
         <span class="logo-name">RBMI Hub</span>
         <span class="logo-sub">${branchLabel} - ${roleLabel(role)}</span>
@@ -81,15 +81,15 @@ export function renderSidebar(user = null) {
 
     <div class="sidebar-search">
       <div class="sidebar-search-box">
-        <span>Search</span>
-        <input type="text" id="sidebar-search-input" placeholder="Menu" />
+        <i data-lucide="search" style="width:16px;height:16px;color:#94a3b8;flex-shrink:0;"></i>
+        <input type="text" id="sidebar-search-input" placeholder="Search menu..." />
       </div>
     </div>
 
     <nav class="sidebar-nav" id="sidebar-nav">
       ${navItems.map(item => `
         <a class="nav-item" data-route="${item.route}" href="#${item.route}">
-          ${icon(item.icon)}
+          <i data-lucide="${item.icon}" style="width:20px;height:20px;flex-shrink:0;"></i>
           <span>${item.label}</span>
         </a>
       `).join('')}
@@ -102,16 +102,16 @@ export function renderSidebar(user = null) {
           <span class="user-name">${user ? user.name : 'Admin'}</span>
           <span class="user-role">${roleLabel(role)}</span>
         </div>
-        <button class="user-menu-btn" id="logout-btn" title="Logout">⏻</button>
+        <button class="user-menu-btn" id="logout-btn" title="Logout"><i data-lucide="log-out" style="width:18px;height:18px;"></i></button>
       </div>
     </div>
   `;
 
   function setActive() {
     const hash = window.location.hash.slice(1) || (role === 'student' ? '/portal' : '/dashboard');
-    sidebar.querySelectorAll('.nav-item').forEach(item => {
-      item.classList.toggle('active', item.dataset.route === hash);
-    });
+    sidebar.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    const match = sidebar.querySelector(`.nav-item[data-route="${hash}"]`);
+    if (match) match.classList.add('active');
   }
 
   setActive();
@@ -135,4 +135,8 @@ export function renderSidebar(user = null) {
   document.getElementById('logout-btn')?.addEventListener('click', () => {
     if (confirm('Sign out of RBMI Admission Hub?')) logout();
   });
+
+  if (window.renderIcons) {
+    window.renderIcons();
+  }
 }
