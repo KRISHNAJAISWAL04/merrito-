@@ -191,9 +191,17 @@ export async function updatePortalProfile(user, body) {
     saveDB(dbData);
   }
 
+  let actionDesc = 'updated profile';
+  if (body.next_step) {
+    if (body.next_step.toLowerCase().includes('callback')) actionDesc = 'requested a callback';
+    else if (body.next_step.toLowerCase().includes('application')) actionDesc = 'requested a new application';
+    else actionDesc = `updated status to "${body.next_step}"`;
+  }
+
   await createActivity({
+    user_id: user.id,
     type: 'student_portal',
-    message: `${next.name || user.name} updated student portal profile`
+    message: `${next.name || user.name} ${actionDesc}`
   });
 
   const course = next.course_id ? await getCourse(next.course_id) : null;

@@ -257,6 +257,18 @@
 }
 
 .btn-secondary {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+.btn-secondary:hover {
+  background: var(--color-bg-alt);
+  border-color: var(--color-text-muted);
+  color: var(--color-text);
+}
+
+.btn-secondary {
   background: var(--color-bg);
   color: var(--color-text-secondary);
   border: 1px solid var(--color-border);
@@ -1952,4 +1964,86 @@
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* ---- AI CHAT & ASHA AI ---- */
+.ai-chat-demo {
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  margin-bottom: var(--spacing-xl);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ai-chat-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.ai-msg {
+  padding: 10px 14px;
+  border-radius: 12px;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 85%;
+  position: relative;
+}
+
+.ai-msg.student {
+  background: #eff6ff;
+  color: #1e40af;
+  align-self: flex-start;
+  border-bottom-left-radius: 2px;
+}
+
+.ai-msg.bot {
+  background: #f0fdf4;
+  color: #166534;
+  align-self: flex-end;
+  border-bottom-right-radius: 2px;
+  border: 1px solid #dcfce7;
+}
+
+.ai-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ai-suggestions button {
+  background: #fff;
+  border: 1px solid var(--color-border);
+  padding: 6px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.ai-suggestions button:hover,
+.ai-suggest-btn:hover {
+  background: var(--color-primary-light) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+  transform: translateY(-1px);
+}
+
+.ai-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-chat-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto;
 }

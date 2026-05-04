@@ -1,5 +1,5 @@
 import { openModal } from '../components/modal.js';
-import { fetchFormTemplates, createFormTemplate, fetchCampaigns, createCampaign } from '../lib/api.js';
+import { fetchFormTemplates, createFormTemplate, fetchCampaigns, createCampaign, createUser } from '../lib/api.js';
 
 function escapeHtml(s) {
   return String(s ?? '')
@@ -266,7 +266,57 @@ export function renderAccessControl(el) {
       { icon: 'S', kicker: 'Student', title: 'Student portal role', copy: 'Can view own application, query, document, and fee information only.', meta: 'Self access' }
     ],
     after: `<section class="suite-panel"><div class="panel-head"><div><span class="eyebrow">Permission Matrix</span><h2>Module access</h2></div>${statusPill('Review')}</div><div class="permission-grid"><span>Module</span><span>Admin</span><span>Counselor</span><span>Student</span><b>Applications</b><i>Manage</i><i>Update</i><i>Own</i><b>Payments</b><i>Manage</i><i>View</i><i>Own</i><b>Campaigns</b><i>Manage</i><i>View</i><i>-</i></div></section>`,
-    modal: '<div class="form-group"><label class="form-label">Email</label><input class="form-input" placeholder="team@rbmi.edu.in"></div><div class="form-group"><label class="form-label">Role</label><select class="form-input"><option>Admin</option><option>Counselor</option><option>Finance</option><option>Marketing</option></select></div>'
+    onPrimaryClick: () => {
+      openModal('Invite New User', `
+        <div class="form-group">
+          <label class="form-label">Full Name</label>
+          <input type="text" class="form-input" id="invite-name" placeholder="e.g. John Doe">
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Email Address</label>
+          <input type="email" class="form-input" id="invite-email" placeholder="john@rbmi.edu.in">
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Assign Role</label>
+          <select class="form-input" id="invite-role">
+            <option value="admin">Administrator</option>
+            <option value="counselor">Counselor</option>
+            <option value="finance">Finance Team</option>
+            <option value="marketing">Marketing Team</option>
+          </select>
+        </div>
+        <div class="form-group" style="margin-top:12px;">
+          <label class="form-label">Assign Branch</label>
+          <select class="form-input" id="invite-branch">
+            <option value="bareilly">Bareilly Campus</option>
+            <option value="greater_noida">Greater Noida</option>
+          </select>
+        </div>
+        <p class="portal-muted" style="font-size:11px;margin-top:12px;">The user will receive an invite email with their login credentials. Default password will be 'rbmi1234'.</p>
+      `, {
+        submitLabel: 'Send Invitation',
+        onSubmit: async (body) => {
+          const name = body.querySelector('#invite-name').value.trim();
+          const email = body.querySelector('#invite-email').value.trim();
+          const role = body.querySelector('#invite-role').value;
+          const branch = body.querySelector('#invite-branch').value;
+
+          if (!name || !email) {
+            alert('Please fill in both Name and Email.');
+            return false;
+          }
+
+          try {
+            await createUser({ name, email, role, branch, password: 'rbmi1234' });
+            alert(`Invitation sent to ${name} (${email}). They can now log in with the default password.`);
+            return true;
+          } catch (err) {
+            alert('Failed to invite user: ' + err.message);
+            return false;
+          }
+        }
+      });
+    }
   });
 }
 
@@ -293,6 +343,12 @@ export function renderAiAssistant(el) {
       let chatHistory = [
         { role: 'bot', text: 'Hello! I am Asha AI, your admission assistant. How can I help you today?' }
       ];
+      const suggestedQuestions = [
+        'What documents are required?',
+        'What are the course fees?',
+        'Can I apply for MBA?',
+        'How do I track my application?'
+      ];
 
       function renderChat(body) {
         const wrap = body.querySelector('#ai-chat-history');
@@ -309,7 +365,10 @@ export function renderAiAssistant(el) {
         'Asha AI Assistant',
         `
         <div class="ai-modal">
-          <div class="ai-chat-history" id="ai-chat-history" style="height:350px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px;background:var(--color-bg-alt);border-radius:8px;margin-bottom:12px;"></div>
+          <div class="ai-chat-history" id="ai-chat-history" style="height:320px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px;background:var(--color-bg-alt);border-radius:8px;margin-bottom:12px;"></div>
+          <div class="ai-suggestions-modal" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
+            ${suggestedQuestions.map(q => `<button class="ai-suggest-btn" style="background:#fff;border:1px solid var(--color-border);padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">${q}</button>`).join('')}
+          </div>
           <div class="form-group" style="display:flex;gap:8px;">
             <input type="text" class="form-input" id="ai-input" placeholder="Type your question..." style="flex:1">
             <button class="btn btn-primary" id="ai-send-btn">Send</button>
@@ -325,11 +384,11 @@ export function renderAiAssistant(el) {
             const input = body.querySelector('#ai-input');
             const btn = body.querySelector('#ai-send-btn');
 
-            const handleSend = () => {
-              const text = input.value.trim();
+            const handleSend = (overrideText) => {
+              const text = overrideText || input.value.trim();
               if (!text) return;
               chatHistory.push({ role: 'student', text });
-              input.value = '';
+              if (!overrideText) input.value = '';
               renderChat(body);
 
               // Simulate AI thinking
@@ -339,14 +398,19 @@ export function renderAiAssistant(el) {
                 if (low.includes('document')) reply = 'Pending documents for most students include Class 12 marksheet and ID proof. You can check your specific checklist in the Student Portal.';
                 else if (low.includes('fee') || low.includes('pay')) reply = 'Fees can be paid online via the Portal or offline at the Bareilly/Greater Noida campuses. MBA fees are currently approx. ₹25,000 per semester.';
                 else if (low.includes('course') || low.includes('mba') || low.includes('bba')) reply = 'RBMI offers top-tier MBA, BBA, BCA, and B.Tech programs. Would you like to speak with a counselor about eligibility?';
+                else if (low.includes('track')) reply = 'You can track your application in real-time from the "Admission Pipeline" if you are a counselor, or "My Application" section if you are a student.';
 
                 chatHistory.push({ role: 'bot', text: reply });
                 renderChat(body);
               }, 800);
             };
 
-            btn.onclick = handleSend;
+            btn.onclick = () => handleSend();
             input.onkeypress = (e) => { if (e.key === 'Enter') handleSend(); };
+            
+            body.querySelectorAll('.ai-suggest-btn').forEach(sbtn => {
+              sbtn.onclick = () => handleSend(sbtn.innerText);
+            });
           }
         }
       );

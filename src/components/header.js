@@ -1,5 +1,5 @@
 import { openModal } from './modal.js';
-import { createLead, fetchCounselors, fetchCourses, fetchLeads } from '../lib/api.js';
+import { createLead, fetchCounselors, fetchCourses, fetchLeads, updatePortalProfile } from '../lib/api.js';
 import { debounce, getAvatarColor } from './utils.js';
 
 function roleLabel(role) {
@@ -143,9 +143,28 @@ export function renderHeader(user = null) {
     openModal('Notifications', role === 'student' ? studentContent : crmContent, { submitLabel: 'Mark All Read', width: '420px' });
   });
 
-  document.getElementById('btn-portal-action')?.addEventListener('click', () => {
-    window.location.hash = '/portal';
-    window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+  document.getElementById('btn-portal-action')?.addEventListener('click', async () => {
+    if (role === 'student') {
+      const btn = document.getElementById('btn-portal-action');
+      const oldText = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = 'Requesting...';
+      try {
+        await updatePortalProfile({ next_step: 'Callback requested via portal header' });
+        alert('Callback requested! A counselor will call you shortly.');
+        window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+      } catch (e) {
+        alert('Failed to request callback: ' + e.message);
+      } finally {
+        if (btn) {
+          btn.disabled = false;
+          btn.textContent = oldText;
+        }
+      }
+    } else {
+      window.location.hash = '/portal';
+      window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+    }
   });
 
   document.getElementById('btn-add-lead')?.addEventListener('click', async () => {

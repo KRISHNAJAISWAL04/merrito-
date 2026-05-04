@@ -165,8 +165,22 @@ export async function renderStudentPortal(el) {
   });
 
   el.querySelector('#portal-contact-btn')?.addEventListener('click', async () => {
-    await updatePortalProfile({ next_step: 'Callback requested with admissions counselor' });
-    window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+    const btn = el.querySelector('#portal-contact-btn');
+    const oldText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Requesting...';
+    try {
+      await updatePortalProfile({ next_step: 'Callback requested! Admissions team will call you shortly.' });
+      alert('Callback requested! A counselor will reach out to you shortly.');
+      window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+    } catch (e) {
+      alert('Failed to request callback: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }
+    }
   });
 
   el.querySelector('#portal-upload-btn')?.addEventListener('click', async () => {
@@ -241,21 +255,56 @@ export async function renderStudentPortal(el) {
   });
 
   el.querySelector('#portal-apply-btn')?.addEventListener('click', async () => {
-    const preferredCourse = courses.find((course) => course.status === 'Active') || courses[0];
-    const [firstName, ...lastName] = (profile.name || 'Student').split(' ');
-    await createLead({
-      first_name: firstName,
-      last_name: lastName.join(' '),
-      phone: profile.phone || '',
-      email: profile.email || user?.email || '',
-      city: profile.city || '',
-      course_id: preferredCourse?.id || null,
-      source: 'Student Portal',
-      stage: 'enquiry',
-      priority: 'high',
-      notes: 'Student requested another course from the portal.'
+    console.log('Apply for another course clicked');
+    if (!courses || courses.length === 0) {
+      alert('Courses are currently unavailable. Please try again later.');
+      return;
+    }
+    
+    openModal('Apply for Another Program', `
+      <div class="form-group">
+        <p class="portal-muted" style="margin-bottom:12px;">Select the course you are interested in. Our admissions team will get in touch to guide you through the transition or secondary application.</p>
+        <label class="form-label">Choose Program</label>
+        <select class="form-select" id="new-course-select">
+          ${courses.filter(c => c.status === 'Active').map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">Why are you interested in this program? (Optional)</label>
+        <textarea class="form-textarea" id="new-course-notes" placeholder="e.g. Want to switch from current program, or looking for dual certification..." style="min-height:80px;"></textarea>
+      </div>
+    `, {
+      submitLabel: 'Submit Interest',
+      onSubmit: async (body) => {
+        const courseId = body.querySelector('#new-course-select').value;
+        const notes = body.querySelector('#new-course-notes').value.trim();
+        const selectedCourse = courses.find(c => c.id == courseId);
+        
+        const [firstName, ...lastName] = (profile.name || 'Student').split(' ');
+        
+        try {
+          await createLead({
+            first_name: firstName,
+            last_name: lastName.join(' '),
+            phone: profile.phone || '',
+            email: profile.email || user?.email || '',
+            city: profile.city || '',
+            course_id: courseId,
+            source: 'Student Portal',
+            stage: 'enquiry',
+            priority: 'high',
+            notes: notes ? `Student requested ${selectedCourse?.name}. Note: ${notes}` : `Student requested another course: ${selectedCourse?.name}`
+          });
+          
+          await updatePortalProfile({ next_step: `Interest sent for ${selectedCourse?.name}` });
+          alert('Your interest has been registered. A counselor will contact you shortly.');
+          window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+          return true;
+        } catch (err) {
+          alert('Failed to submit request: ' + err.message);
+          return false;
+        }
+      }
     });
-    await updatePortalProfile({ next_step: 'New course request sent to admissions team' });
-    window.dispatchEvent(new CustomEvent('rbmi:refresh'));
   });
 }

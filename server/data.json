@@ -1,6 +1,246 @@
 {
   "leads": [
     {
+      "id": "e6468435-4f95-4075-b389-6e868b245302",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-04T02:19:16.849Z",
+      "updated_at": "2026-05-04T02:19:16.849Z"
+    },
+    {
+      "id": "4ff406f3-ce0f-405e-98db-206d7c4deba7",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-04T02:19:16.621Z",
+      "updated_at": "2026-05-04T02:19:16.621Z"
+    },
+    {
+      "id": "ab00a8b8-6b74-4ccf-ae32-505d5407e175",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-04T02:19:16.113Z",
+      "updated_at": "2026-05-04T02:19:16.113Z"
+    },
+    {
+      "id": "dddc272e-26e5-43fc-94ec-fd442fad194c",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-04T02:19:15.887Z",
+      "updated_at": "2026-05-04T02:19:15.887Z"
+    },
+    {
+      "id": "80855688-4caf-42f1-997f-ec1f1b7d1970",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-04T02:19:15.717Z",
+      "updated_at": "2026-05-04T02:19:15.717Z"
+    },
+    {
+      "id": "da3aa41f-9c87-4752-9b0e-9828849958cc",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-04T02:19:15.548Z",
+      "updated_at": "2026-05-04T02:19:15.548Z"
+    },
+    {
+      "id": "a3f210bb-c21a-4efd-9fd8-4cd00f814da9",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-04T02:19:15.138Z",
+      "updated_at": "2026-05-04T02:19:15.138Z"
+    },
+    {
+      "id": "56aec8bd-7e54-4f24-a9f9-ab06a78fb4c8",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-04T02:19:14.211Z",
+      "updated_at": "2026-05-04T02:19:14.211Z"
+    },
+    {
+      "id": "88c5a9c5-9907-4e56-b627-498beebebeaf",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T17:29:39.189Z",
+      "updated_at": "2026-05-03T17:29:39.189Z"
+    },
+    {
+      "id": "0fc9620f-6611-476b-8477-c478dc616759",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T17:29:38.968Z",
+      "updated_at": "2026-05-03T17:29:38.968Z"
+    },
+    {
+      "id": "22311381-566a-46b0-9bb2-be5353133862",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T17:29:38.798Z",
+      "updated_at": "2026-05-03T17:29:38.798Z"
+    },
+    {
+      "id": "3fee85f8-aa60-4f49-b089-7c77a55645c5",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T17:29:38.648Z",
+      "updated_at": "2026-05-03T17:29:38.648Z"
+    },
+    {
+      "id": "34971497-626c-4577-8876-52612a14ab48",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T17:29:38.464Z",
+      "updated_at": "2026-05-03T17:29:38.464Z"
+    },
+    {
+      "id": "c92f7439-accd-4bf2-856f-bde2581bc546",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T17:29:37.659Z",
+      "updated_at": "2026-05-03T17:29:37.659Z"
+    },
+    {
+      "id": "ef932ba2-4410-4273-b7c8-4795ebff4f86",
+      "first_name": "Aarav",
+      "last_name": "Mehta",
+      "email": "student@demo.in",
+      "phone": "+91 90123 45678",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "source": "Student Portal",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "high",
+      "city": "Bareilly",
+      "notes": "Student requested another course from the portal.",
+      "created_at": "2026-05-03T17:24:31.558Z",
+      "updated_at": "2026-05-03T17:24:31.558Z"
+    },
+    {
       "id": "9cfc054b-0566-43b3-b014-0bbccd0f5735",
       "first_name": "Krishna",
       "last_name": "Jaiswal",
@@ -293,6 +533,418 @@
   ],
   "activities": [
     {
+      "id": "e5eb0abc-0db3-41c4-95bc-eed63dc05655",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Aarav Mehta requested a callback",
+      "created_at": "2026-05-04T02:47:42.975Z"
+    },
+    {
+      "id": "7b04e7d0-83ab-4522-a200-f1a76e6e087b",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:44:17.635Z"
+    },
+    {
+      "id": "97d1b662-fb07-4455-8c46-d67891d249e5",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:39:03.843Z"
+    },
+    {
+      "id": "56328f5b-a3fe-435f-ad2a-089586e856ed",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:38:14.510Z"
+    },
+    {
+      "id": "e1873bfb-9d6c-4502-958d-e4afd65cd2c0",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:37:40.303Z"
+    },
+    {
+      "id": "71fe8ad0-b5b8-4fcb-afd4-409a4c6e0611",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:28:08.095Z"
+    },
+    {
+      "id": "e33af29a-e2f1-450d-be84-75a7089011f0",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:27:40.101Z"
+    },
+    {
+      "id": "a3a27ab5-49d7-4966-9781-43205acfad0f",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:24:19.183Z"
+    },
+    {
+      "id": "b42df4a6-8fea-4095-ad92-47570e61d49e",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:24:11.941Z"
+    },
+    {
+      "id": "a38cbc78-f545-4336-a52f-07d3210681cd",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:23:00.789Z"
+    },
+    {
+      "id": "4430e5e6-7d46-4041-83bf-2e789ff56148",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:23:00.572Z"
+    },
+    {
+      "id": "53bb2260-c0c0-4d9d-aef3-b29b98f297f7",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:23:00.359Z"
+    },
+    {
+      "id": "22bf6ad9-8734-4cbf-bd54-2659222be83f",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:23:00.170Z"
+    },
+    {
+      "id": "854bc031-1d31-494b-8a5d-9a1c003e37d0",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:22:59.853Z"
+    },
+    {
+      "id": "9b5aedc2-4942-4f28-871f-7c05106975c3",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:22:59.639Z"
+    },
+    {
+      "id": "02c5e067-e4a3-43cf-86ed-f2463737a062",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:22:59.435Z"
+    },
+    {
+      "id": "96d734a3-18d4-4192-85ea-24cd95507fe8",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:22:58.371Z"
+    },
+    {
+      "id": "0a2ea1cc-b276-4c61-a863-c1ef86da04a1",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:19:22.127Z"
+    },
+    {
+      "id": "61028a4a-6729-42fd-995f-7a4ce2a0d2e3",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:19:16.869Z"
+    },
+    {
+      "id": "a0f5c689-89c7-4557-8f6b-43c9cab7c215",
+      "type": "lead_added",
+      "lead_id": "e6468435-4f95-4075-b389-6e868b245302",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-04T02:19:16.852Z"
+    },
+    {
+      "id": "b914a2cd-e93a-4b75-8692-d1b3263354cd",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:19:16.640Z"
+    },
+    {
+      "id": "0b2f64fb-2063-44ad-81d7-f36fb4b63766",
+      "type": "lead_added",
+      "lead_id": "4ff406f3-ce0f-405e-98db-206d7c4deba7",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-04T02:19:16.624Z"
+    },
+    {
+      "id": "3b44f715-6215-47ba-8eeb-b61d278e4458",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:19:16.134Z"
+    },
+    {
+      "id": "771102dd-c921-4dc8-9668-d2285421b1e6",
+      "type": "lead_added",
+      "lead_id": "ab00a8b8-6b74-4ccf-ae32-505d5407e175",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-04T02:19:16.117Z"
+    },
+    {
+      "id": "8eec6197-e463-4dd6-96db-2498e3ee1455",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:19:15.906Z"
+    },
+    {
+      "id": "32065137-c1c7-49f1-8cdb-5e96aaa76587",
+      "type": "lead_added",
+      "lead_id": "dddc272e-26e5-43fc-94ec-fd442fad194c",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-04T02:19:15.889Z"
+    },
+    {
+      "id": "a1463618-c1ee-456b-8cbd-ef5f24253393",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:19:15.741Z"
+    },
+    {
+      "id": "79d485da-013b-4dfc-a945-f9fc26f0955b",
+      "type": "lead_added",
+      "lead_id": "80855688-4caf-42f1-997f-ec1f1b7d1970",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-04T02:19:15.722Z"
+    },
+    {
+      "id": "e3f00494-6efa-4f34-994a-11d1228a60ae",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:19:15.574Z"
+    },
+    {
+      "id": "5a9dc68e-57de-4b34-9ea9-8af99050a14c",
+      "type": "lead_added",
+      "lead_id": "da3aa41f-9c87-4752-9b0e-9828849958cc",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-04T02:19:15.555Z"
+    },
+    {
+      "id": "d057f958-b363-4da5-b67f-b0a7ca983052",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:19:15.159Z"
+    },
+    {
+      "id": "55fb71b6-9522-4417-bd67-928bb0aa94e1",
+      "type": "lead_added",
+      "lead_id": "a3f210bb-c21a-4efd-9fd8-4cd00f814da9",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-04T02:19:15.141Z"
+    },
+    {
+      "id": "05537300-f89d-4e23-9ebe-bee9dd5018f9",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T02:19:14.240Z"
+    },
+    {
+      "id": "044594fd-f047-4c3a-ab76-1c53ef7c311e",
+      "type": "lead_added",
+      "lead_id": "56aec8bd-7e54-4f24-a9f9-ab06a78fb4c8",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-04T02:19:14.216Z"
+    },
+    {
+      "id": "b0edd5a5-1059-4975-a750-f57aa1eb4f4f",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:31:52.457Z"
+    },
+    {
+      "id": "c325adcd-aa9a-4b9e-a2f3-182800eee7c0",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:57.617Z"
+    },
+    {
+      "id": "ba5fa239-a6fa-4b09-9301-f15983fff021",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:57.390Z"
+    },
+    {
+      "id": "63a1cb20-4773-4816-a73c-72e7cd945eda",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:57.240Z"
+    },
+    {
+      "id": "4f483f48-e1d8-4c23-8d86-a5010f8f5884",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:57.069Z"
+    },
+    {
+      "id": "8a2dc971-dee8-4604-ad80-f934a3455b18",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:56.914Z"
+    },
+    {
+      "id": "731fc592-9bd3-4b03-8734-45dfbef9c6c2",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:56.750Z"
+    },
+    {
+      "id": "a3da9e0f-fb52-4e4d-842e-8060622d04da",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:56.565Z"
+    },
+    {
+      "id": "d8bd103e-7e47-4cfe-84aa-37d9308f1b49",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:56.396Z"
+    },
+    {
+      "id": "a126e526-4d5a-4a5a-888d-01cc73fce578",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:56.247Z"
+    },
+    {
+      "id": "5039ad8a-a4ed-4a79-bb21-7035c598642c",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:56.078Z"
+    },
+    {
+      "id": "5ccfd055-e3d7-4677-8d6f-e3bca2c9438e",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:55.912Z"
+    },
+    {
+      "id": "f71bd3a8-f720-4561-8091-1989fce727a1",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:55.744Z"
+    },
+    {
+      "id": "04395a23-b46a-48b5-8d7a-eb5fd1d4f100",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:55.575Z"
+    },
+    {
+      "id": "9bb71fcf-9c0d-46bd-b6b7-d9a82e8c3705",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:55.396Z"
+    },
+    {
+      "id": "c15e64d4-3a36-451b-a5fe-c43b6f87c25f",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:55.222Z"
+    },
+    {
+      "id": "e0a34983-703b-4782-af6d-5267cb8ade5f",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:54.410Z"
+    },
+    {
+      "id": "7a52599b-2218-431e-bdc3-3467f068b656",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:39.210Z"
+    },
+    {
+      "id": "4ab56b88-270f-448c-82eb-eaa13b04b149",
+      "type": "lead_added",
+      "lead_id": "88c5a9c5-9907-4e56-b627-498beebebeaf",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T17:29:39.192Z"
+    },
+    {
+      "id": "58314c6f-f2df-4852-81dd-ccb10c405e6f",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:38.989Z"
+    },
+    {
+      "id": "98d3ba6b-fb55-400e-9fab-6e1020775492",
+      "type": "lead_added",
+      "lead_id": "0fc9620f-6611-476b-8477-c478dc616759",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T17:29:38.971Z"
+    },
+    {
+      "id": "abf15c98-f020-4b5d-8707-9f1dc54a6ee1",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:38.819Z"
+    },
+    {
+      "id": "e619a04f-05ea-48f7-a457-3616dc4a7bfb",
+      "type": "lead_added",
+      "lead_id": "22311381-566a-46b0-9bb2-be5353133862",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T17:29:38.800Z"
+    },
+    {
+      "id": "e4f2925f-bc1b-4c56-a5a2-a5db3b352518",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:38.669Z"
+    },
+    {
+      "id": "72eb985d-0ee9-43cf-afbe-80737f5e81ae",
+      "type": "lead_added",
+      "lead_id": "3fee85f8-aa60-4f49-b089-7c77a55645c5",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T17:29:38.651Z"
+    },
+    {
+      "id": "c85c361b-21f6-411c-9a5d-effde80aae37",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:38.488Z"
+    },
+    {
+      "id": "63c4ece5-729a-4441-acd5-30b3def3caf6",
+      "type": "lead_added",
+      "lead_id": "34971497-626c-4577-8876-52612a14ab48",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T17:29:38.467Z"
+    },
+    {
+      "id": "051894fc-8bb5-4027-b2b6-f9ff9cbd00e6",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:29:37.679Z"
+    },
+    {
+      "id": "080f2fe1-31e6-49cc-84fc-47c5e863d93a",
+      "type": "lead_added",
+      "lead_id": "c92f7439-accd-4bf2-856f-bde2581bc546",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T17:29:37.662Z"
+    },
+    {
+      "id": "3cc1b8ae-4612-4ed0-819d-799ea1d4fa97",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:25:20.664Z"
+    },
+    {
+      "id": "31717ebb-f616-48a9-bbb7-31b2d7f58c48",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-03T17:24:31.586Z"
+    },
+    {
+      "id": "33dd738d-3ad8-40d9-a8ba-d66014b0d777",
+      "type": "lead_added",
+      "lead_id": "ef932ba2-4410-4273-b7c8-4795ebff4f86",
+      "message": "New lead Aarav Mehta added via Student Portal",
+      "created_at": "2026-05-03T17:24:31.562Z"
+    },
+    {
       "id": "f44e392c-030a-44f1-b9b6-450a6bc3f012",
       "type": "stage_change",
       "lead_id": "9cfc054b-0566-43b3-b014-0bbccd0f5735",
@@ -468,6 +1120,24 @@
       "counselor_id": null,
       "branch": "bareilly",
       "created_at": "2026-05-02T10:24:13.829Z"
+    },
+    {
+      "id": "dfdbf297-9ccf-429f-86ae-efd8a9c84f58",
+      "name": "krishna jaiswal",
+      "email": "krishna@rbmi.in",
+      "role": "admin",
+      "branch": "bareilly",
+      "password": "f09238b979927dfd36e9189e6f96c95a:db676428ddf7f9ff7d916c9563d6e926eeeabb3bfb14dccc9e73b89d71480470db3838acb6581d6219e71439da3931fb382074c67688c848cf435095df0141a9",
+      "created_at": "2026-05-04T02:32:13.249Z"
+    },
+    {
+      "id": "d3a9a7ac-02a5-4eaf-889d-62d7093e749e",
+      "name": "krishna jaiswal",
+      "email": "krishnajaiswal0984@gmail.com",
+      "role": "admin",
+      "branch": "bareilly",
+      "password": "bd972cf327d09d8288e9be03e2579597:df07cce3327d22ec4bdd56470f63ec12728c2eae8bee237cb33635ea20555073adab0079e62c694bdff09b16a4b23e38ca09bbe00014ace04d1b0f8e6b7b0539",
+      "created_at": "2026-05-04T02:33:54.520Z"
     }
   ],
   "settings": {
@@ -506,26 +1176,39 @@
       "stage": "application_submitted",
       "counselor_name": "Priya Sharma",
       "readiness": 78,
-      "next_step": "New course request sent to admissions team",
+      "next_step": "Callback requested via portal header",
       "fee_due": "25000",
       "scholarship": "Fee slip generated. Payment desk will verify within 24 hours.",
       "branch": "bareilly",
-      "updated_at": "2026-05-03T15:38:14.585Z"
+      "updated_at": "2026-05-04T02:47:42.969Z"
     }
   },
   "applications": [
+    {
+      "id": "5c8bf921-86ad-4dbc-b88e-4d7e522f909a",
+      "user_id": "u004-student-demo",
+      "student_name": "Aarav Mehta",
+      "email": "student@demo.in",
+      "course_id": "c5cb1eb7-8530-4ef7-bbfa-26f437fc897a",
+      "status": "approved",
+      "documents_status": "verified",
+      "counselor_name": "Priya Sharma",
+      "priority": "medium",
+      "created_at": "2026-05-03T17:26:20.092Z",
+      "updated_at": "2026-05-04T02:29:18.905Z"
+    },
     {
       "id": "app-demo-aarav",
       "user_id": "u004-student-demo",
       "student_name": "Aarav Mehta",
       "email": "student@demo.in",
       "course_id": "cr001-mba",
-      "status": "submitted",
+      "status": "approved",
       "documents_status": "verified",
       "counselor_name": "Priya Sharma",
       "priority": "high",
       "created_at": "2026-05-02T10:45:39.154Z",
-      "updated_at": "2026-05-02T16:33:41.975Z"
+      "updated_at": "2026-05-04T02:29:27.807Z"
     }
   ],
   "queries": [
@@ -535,12 +1218,12 @@
       "student_name": "Aarav Mehta",
       "subject": "Admission query",
       "category": "Documents",
-      "status": "open",
+      "status": "answered",
       "priority": "medium",
       "message": "",
       "response": "",
       "created_at": "2026-05-03T10:45:15.390Z",
-      "updated_at": "2026-05-03T10:45:15.390Z"
+      "updated_at": "2026-05-03T17:30:46.878Z"
     },
     {
       "id": "qry-demo-aarav",
@@ -568,7 +1251,7 @@
       "due_date": "2026-05-15",
       "receipt_no": "RBMI-800120",
       "created_at": "2026-05-02T10:45:39.154Z",
-      "updated_at": "2026-05-03T10:40:04.258Z"
+      "updated_at": "2026-05-04T02:29:43.768Z"
     }
   ],
   "communicationIntegrations": {
@@ -852,6 +1535,15 @@
     }
   ],
   "notificationCenter": [
+    {
+      "id": "fdec6554-496a-4538-b37d-4a1ccdb907d6",
+      "title": "Callback Requested",
+      "message": "Aarav Mehta: Callback requested via portal header",
+      "channel": "push",
+      "target_type": "student_inbox",
+      "status": "unread",
+      "created_at": "2026-05-04T02:47:42.980Z"
+    },
     {
       "id": "bd6046ca-7b4e-42ff-a950-d92ad86939d6",
       "title": "Campaign launched",

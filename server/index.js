@@ -753,6 +753,23 @@ app.put('/api/portal/profile', requireAuth, async (req, res) => {
   try {
     if (req.user.role !== 'student') return res.status(403).json({ error: 'Student portal access required' });
     const next = await appStore.updatePortalProfile(req.user, req.body);
+    
+    // Notify counselor of significant student actions
+    if (req.body.next_step && req.body.next_step !== 'Complete your profile') {
+      const dbData = ensureMarketingModules();
+      let title = 'Student Update';
+      if (req.body.next_step.toLowerCase().includes('callback')) title = 'Callback Requested';
+      if (req.body.next_step.toLowerCase().includes('application')) title = 'New Application Request';
+
+      createNotificationEntry(dbData, {
+        title,
+        message: `${req.user.name}: ${req.body.next_step}`,
+        channel: 'push',
+        target_type: 'student_inbox'
+      });
+      saveDB(dbData);
+    }
+
     res.json(next);
   } catch (error) {
     res.status(500).json({ error: error.message });
