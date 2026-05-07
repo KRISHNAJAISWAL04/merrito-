@@ -55,7 +55,7 @@ export function seedIfEmpty() {
 
   // Counselors (reference data — needed for lead assignment dropdowns)
   const counselors = [
-    { id: generateId(), name: 'Priya Sharma', email: 'priya.sharma@Meriito.com', phone: '+91 98765 43210', role: 'Senior Counselor', department: 'Engineering', rating: 4.8, created_at: new Date().toISOString() },
+    { id: generateId(), name: 'Neha Khan', email: 'priya.sharma@Meriito.com', phone: '+91 98765 43210', role: 'Senior Counselor', department: 'Engineering', rating: 4.8, created_at: new Date().toISOString() },
     { id: generateId(), name: 'Rajesh Kumar', email: 'rajesh.kumar@Meriito.com', phone: '+91 87654 32109', role: 'Counselor', department: 'Management', rating: 4.5, created_at: new Date().toISOString() },
     { id: generateId(), name: 'Anita Desai', email: 'anita.desai@Meriito.com', phone: '+91 76543 21098', role: 'Senior Counselor', department: 'Sciences', rating: 4.9, created_at: new Date().toISOString() },
     { id: generateId(), name: 'Vikram Singh', email: 'vikram.singh@Meriito.com', phone: '+91 65432 10987', role: 'Counselor', department: 'Arts & Humanities', rating: 4.3, created_at: new Date().toISOString() },

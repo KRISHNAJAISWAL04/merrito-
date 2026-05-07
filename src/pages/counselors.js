@@ -156,9 +156,8 @@ function renderCounselorCard(c, i, isAdmin) {
           <span>${c.rating}</span>
         </div>
         <div class="counselor-contact">
-          <a href="mailto:${c.email}" class="contact-btn" title="Email">??</a>
-          <a href="mailto:${c.email}" class="contact-btn" title="Email" style="font-size:13px;text-decoration:none;">Mail</a>
-          <a href="tel:${c.phone}" class="contact-btn" title="Call" style="font-size:13px;text-decoration:none;">Call</a>
+          <a href="mailto:${c.email}" class="contact-btn" title="Email" style="font-size:13px;text-decoration:none;"><i data-lucide="mail" style="width:14px;height:14px;"></i> Mail</a>
+          <a href="tel:${c.phone}" class="contact-btn" title="Call" style="font-size:13px;text-decoration:none;"><i data-lucide="phone" style="width:14px;height:14px;"></i> Call</a>
           ${isAdmin ? `
           <button class="contact-btn btn-edit-counselor" data-id="${c.id}" title="Edit" style="font-size:11px;font-weight:600;background:#ede9fe;color:#7c3aed;border:1px solid #ddd6fe;">Edit</button>
           <button class="contact-btn btn-delete-counselor" data-id="${c.id}" title="Delete" style="font-size:11px;font-weight:600;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;">Del</button>
@@ -178,7 +177,7 @@ function openCounselorModal(counselor, onSave) {
     <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
       <div class="form-group" style="grid-column:1/-1;">
         <label class="form-label">Full Name *</label>
-        <input type="text" id="c-name" class="form-input" value="${counselor?.name || ''}" placeholder="e.g. Priya Sharma" required />
+        <input type="text" id="c-name" class="form-input" value="${counselor?.name || ''}" placeholder="e.g. Neha Khan" required />
       </div>
       <div class="form-group">
         <label class="form-label">Email</label>

@@ -1,6 +1,22 @@
 {
   "leads": [
     {
+      "id": "219e5ead-1154-4864-a0a0-0de54dc725e2",
+      "first_name": "Test",
+      "last_name": "Lead RBMI",
+      "email": "test@rbmi.edu.in",
+      "phone": "+91 9999999999",
+      "course_id": null,
+      "source": "Website",
+      "stage": "enquiry",
+      "counselor_id": null,
+      "priority": "medium",
+      "city": "Bareilly",
+      "notes": "",
+      "created_at": "2026-05-04T14:50:05.731Z",
+      "updated_at": "2026-05-04T14:50:05.731Z"
+    },
+    {
       "id": "9cfc054b-0566-43b3-b014-0bbccd0f5735",
       "first_name": "Krishna",
       "last_name": "Jaiswal",
@@ -293,6 +309,132 @@
   ],
   "activities": [
     {
+      "id": "468d4132-7db8-4b7c-84d1-a68689e4e164",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Krishna Jaiswal requested a callback",
+      "created_at": "2026-05-05T13:59:10.474Z"
+    },
+    {
+      "id": "a5736855-140e-4ac4-8fc3-bcaf7294170c",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Krishna Jaiswal requested a callback",
+      "created_at": "2026-05-05T13:40:58.822Z"
+    },
+    {
+      "id": "be6bd2a1-cb5d-4f35-ac89-658c8451f017",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Krishna Jaiswal updated profile",
+      "created_at": "2026-05-05T04:15:13.333Z"
+    },
+    {
+      "id": "7132b4b1-2275-4e86-8124-3561aabd162d",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Krishna Jaiswal requested a callback",
+      "created_at": "2026-05-05T04:12:48.363Z"
+    },
+    {
+      "id": "6b91f538-bc14-45d5-9d8d-a1ce94e1641d",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Krishna Jaiswal updated profile",
+      "created_at": "2026-05-04T16:36:21.499Z"
+    },
+    {
+      "id": "fcc88396-ee5c-42df-a3db-89cbf35ed14e",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Krishna Jaiswal updated profile",
+      "created_at": "2026-05-04T16:36:21.273Z"
+    },
+    {
+      "id": "c5505832-ed05-4fd3-b25f-67fdf07c440d",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Krishna Jaiswal updated profile",
+      "created_at": "2026-05-04T16:36:11.640Z"
+    },
+    {
+      "id": "27419732-8254-42bb-94b2-c100724d0a56",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Aarav Mehta updated profile",
+      "created_at": "2026-05-04T16:36:00.406Z"
+    },
+    {
+      "id": "af72bb1e-ad11-4605-9470-1e775d682977",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Aarav Mehta updated profile",
+      "created_at": "2026-05-04T16:36:00.178Z"
+    },
+    {
+      "id": "89f82aea-3e73-4266-8913-96d526bb09cc",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Aarav Mehta updated profile",
+      "created_at": "2026-05-04T16:35:59.290Z"
+    },
+    {
+      "id": "fe9a25fc-8821-488a-97d7-12e727821e24",
+      "type": "student_portal",
+      "user_id": "u004-student-demo",
+      "message": "Aarav Mehta requested a callback",
+      "created_at": "2026-05-04T14:58:27.717Z"
+    },
+    {
+      "id": "3dd5adfe-f0a0-42d7-8b45-7f97dec1109e",
+      "type": "lead_added",
+      "lead_id": "219e5ead-1154-4864-a0a0-0de54dc725e2",
+      "message": "New lead Test Lead RBMI captured via webhook (Website)",
+      "created_at": "2026-05-04T14:50:05.738Z"
+    },
+    {
+      "id": "d4d2ecc5-772e-45aa-a47b-3364abcf619b",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T14:27:13.540Z"
+    },
+    {
+      "id": "c1580d71-18ad-4298-ae54-2ead18462a14",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T14:24:07.743Z"
+    },
+    {
+      "id": "bde59966-926f-450c-9600-92c3c1f7e4e3",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T14:23:57.805Z"
+    },
+    {
+      "id": "7c5f44e9-6433-4283-bea2-6989157b846c",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T14:20:15.484Z"
+    },
+    {
+      "id": "5734539c-1de4-4379-8454-19e4902b147d",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T14:12:00.852Z"
+    },
+    {
+      "id": "699d1f9e-23df-417c-a399-182744830bc6",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T14:12:00.631Z"
+    },
+    {
+      "id": "d09abe8b-6ec4-4588-a7a8-2afbad566582",
+      "type": "student_portal",
+      "message": "Aarav Mehta updated student portal profile",
+      "created_at": "2026-05-04T14:11:59.732Z"
+    },
+    {
       "id": "f44e392c-030a-44f1-b9b6-450a6bc3f012",
       "type": "stage_change",
       "lead_id": "9cfc054b-0566-43b3-b014-0bbccd0f5735",
@@ -498,19 +640,19 @@
   "portalProfiles": {
     "u004-student-demo": {
       "user_id": "u004-student-demo",
-      "name": "Aarav Mehta",
+      "name": "Krishna Jaiswal",
       "email": "student@demo.in",
-      "phone": "+91 90123 45678",
+      "phone": "",
       "city": "Bareilly",
       "course_id": "cr001-mba",
       "stage": "application_submitted",
       "counselor_name": "Priya Sharma",
       "readiness": 78,
-      "next_step": "New course request sent to admissions team",
+      "next_step": "Callback requested via portal header",
       "fee_due": "25000",
       "scholarship": "Fee slip generated. Payment desk will verify within 24 hours.",
       "branch": "bareilly",
-      "updated_at": "2026-05-03T15:38:14.585Z"
+      "updated_at": "2026-05-05T13:59:10.469Z"
     }
   },
   "applications": [
@@ -535,12 +677,12 @@
       "student_name": "Aarav Mehta",
       "subject": "Admission query",
       "category": "Documents",
-      "status": "open",
+      "status": "answered",
       "priority": "medium",
       "message": "",
-      "response": "",
+      "response": "test",
       "created_at": "2026-05-03T10:45:15.390Z",
-      "updated_at": "2026-05-03T10:45:15.390Z"
+      "updated_at": "2026-05-05T04:00:24.431Z"
     },
     {
       "id": "qry-demo-aarav",
@@ -558,6 +700,19 @@
   ],
   "payments": [
     {
+      "id": "f4719fd8-8906-421f-95b8-14be746c4ba3",
+      "user_id": null,
+      "student_name": "arav maheta",
+      "title": "Admission fee",
+      "amount": 25000,
+      "status": "due",
+      "method": "Online",
+      "due_date": "",
+      "receipt_no": "",
+      "created_at": "2026-05-04T14:44:39.826Z",
+      "updated_at": "2026-05-04T14:44:39.826Z"
+    },
+    {
       "id": "pay-demo-aarav",
       "user_id": "u004-student-demo",
       "student_name": "Aarav Mehta",
@@ -568,7 +723,7 @@
       "due_date": "2026-05-15",
       "receipt_no": "RBMI-800120",
       "created_at": "2026-05-02T10:45:39.154Z",
-      "updated_at": "2026-05-03T10:40:04.258Z"
+      "updated_at": "2026-05-05T04:13:07.211Z"
     }
   ],
   "communicationIntegrations": {
@@ -824,11 +979,44 @@
   ],
   "chatThreads": [
     {
+      "id": "6297366c-cc8c-467d-831e-2a6bf9859ff3",
+      "student_name": "Aarav Mehta",
+      "counselor_name": "Priya Sharma",
+      "status": "active",
+      "last_message_at": "2026-05-05T07:53:43.106Z",
+      "messages": [
+        {
+          "id": "cc2443c0-40ee-4322-bb89-8ec7e531f240",
+          "sender": "student",
+          "text": "hii",
+          "created_at": "2026-05-05T04:13:43.615Z"
+        },
+        {
+          "id": "bf1c54d4-c871-45cd-b8c8-e930dc9dc4d5",
+          "sender": "student",
+          "text": "hello",
+          "created_at": "2026-05-05T04:13:55.751Z"
+        },
+        {
+          "id": "214be6d5-bfbc-4621-828d-ddadba748cbc",
+          "sender": "student",
+          "text": "d",
+          "created_at": "2026-05-05T04:15:16.715Z"
+        },
+        {
+          "id": "9f3fb67f-c6af-4394-aaf3-119b09b35d0c",
+          "sender": "counselor",
+          "text": "hii",
+          "created_at": "2026-05-05T07:53:43.106Z"
+        }
+      ]
+    },
+    {
       "id": "f2a4f183-c7fb-4a6f-84a2-64d55182213d",
       "student_name": "Krishna Jaiswal",
       "counselor_name": "Priya Sharma",
       "status": "active",
-      "last_message_at": "2026-05-03T11:06:00.701Z",
+      "last_message_at": "2026-05-04T17:43:07.763Z",
       "messages": [
         {
           "id": "75b18eff-1d6b-4367-9e87-1ae8e9817245",
@@ -847,11 +1035,158 @@
           "sender": "counselor",
           "text": "hii",
           "created_at": "2026-05-03T11:06:00.701Z"
+        },
+        {
+          "id": "aa42b63a-c59f-46ca-a3ad-8f1cba74bd33",
+          "sender": "counselor",
+          "text": "hello",
+          "created_at": "2026-05-04T17:20:03.379Z"
+        },
+        {
+          "id": "c51f336d-054d-41d2-b2ea-0efef7b3009f",
+          "sender": "counselor",
+          "text": "Hello from counselor!",
+          "created_at": "2026-05-04T17:22:20.362Z"
+        },
+        {
+          "id": "87e6f97f-c0b7-4a6e-baa9-3f9089dbd10c",
+          "sender": "counselor",
+          "text": "Testing auto-scroll functionality.",
+          "created_at": "2026-05-04T17:23:04.748Z"
+        },
+        {
+          "id": "1a6d5ce4-5a01-4ac7-bbb0-d3cd1260f2b3",
+          "sender": "counselor",
+          "text": "test 1",
+          "created_at": "2026-05-04T17:28:27.554Z"
+        },
+        {
+          "id": "c5fb53bf-3082-44e0-8e6b-ee8d82a0c2f6",
+          "sender": "student",
+          "text": "acknowledge",
+          "created_at": "2026-05-04T17:43:07.763Z"
         }
       ]
     }
   ],
   "notificationCenter": [
+    {
+      "id": "a5346ca6-dc7e-414a-a605-7e6d701bef01",
+      "title": "Callback Requested",
+      "message": "Aarav Mehta: Callback requested via portal header",
+      "channel": "push",
+      "target_type": "student_inbox",
+      "status": "unread",
+      "created_at": "2026-05-05T13:59:10.477Z"
+    },
+    {
+      "id": "be8d42c9-8731-4d44-b8bb-9f11e38a7a82",
+      "title": "Callback Requested",
+      "message": "Aarav Mehta: Callback requested via portal header",
+      "channel": "push",
+      "target_type": "student_inbox",
+      "status": "unread",
+      "created_at": "2026-05-05T13:40:58.826Z"
+    },
+    {
+      "id": "808966dc-4033-4034-91e7-8a366d844e02",
+      "title": "Chat updated",
+      "message": "Counselor Priya Sharma sent a message.",
+      "channel": "push",
+      "target_type": "chat",
+      "status": "unread",
+      "created_at": "2026-05-05T07:53:43.106Z"
+    },
+    {
+      "id": "8e600a42-e522-4928-ab52-2148b22eb593",
+      "title": "Chat updated",
+      "message": "Student Aarav Mehta sent a message.",
+      "channel": "push",
+      "target_type": "chat",
+      "status": "unread",
+      "created_at": "2026-05-05T04:15:16.715Z"
+    },
+    {
+      "id": "312d30d8-40b8-4640-bb20-22075299f7c9",
+      "title": "Chat updated",
+      "message": "Student Aarav Mehta sent a message.",
+      "channel": "push",
+      "target_type": "chat",
+      "status": "unread",
+      "created_at": "2026-05-05T04:13:55.751Z"
+    },
+    {
+      "id": "4fd01186-1a98-4e8a-a832-50b6cf41b633",
+      "title": "Chat updated",
+      "message": "Student Aarav Mehta sent a message.",
+      "channel": "push",
+      "target_type": "chat",
+      "status": "unread",
+      "created_at": "2026-05-05T04:13:43.615Z"
+    },
+    {
+      "id": "36a9e017-63ae-47a4-aa44-11798292b3f9",
+      "title": "Callback Requested",
+      "message": "Aarav Mehta: Callback requested! Admissions team will call you shortly.",
+      "channel": "push",
+      "target_type": "student_inbox",
+      "status": "unread",
+      "created_at": "2026-05-05T04:12:48.367Z"
+    },
+    {
+      "id": "c9bc0b00-3771-498a-beab-4ff63b79896d",
+      "title": "Chat updated",
+      "message": "New counselor-student chat message in Krishna Jaiswal's thread.",
+      "channel": "push",
+      "target_type": "chat",
+      "status": "unread",
+      "created_at": "2026-05-04T17:43:07.763Z"
+    },
+    {
+      "id": "45f0dbec-f667-415b-9337-434a967100b3",
+      "title": "Chat updated",
+      "message": "New counselor-student chat message in Krishna Jaiswal's thread.",
+      "channel": "push",
+      "target_type": "chat",
+      "status": "read",
+      "created_at": "2026-05-04T17:28:27.555Z"
+    },
+    {
+      "id": "93159a2a-6545-491a-9b48-8cfcab4a0687",
+      "title": "Chat updated",
+      "message": "New counselor-student chat message in Krishna Jaiswal's thread.",
+      "channel": "push",
+      "target_type": "chat",
+      "status": "unread",
+      "created_at": "2026-05-04T17:23:04.748Z"
+    },
+    {
+      "id": "618e8788-48f7-4bdd-ae4e-59214dc69cca",
+      "title": "Chat updated",
+      "message": "New counselor-student chat message in Krishna Jaiswal's thread.",
+      "channel": "push",
+      "target_type": "chat",
+      "status": "unread",
+      "created_at": "2026-05-04T17:22:20.362Z"
+    },
+    {
+      "id": "090c8640-97c1-409d-8750-3d30d579b96e",
+      "title": "Chat updated",
+      "message": "New counselor-student chat message in Krishna Jaiswal's thread.",
+      "channel": "push",
+      "target_type": "chat",
+      "status": "unread",
+      "created_at": "2026-05-04T17:20:03.379Z"
+    },
+    {
+      "id": "7f9c5f4c-9417-4e0c-818c-c0f1340b6a67",
+      "title": "Callback Requested",
+      "message": "Aarav Mehta: Callback requested! Admissions team will call you shortly.",
+      "channel": "push",
+      "target_type": "student_inbox",
+      "status": "unread",
+      "created_at": "2026-05-04T14:58:27.723Z"
+    },
     {
       "id": "bd6046ca-7b4e-42ff-a950-d92ad86939d6",
       "title": "Campaign launched",

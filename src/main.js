@@ -26,7 +26,7 @@ import { renderQueries } from './pages/queries.js';
 import { renderPayments } from './pages/payments.js';
 import { renderStudentPortal } from './pages/studentPortal.js';
 import { renderMarketing } from './pages/marketing.js';
-import { renderAccessControl, renderAiAssistant, renderCalendar, renderFormDesk, renderIntegrations, renderMobileApp } from './pages/platformSections.js';
+import { renderAccessControl, renderAiAssistant, renderCalendar, renderCampaigns, renderFormDesk, renderIntegrations, renderMobileApp, renderTemplates } from './pages/platformSections.js';
 import { renderAuditLog } from './pages/auditLog.js';
 import { getCurrentUser } from './lib/auth.js';
 import { API_BASE } from './lib/api.js';
@@ -49,10 +49,10 @@ const routes = [
   ['/calendar', renderCalendar],
   ['/applications', renderApplications],
   ['/marketing', renderMarketing],
-  ['/campaigns', renderMarketing],
+  ['/campaigns', renderCampaigns],
   ['/queries', renderQueries],
   ['/payments', renderPayments],
-  ['/templates', renderMarketing],
+  ['/templates', renderTemplates],
   ['/access-control', renderAccessControl],
   ['/download', renderMobileApp],
   ['/ai-assistant', renderAiAssistant],
@@ -158,4 +158,4 @@ setTimeout(() => {
       showLoginPage();
     }
   });
-}, 3000);
+}, 800);

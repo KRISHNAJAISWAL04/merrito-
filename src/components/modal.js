@@ -2,7 +2,7 @@
 
 export function openModal(title, contentHTML, options = {}) {
   const root = document.getElementById('modal-root');
-  const { width = '560px', onSubmit, submitLabel = 'Save', showFooter = true, cancelLabel = 'Cancel' } = options;
+  const { width = '560px', onSubmit, onOpen, submitLabel = 'Save', showFooter = true, cancelLabel = 'Cancel' } = options;
 
   root.innerHTML = `
     <div class="modal-overlay" id="modal-overlay">
@@ -31,6 +31,10 @@ export function openModal(title, contentHTML, options = {}) {
   });
 
   window.renderIcons();
+
+  if (typeof onOpen === 'function') {
+    onOpen(root.querySelector('.modal-body'));
+  }
 
   const close = () => {
     const overlay = root.querySelector('.modal-overlay');

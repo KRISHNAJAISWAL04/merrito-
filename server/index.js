@@ -561,10 +561,12 @@ app.get('/api/activities', requireAuth, async (req, res) => {
     const activities = await db.getActivities(limit);
     const users = await getUsers();
     const userMap = Object.fromEntries(users.map(u => [u.id, u]));
+    const dbData = getDB();
+    const portalProfiles = dbData.portalProfiles || {};
     const enriched = activities.map(a => ({
       ...a,
-      user_name: userMap[a.user_id]?.name || 'System',
-      user_role: userMap[a.user_id]?.role || 'system'
+      user_name: userMap[a.user_id]?.name || portalProfiles[a.user_id]?.name || (a.type === 'student_portal' ? 'Student' : 'System'),
+      user_role: userMap[a.user_id]?.role || (portalProfiles[a.user_id] ? 'student' : (a.type === 'student_portal' ? 'student' : 'system'))
     }));
     res.json(enriched);
   } catch (error) {
@@ -753,6 +755,23 @@ app.put('/api/portal/profile', requireAuth, async (req, res) => {
   try {
     if (req.user.role !== 'student') return res.status(403).json({ error: 'Student portal access required' });
     const next = await appStore.updatePortalProfile(req.user, req.body);
+    
+    // Notify counselor of significant student actions
+    if (req.body.next_step && req.body.next_step !== 'Complete your profile') {
+      const dbData = ensureMarketingModules();
+      let title = 'Student Update';
+      if (req.body.next_step.toLowerCase().includes('callback')) title = 'Callback Requested';
+      if (req.body.next_step.toLowerCase().includes('application')) title = 'New Application Request';
+
+      createNotificationEntry(dbData, {
+        title,
+        message: `${req.user.name}: ${req.body.next_step}`,
+        channel: 'push',
+        target_type: 'student_inbox'
+      });
+      saveDB(dbData);
+    }
+
     res.json(next);
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -870,8 +889,8 @@ function ensureMarketingModules() {
   const leads = dbData.leads || [];
   const lead = leads[0] || {
     id: 'demo-student',
-    first_name: 'Aarav',
-    last_name: 'Mehta',
+    first_name: 'krishna',
+    last_name: 'jaiswal',
     email: 'student@demo.in',
     phone: '+91 90123 45678',
     city: 'Bareilly'
@@ -1065,7 +1084,7 @@ function ensureMarketingModules() {
       {
         id: generateId(),
         student_name: leadName,
-        counselor_name: 'Priya Sharma',
+        counselor_name: 'Neha Khan',
         status: 'active',
         last_message_at: now,
         messages: [
@@ -1582,7 +1601,41 @@ app.put('/api/marketing/inbox/:id', requireAuth, (req, res) => {
 app.get('/api/marketing/chats', requireAuth, (req, res) => {
   try {
     const dbData = ensureMarketingModules();
-    res.json((dbData.chatThreads || []).sort((a, b) => new Date(b.last_message_at) - new Date(a.last_message_at)));
+    let threads = dbData.chatThreads || [];
+    
+    // Filter by student if applicable
+    if (req.user.role === 'student') {
+      threads = threads.filter(t => t.student_name === req.user.name);
+    }
+    
+    res.json(threads.sort((a, b) => new Date(b.last_message_at) - new Date(a.last_message_at)));
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/marketing/chats', requireAuth, async (req, res) => {
+  try {
+    const dbData = ensureMarketingModules();
+    if (req.user.role !== 'student') return res.status(403).json({ error: 'Only students can initiate threads' });
+
+    // Check if thread exists
+    let thread = (dbData.chatThreads || []).find(t => t.student_name === req.user.name);
+    if (thread) return res.json(thread);
+
+    // Create new thread
+    const profile = await appStore.getPortalProfileForUser(req.user);
+    thread = {
+      id: generateId(),
+      student_name: req.user.name,
+      counselor_name: profile.counselor_name || 'Admissions team',
+      status: 'active',
+      last_message_at: new Date().toISOString(),
+      messages: []
+    };
+    dbData.chatThreads.unshift(thread);
+    saveDB(dbData);
+    res.status(201).json(thread);
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1593,18 +1646,26 @@ app.post('/api/marketing/chats/:id/messages', requireAuth, (req, res) => {
     const dbData = ensureMarketingModules();
     const idx = dbData.chatThreads.findIndex(item => item.id === req.params.id);
     if (idx === -1) return res.status(404).json({ error: 'Chat thread not found' });
+    
+    // Authorization check
+    const thread = dbData.chatThreads[idx];
+    if (req.user.role === 'student' && thread.student_name !== req.user.name) {
+      return res.status(403).json({ error: 'Access denied to this chat thread' });
+    }
+
     const message = {
       id: generateId(),
-      sender: req.body.sender || (req.user.role === 'student' ? 'student' : 'counselor'),
+      sender: req.user.role === 'student' ? 'student' : 'counselor',
       text: req.body.text || '',
       created_at: new Date().toISOString()
     };
     dbData.chatThreads[idx].messages.push(message);
     dbData.chatThreads[idx].last_message_at = message.created_at;
     dbData.chatThreads[idx].status = 'active';
+    
     createNotificationEntry(dbData, {
       title: 'Chat updated',
-      message: `New counselor-student chat message in ${dbData.chatThreads[idx].student_name}'s thread.`,
+      message: `${req.user.role === 'student' ? 'Student' : 'Counselor'} ${req.user.name} sent a message.`,
       channel: 'push',
       target_type: 'chat'
     });
@@ -1659,5 +1720,3 @@ app.listen(PORT, () => {
   if (db.USE_SUPABASE) console.log(`  Supabase session: POST http://localhost:${PORT}/api/auth/supabase`);
   console.log('');
 });
-
-

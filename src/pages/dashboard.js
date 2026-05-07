@@ -228,7 +228,13 @@ export async function renderDashboard(container) {
       const stageLabels = STAGE_META.map(s => s.label);
       const stageValues = STAGE_META.map(s => stats.stageDistribution[s.id] || 0);
       const stageColors = STAGE_META.map(s => s.color);
-      createBarChart('chart-funnel', stageLabels, stageValues, stageColors);
+      
+      createDoughnutChart('chart-funnel', stageLabels, stageValues, stageColors);
+
+      createBarChart('chart-pipeline', stageLabels, stageValues, stageColors, {
+        indexAxis: 'x',
+        plugins: { legend: { display: false } }
+      });
     }, 100);
 
   } catch (err) {

@@ -122,7 +122,10 @@ export function renderSidebar(user = null) {
   }
 
   setActive();
-  window.addEventListener('hashchange', setActive);
+  if (!window.sidebarListenerAdded) {
+    window.addEventListener('hashchange', setActive);
+    window.sidebarListenerAdded = true;
+  }
 
   sidebar.querySelectorAll('.nav-item').forEach(item => {
     item.addEventListener('click', (event) => {
@@ -140,7 +143,7 @@ export function renderSidebar(user = null) {
   });
 
   document.getElementById('logout-btn')?.addEventListener('click', () => {
-    if (confirm('Sign out of RBMI Admission Hub?')) logout();
+    logout();
   });
 
   document.getElementById('campus-switcher')?.addEventListener('change', (e) => {

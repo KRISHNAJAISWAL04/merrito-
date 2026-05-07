@@ -67,9 +67,9 @@ export function showLogin({ onSuccess, onSignupClick }) {
         <div class="lp-div"><span>Demo Accounts</span></div>
         <div class="lp-demos">
           <button class="lp-demo" data-e="admin@rbmi.edu.in" data-p="admin123"><span class="lp-badge admin">Admin</span><div><div class="lp-demo-name">Admin RBMI</div><div class="lp-demo-email">admin@rbmi.edu.in</div></div></button>
-          <button class="lp-demo" data-e="priya@rbmi.edu.in" data-p="counselor123"><span class="lp-badge counselor">Counselor</span><div><div class="lp-demo-name">Priya Sharma</div><div class="lp-demo-email">priya@rbmi.edu.in</div></div></button>
+          <button class="lp-demo" data-e="priya@rbmi.edu.in" data-p="counselor123"><span class="lp-badge counselor">Counselor</span><div><div class="lp-demo-name">Neha Khan</div><div class="lp-demo-email">priya@rbmi.edu.in</div></div></button>
           <button class="lp-demo" data-e="rajesh@rbmi.edu.in" data-p="counselor123"><span class="lp-badge counselor">Counselor</span><div><div class="lp-demo-name">Rajesh Kumar</div><div class="lp-demo-email">rajesh@rbmi.edu.in</div></div></button>
-          <button class="lp-demo" data-e="student@demo.in" data-p="student123"><span class="lp-badge student">Student</span><div><div class="lp-demo-name">Aarav Mehta</div><div class="lp-demo-email">student@demo.in</div></div></button>
+          <button class="lp-demo" data-e="student@demo.in" data-p="student123"><span class="lp-badge student">Student</span><div><div class="lp-demo-name">krishna jaiswal</div><div class="lp-demo-email">student@demo.in</div></div></button>
         </div>
         <div class="lp-footer-link">
           <span>Student? </span><a href="#/signup" id="go-signup">Create your account</a>
@@ -99,9 +99,10 @@ export function showLogin({ onSuccess, onSignupClick }) {
         }
       });
     } else {
-      const err = document.getElementById('lerr');
-      err.textContent = '⚠ Google Sign-In requires Supabase configuration';
-      err.style.display = 'block';
+      // Mock Google SSO if Supabase is not configured
+      document.getElementById('lemail').value = 'student@demo.in';
+      document.getElementById('lpass').value = 'student123';
+      document.getElementById('lform').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
     }
   });
 

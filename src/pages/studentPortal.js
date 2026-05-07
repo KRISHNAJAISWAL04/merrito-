@@ -1,4 +1,4 @@
-import { createLead, fetchCourses, fetchPortalProfile, updatePortalProfile } from '../lib/api.js';
+import { createLead, fetchCourses, fetchPortalProfile, updatePortalProfile, fetchChatThreads, sendChatMessage, createChatThread } from '../lib/api.js';
 import { getCurrentUser } from '../lib/auth.js';
 
 const stageLabels = {
@@ -44,6 +44,8 @@ function fallbackProfile(user) {
     branch: 'bareilly'
   };
 }
+
+let portalPollingInterval = null;
 
 function formatMoney(value) {
   const amount = Number(String(value || '0').replace(/[^\d]/g, '')) || 0;
@@ -150,6 +152,25 @@ export async function renderStudentPortal(el) {
             <button class="btn btn-primary" type="submit">Save profile</button>
           </form>
         </article>
+
+        <article class="portal-panel support-card">
+          <div class="panel-head">
+            <div>
+              <span class="eyebrow">Live Support</span>
+              <h2>Chat with counselor</h2>
+              <p class="portal-muted">${escapeHtml(profile.counselor_name || 'Admissions team')}</p>
+            </div>
+          </div>
+          <div class="portal-chat-area">
+            <div class="portal-chat-messages" id="portal-chat-messages">
+              <div class="ops-empty">Loading messages...</div>
+            </div>
+            <div class="portal-chat-compose">
+              <textarea id="portal-chat-text" class="form-input portal-chat-input" rows="1" placeholder="Type a message..."></textarea>
+              <button class="btn btn-primary btn-sm" id="portal-send-chat" disabled>Send</button>
+            </div>
+          </div>
+        </article>
       </section>
     </div>
   `;
@@ -165,8 +186,22 @@ export async function renderStudentPortal(el) {
   });
 
   el.querySelector('#portal-contact-btn')?.addEventListener('click', async () => {
-    await updatePortalProfile({ next_step: 'Callback requested with admissions counselor' });
-    window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+    const btn = el.querySelector('#portal-contact-btn');
+    const oldText = btn.textContent;
+    btn.disabled = true;
+    btn.textContent = 'Requesting...';
+    try {
+      await updatePortalProfile({ next_step: 'Callback requested! Admissions team will call you shortly.' });
+      alert('Callback requested! A counselor will reach out to you shortly.');
+      window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+    } catch (e) {
+      alert('Failed to request callback: ' + e.message);
+    } finally {
+      if (btn) {
+        btn.disabled = false;
+        btn.textContent = oldText;
+      }
+    }
   });
 
   el.querySelector('#portal-upload-btn')?.addEventListener('click', async () => {
@@ -241,21 +276,139 @@ export async function renderStudentPortal(el) {
   });
 
   el.querySelector('#portal-apply-btn')?.addEventListener('click', async () => {
-    const preferredCourse = courses.find((course) => course.status === 'Active') || courses[0];
-    const [firstName, ...lastName] = (profile.name || 'Student').split(' ');
-    await createLead({
-      first_name: firstName,
-      last_name: lastName.join(' '),
-      phone: profile.phone || '',
-      email: profile.email || user?.email || '',
-      city: profile.city || '',
-      course_id: preferredCourse?.id || null,
-      source: 'Student Portal',
-      stage: 'enquiry',
-      priority: 'high',
-      notes: 'Student requested another course from the portal.'
+    console.log('Apply for another course clicked');
+    if (!courses || courses.length === 0) {
+      alert('Courses are currently unavailable. Please try again later.');
+      return;
+    }
+    
+    openModal('Apply for Another Program', `
+      <div class="form-group">
+        <p class="portal-muted" style="margin-bottom:12px;">Select the course you are interested in. Our admissions team will get in touch to guide you through the transition or secondary application.</p>
+        <label class="form-label">Choose Program</label>
+        <select class="form-select" id="new-course-select">
+          ${courses.filter(c => c.status === 'Active').map(c => `<option value="${c.id}">${c.name}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">Why are you interested in this program? (Optional)</label>
+        <textarea class="form-textarea" id="new-course-notes" placeholder="e.g. Want to switch from current program, or looking for dual certification..." style="min-height:80px;"></textarea>
+      </div>
+    `, {
+      submitLabel: 'Submit Interest',
+      onSubmit: async (body) => {
+        const courseId = body.querySelector('#new-course-select').value;
+        const notes = body.querySelector('#new-course-notes').value.trim();
+        const selectedCourse = courses.find(c => c.id == courseId);
+        
+        const [firstName, ...lastName] = (profile.name || 'Student').split(' ');
+        
+        try {
+          await createLead({
+            first_name: firstName,
+            last_name: lastName.join(' '),
+            phone: profile.phone || '',
+            email: profile.email || user?.email || '',
+            city: profile.city || '',
+            course_id: courseId,
+            source: 'Student Portal',
+            stage: 'enquiry',
+            priority: 'high',
+            notes: notes ? `Student requested ${selectedCourse?.name}. Note: ${notes}` : `Student requested another course: ${selectedCourse?.name}`
+          });
+          
+          await updatePortalProfile({ next_step: `Interest sent for ${selectedCourse?.name}` });
+          alert('Your interest has been registered. A counselor will contact you shortly.');
+          window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+          return true;
+        } catch (err) {
+          alert('Failed to submit request: ' + err.message);
+          return false;
+        }
+      }
     });
-    await updatePortalProfile({ next_step: 'New course request sent to admissions team' });
-    window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+  });
+
+  const updateChatUI = (threads) => {
+    const thread = threads[0]; // Students only have one thread
+    const msgBox = el.querySelector('#portal-chat-messages');
+    const sendBtn = el.querySelector('#portal-send-chat');
+    if (!msgBox) return;
+
+    if (!thread) {
+      msgBox.innerHTML = '<div class="ops-empty">Start a conversation with your counselor</div>';
+      if (sendBtn) {
+        sendBtn.disabled = false;
+        // Find a way to get thread ID or create one?
+        // For demo, we assume a thread exists if we see messages in counselor side.
+      }
+      return;
+    }
+
+    msgBox.innerHTML = thread.messages.map(m => `
+      <div class="portal-bubble ${m.sender}">
+        <div class="bubble-text">${escapeHtml(m.text)}</div>
+        <div class="bubble-time">${new Date(m.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</div>
+      </div>
+    `).join('');
+    
+    msgBox.scrollTop = msgBox.scrollHeight;
+    if (sendBtn) {
+      sendBtn.disabled = false;
+      sendBtn.dataset.threadId = thread.id;
+    }
+  };
+
+  // Load initial messages
+  fetchChatThreads().then(updateChatUI).catch(e => {
+    console.error('Failed to load chat:', e);
+    const msgBox = el.querySelector('#portal-chat-messages');
+    if (msgBox) msgBox.innerHTML = '<div class="ops-empty">Chat currently unavailable</div>';
+  });
+
+  // Polling
+  if (portalPollingInterval) clearInterval(portalPollingInterval);
+  portalPollingInterval = setInterval(async () => {
+    if (document.getElementById('portal-chat-messages')) {
+      const threads = await fetchChatThreads();
+      updateChatUI(threads);
+    } else {
+      clearInterval(portalPollingInterval);
+    }
+  }, 5000);
+
+  const sendStudentMsg = async () => {
+    const btn = el.querySelector('#portal-send-chat');
+    const textEl = el.querySelector('#portal-chat-text');
+    const text = textEl.value.trim();
+    if (!text || !btn || btn.disabled) return;
+
+    btn.disabled = true;
+    try {
+      let threadId = btn.dataset.threadId;
+      if (!threadId || threadId === 'undefined') {
+        const newThread = await createChatThread();
+        threadId = newThread.id;
+        btn.dataset.threadId = threadId;
+      }
+      
+      await sendChatMessage(threadId, { text });
+      textEl.value = '';
+      const threads = await fetchChatThreads();
+      updateChatUI(threads);
+    } catch (err) {
+      console.error('Chat error:', err);
+      alert('Failed to send message: ' + err.message);
+    } finally {
+      btn.disabled = false;
+    }
+  };
+
+  el.querySelector('#portal-send-chat')?.addEventListener('click', sendStudentMsg);
+  el.querySelector('#portal-chat-text')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendStudentMsg();
+    }
   });
 }

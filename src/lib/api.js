@@ -571,6 +571,10 @@ export async function fetchChatThreads() {
   return request('/marketing/chats');
 }
 
+export async function createChatThread(data = {}) {
+  return request('/marketing/chats', { method: 'POST', body: JSON.stringify(data) });
+}
+
 export async function sendChatMessage(threadId, data) {
   return request(`/marketing/chats/${threadId}/messages`, { method: 'POST', body: JSON.stringify(data) });
 }

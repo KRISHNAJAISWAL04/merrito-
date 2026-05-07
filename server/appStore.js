@@ -32,12 +32,12 @@ function jsonEnsureAdmissions() {
     dbData.applications.push({
       id: 'app-demo-aarav',
       user_id: 'u004-student-demo',
-      student_name: 'Aarav Mehta',
+      student_name: 'krishna jaiswal',
       email: 'student@demo.in',
       course_id: 'cr001-mba',
       status: 'submitted',
       documents_status: 'pending',
-      counselor_name: 'Priya Sharma',
+      counselor_name: 'Neha Khan',
       priority: 'high',
       created_at: nowIso(),
       updated_at: nowIso()
@@ -47,7 +47,7 @@ function jsonEnsureAdmissions() {
     dbData.queries.push({
       id: 'qry-demo-aarav',
       user_id: 'u004-student-demo',
-      student_name: 'Aarav Mehta',
+      student_name: 'krishna jaiswal',
       subject: 'Document upload help',
       category: 'Documents',
       status: 'open',
@@ -62,7 +62,7 @@ function jsonEnsureAdmissions() {
     dbData.payments.push({
       id: 'pay-demo-aarav',
       user_id: 'u004-student-demo',
-      student_name: 'Aarav Mehta',
+      student_name: 'krishna jaiswal',
       title: 'Admission confirmation fee',
       amount: 25000,
       status: 'due',
@@ -191,9 +191,17 @@ export async function updatePortalProfile(user, body) {
     saveDB(dbData);
   }
 
+  let actionDesc = 'updated profile';
+  if (body.next_step) {
+    if (body.next_step.toLowerCase().includes('callback')) actionDesc = 'requested a callback';
+    else if (body.next_step.toLowerCase().includes('application')) actionDesc = 'requested a new application';
+    else actionDesc = `updated status to "${body.next_step}"`;
+  }
+
   await createActivity({
+    user_id: user.id,
     type: 'student_portal',
-    message: `${next.name || user.name} updated student portal profile`
+    message: `${next.name || user.name} ${actionDesc}`
   });
 
   const course = next.course_id ? await getCourse(next.course_id) : null;

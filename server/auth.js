@@ -67,9 +67,9 @@ function buildTokenResult(user, branch) {
 // ===== DEMO USERS (seeded into Supabase Auth on startup) =====
 const DEMO_USERS = [
   { email: 'admin@rbmi.edu.in', password: 'admin123', name: 'Admin RBMI', role: 'admin', counselor_id: null, branch: 'bareilly' },
-  { email: 'priya@rbmi.edu.in', password: 'counselor123', name: 'Priya Sharma', role: 'counselor', counselor_id: null, branch: 'bareilly' },
+  { email: 'priya@rbmi.edu.in', password: 'counselor123', name: 'Neha Khan', role: 'counselor', counselor_id: null, branch: 'bareilly' },
   { email: 'rajesh@rbmi.edu.in', password: 'counselor123', name: 'Rajesh Kumar', role: 'counselor', counselor_id: null, branch: 'bareilly' },
-  { email: 'student@demo.in', password: 'student123', name: 'Aarav Mehta', role: 'student', counselor_id: null, branch: 'bareilly' }
+  { email: 'student@demo.in', password: 'student123', name: 'krishna jaiswal', role: 'student', counselor_id: null, branch: 'bareilly' }
 ];
 
 export async function seedDemoUsers() {
@@ -147,13 +147,13 @@ function ensureDemoStudentPortal(db) {
   if (db.portalProfiles[uid]) return;
   db.portalProfiles[uid] = {
     user_id: uid,
-    name: 'Aarav Mehta',
+    name: 'krishna jaiswal',
     email: 'student@demo.in',
     phone: '+91 90123 45678',
     city: 'Bareilly',
     course_id: 'cr001-mba',
     stage: 'application_submitted',
-    counselor_name: 'Priya Sharma',
+    counselor_name: 'Neha Khan',
     readiness: 78,
     next_step: 'Upload Class 12 marksheet',
     fee_due: '25000',

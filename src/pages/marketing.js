@@ -26,6 +26,9 @@ import {
 } from '../lib/api.js';
 import { openModal } from '../components/modal.js';
 
+let selectedChatId = null;
+let pollingInterval = null;
+
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({
     '&': '&amp;',
@@ -235,7 +238,27 @@ export async function renderMarketing(el) {
 
     const route = window.location.hash.slice(1) || '/marketing';
     const heroTitle = route === '/templates' ? 'Communication templates' : route === '/campaigns' ? 'Campaign manager' : 'Marketing / Campaigns';
-    const activeChat = chats[0];
+    
+    if (!selectedChatId && chats.length > 0) {
+      selectedChatId = chats[0].id;
+    }
+    const activeChat = chats.find(c => c.id === selectedChatId) || chats[0];
+
+    // Clear existing interval
+    if (pollingInterval) clearInterval(pollingInterval);
+    // Start polling
+    pollingInterval = setInterval(async () => {
+      if (document.getElementById('mk-chat-messages')) {
+        const freshChats = await fetchChatThreads();
+        const freshActive = freshChats.find(c => c.id === selectedChatId);
+        if (freshActive && JSON.stringify(freshActive.messages) !== JSON.stringify(activeChat?.messages)) {
+          // New messages! Just refresh the whole page for simplicity, or we could update just the chat
+          refreshPage();
+        }
+      } else {
+        clearInterval(pollingInterval);
+      }
+    }, 5000);
 
     el.innerHTML = `
       <div class="mk-shell">
@@ -427,25 +450,35 @@ export async function renderMarketing(el) {
             <div class="chart-header">
               <div><h3 class="chart-title">Counselor-student chat</h3><span class="chart-subtitle">Live thread for handoff and guidance</span></div>
             </div>
-            <div class="mk-chat-shell">
-              ${activeChat ? `
-                <div class="mk-chat-head">
-                  <strong>${escapeHtml(activeChat.student_name)}</strong>
-                  <small>${escapeHtml(activeChat.counselor_name)} · ${fmtDate(activeChat.last_message_at)}</small>
-                </div>
-                <div class="mk-chat-messages">
-                  ${activeChat.messages.map(message => `
-                    <div class="mk-chat-bubble ${message.sender}">
-                      <span>${escapeHtml(message.text)}</span>
-                      <small>${fmtDate(message.created_at)}</small>
-                    </div>
-                  `).join('')}
-                </div>
-                <div class="mk-chat-compose">
-                  <textarea id="mk-chat-text" class="form-textarea" rows="3" placeholder="Send a counselor update"></textarea>
-                  <button class="btn btn-primary" id="mk-send-chat" data-id="${activeChat.id}">Send message</button>
-                </div>
-              ` : '<div class="ops-empty">No chat threads yet</div>'}
+            <div class="mk-chat-container">
+              <div class="mk-chat-threads">
+                ${chats.map(c => `
+                  <div class="mk-thread-item ${c.id === selectedChatId ? 'active' : ''}" data-id="${c.id}">
+                    <strong>${escapeHtml(c.student_name)}</strong>
+                    <small>${escapeHtml(c.messages[c.messages.length - 1]?.text || 'No messages')}</small>
+                  </div>
+                `).join('')}
+              </div>
+              <div class="mk-chat-shell">
+                ${activeChat ? `
+                  <div class="mk-chat-head">
+                    <strong>${escapeHtml(activeChat.student_name)}</strong>
+                    <small>${escapeHtml(activeChat.counselor_name)} · ${fmtDate(activeChat.last_message_at)}</small>
+                  </div>
+                  <div class="mk-chat-messages" id="mk-chat-messages">
+                    ${activeChat.messages.map(message => `
+                      <div class="mk-chat-bubble ${message.sender}">
+                        <span>${escapeHtml(message.text)}</span>
+                        <small>${fmtDate(message.created_at)}</small>
+                      </div>
+                    `).join('')}
+                  </div>
+                  <div class="mk-chat-compose">
+                    <textarea id="mk-chat-text" class="form-textarea" rows="2" placeholder="Send a counselor update (Ctrl+Enter to send)"></textarea>
+                    <button class="btn btn-primary" id="mk-send-chat" data-id="${activeChat.id}">Send message</button>
+                  </div>
+                ` : '<div class="ops-empty">No chat threads yet</div>'}
+              </div>
             </div>
           </article>
         </section>
@@ -604,11 +637,41 @@ export async function renderMarketing(el) {
       refreshPage();
     }));
 
-    el.querySelector('#mk-send-chat')?.addEventListener('click', async (event) => {
-      const text = el.querySelector('#mk-chat-text').value.trim();
-      if (!text) return;
-      await sendChatMessage(event.currentTarget.dataset.id, { text, sender: 'counselor' });
+    el.querySelectorAll('.mk-thread-item').forEach(item => item.addEventListener('click', () => {
+      selectedChatId = item.dataset.id;
       refreshPage();
+    }));
+
+    const scrollChat = () => {
+      const box = el.querySelector('#mk-chat-messages');
+      if (box) box.scrollTop = box.scrollHeight;
+    };
+    scrollChat();
+
+    const sendMsg = async () => {
+      const btn = el.querySelector('#mk-send-chat');
+      const textEl = el.querySelector('#mk-chat-text');
+      const text = textEl.value.trim();
+      if (!text || !btn) return;
+      
+      btn.disabled = true;
+      btn.textContent = 'Sending...';
+      try {
+        await sendChatMessage(btn.dataset.id, { text, sender: 'counselor' });
+        textEl.value = '';
+        refreshPage();
+      } catch (err) {
+        alert('Failed to send: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = 'Send message';
+      }
+    };
+
+    el.querySelector('#mk-send-chat')?.addEventListener('click', sendMsg);
+    el.querySelector('#mk-chat-text')?.addEventListener('keydown', (e) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+        sendMsg();
+      }
     });
 
     el.querySelector('#mk-new-call')?.addEventListener('click', () => {

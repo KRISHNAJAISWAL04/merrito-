@@ -1831,6 +1831,27 @@
   cursor: pointer;
 }
 
+.ai-suggestions button:hover,
+.ai-suggest-btn:hover {
+  background: var(--color-primary-light) !important;
+  border-color: var(--color-primary) !important;
+  color: var(--color-primary) !important;
+  transform: translateY(-1px);
+}
+
+.ai-modal {
+  display: flex;
+  flex-direction: column;
+}
+
+.ai-chat-history {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px;
+  overflow-y: auto;
+}
+
 .phone-preview {
   display: grid;
   grid-template-columns: 230px 1fr;

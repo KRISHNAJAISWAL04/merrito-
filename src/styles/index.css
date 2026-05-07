@@ -343,3 +343,86 @@ ul, ol {
   color: var(--color-primary);
 }
 
+/* ===== STUDENT PORTAL CHAT ===== */
+.support-card {
+  margin-top: var(--spacing-2xl);
+}
+
+.portal-chat-area {
+  background: var(--color-surface);
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  display: flex;
+  flex-direction: column;
+  height: 450px;
+  overflow: hidden;
+}
+
+.portal-chat-messages {
+  flex: 1;
+  padding: var(--spacing-lg);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-md);
+  background: var(--color-bg);
+}
+
+.portal-bubble {
+  max-width: 80%;
+  padding: var(--spacing-md);
+  border-radius: var(--radius-lg);
+  position: relative;
+  font-size: var(--font-size-sm);
+  line-height: 1.5;
+}
+
+.portal-bubble.counselor {
+  align-self: flex-start;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-bottom-left-radius: 2px;
+}
+
+.portal-bubble.student {
+  align-self: flex-end;
+  background: var(--color-primary);
+  color: #fff;
+  border-bottom-right-radius: 2px;
+}
+
+.bubble-text {
+  word-break: break-word;
+}
+
+.bubble-time {
+  font-size: 10px;
+  opacity: 0.7;
+  margin-top: 4px;
+  text-align: right;
+}
+
+.portal-chat-compose {
+  padding: var(--spacing-md) var(--spacing-lg);
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.portal-chat-input {
+  flex: 1;
+  border-radius: var(--radius-full) !important;
+  padding: 10px 18px !important;
+  resize: none;
+}
+
+.portal-chat-messages::-webkit-scrollbar {
+  width: 4px;
+}
+
+.portal-chat-messages::-webkit-scrollbar-thumb {
+  background: var(--color-text-muted);
+  border-radius: var(--radius-full);
+}
