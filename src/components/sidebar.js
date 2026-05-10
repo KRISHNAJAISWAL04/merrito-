@@ -2,8 +2,13 @@
 import { navigateTo } from '../router.js';
 import { logout } from '../lib/auth.js';
 
+// Items that have sub-nav are marked with `children`
 const adminNavItems = [
-  { route: '/dashboard', icon: 'layout-dashboard', label: 'Command Center' },
+  { route: '/dashboard', icon: 'layout-dashboard', label: 'Dashboard', children: [
+    { route: '/dashboard', label: 'Admin Dashboard' },
+    { route: '/user-dashboard', label: 'User Dashboard' },
+    { route: '/sqi', label: 'Student Quality Index' }
+  ]},
   { route: '/leads', icon: 'users', label: 'Leads Manager' },
   { route: '/pipeline', icon: 'git-branch', label: 'Admission Pipeline' },
   { route: '/counselors', icon: 'headphones', label: 'Counselors' },
@@ -26,7 +31,11 @@ const adminNavItems = [
 ];
 
 const counselorNavItems = [
-  { route: '/dashboard', icon: 'layout-dashboard', label: 'My Desk' },
+  { route: '/dashboard', icon: 'layout-dashboard', label: 'My Desk', children: [
+    { route: '/dashboard', label: 'My Dashboard' },
+    { route: '/user-dashboard', label: 'User Dashboard' },
+    { route: '/sqi', label: 'Student Quality Index' }
+  ]},
   { route: '/leads', icon: 'users', label: 'My Leads' },
   { route: '/pipeline', icon: 'git-branch', label: 'Pipeline' },
   { route: '/applications', icon: 'file-input', label: 'Applications' },
@@ -54,6 +63,36 @@ function roleLabel(role) {
   return 'Counselor';
 }
 
+function renderNavItem(item, currentHash) {
+  if (item.children) {
+    const childRoutes = item.children.map(c => c.route);
+    const isExpanded = childRoutes.includes(currentHash);
+    const isParentActive = childRoutes.includes(currentHash);
+    return `
+      <div class="nav-group ${isExpanded ? 'expanded' : ''}">
+        <a class="nav-item nav-group-toggle ${isParentActive ? 'active' : ''}" data-group-toggle>
+          <i data-lucide="${item.icon}" style="width:20px;height:20px;flex-shrink:0;"></i>
+          <span>${item.label}</span>
+          <i data-lucide="chevron-down" class="nav-chevron" style="width:16px;height:16px;margin-left:auto;flex-shrink:0;"></i>
+        </a>
+        <div class="sub-nav">
+          ${item.children.map(child => `
+            <a class="nav-item sub-nav-item ${currentHash === child.route ? 'active' : ''}" data-route="${child.route}" href="#${child.route}">
+              <span>${child.label}</span>
+            </a>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }
+  return `
+    <a class="nav-item ${currentHash === item.route ? 'active' : ''}" data-route="${item.route}" href="#${item.route}">
+      <i data-lucide="${item.icon}" style="width:20px;height:20px;flex-shrink:0;"></i>
+      <span>${item.label}</span>
+    </a>
+  `;
+}
+
 export function renderSidebar(user = null) {
   const sidebar = document.getElementById('sidebar');
   if (!sidebar) return;
@@ -67,11 +106,12 @@ export function renderSidebar(user = null) {
   }
 
   const branchLabel = user?.branch === 'greater_noida' ? 'Greater Noida' : 'Bareilly';
+  const currentHash = window.location.hash.slice(1) || (role === 'student' ? '/portal' : '/dashboard');
 
   sidebar.innerHTML = `
     <div class="sidebar-logo">
       <div class="logo-icon">
-        <img src="/logo.png" alt="RBMI Logo" style="width:64px;height:64px;object-fit:contain;border-radius:50%;background:transparent;transform:scale(1.06);" onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<div style=\'width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#14b8a6,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;\'>RBMI</div>';" />
+        <img src="/logo.png" alt="RBMI Logo" style="width:64px;height:64px;object-fit:contain;border-radius:50%;background:transparent;transform:scale(1.06);" onerror="this.onerror=null;this.style.display='none';this.parentNode.innerHTML='<div style=\\'width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#14b8a6,#2563eb);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;\\'>RBMI</div>';" />
       </div>
       <div class="logo-text">
         <span class="logo-name">RBMI Hub</span>
@@ -94,12 +134,7 @@ export function renderSidebar(user = null) {
     </div>
 
     <nav class="sidebar-nav" id="sidebar-nav">
-      ${navItems.map(item => `
-        <a class="nav-item" data-route="${item.route}" href="#${item.route}">
-          <i data-lucide="${item.icon}" style="width:20px;height:20px;flex-shrink:0;"></i>
-          <span>${item.label}</span>
-        </a>
-      `).join('')}
+      ${navItems.map(item => renderNavItem(item, currentHash)).join('')}
     </nav>
 
     <div class="sidebar-footer">
@@ -117,8 +152,17 @@ export function renderSidebar(user = null) {
   function setActive() {
     const hash = window.location.hash.slice(1) || (role === 'student' ? '/portal' : '/dashboard');
     sidebar.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+    // Activate direct nav items
     const match = sidebar.querySelector(`.nav-item[data-route="${hash}"]`);
     if (match) match.classList.add('active');
+    // Activate parent group toggle if child is active
+    sidebar.querySelectorAll('.nav-group').forEach(group => {
+      const hasActive = group.querySelector(`.sub-nav-item[data-route="${hash}"]`);
+      if (hasActive) {
+        group.classList.add('expanded');
+        group.querySelector('.nav-group-toggle')?.classList.add('active');
+      }
+    });
   }
 
   setActive();
@@ -127,18 +171,36 @@ export function renderSidebar(user = null) {
     window.sidebarListenerAdded = true;
   }
 
-  sidebar.querySelectorAll('.nav-item').forEach(item => {
+  // Click handlers for nav items (not group toggles)
+  sidebar.querySelectorAll('.nav-item[data-route]').forEach(item => {
     item.addEventListener('click', (event) => {
       event.preventDefault();
       navigateTo(item.dataset.route);
     });
   });
 
+  // Group toggle handlers
+  sidebar.querySelectorAll('[data-group-toggle]').forEach(toggle => {
+    toggle.addEventListener('click', (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const group = toggle.closest('.nav-group');
+      if (group) {
+        group.classList.toggle('expanded');
+      }
+    });
+  });
+
   document.getElementById('sidebar-search-input')?.addEventListener('input', (event) => {
     const q = event.target.value.toLowerCase();
-    sidebar.querySelectorAll('.nav-item').forEach(item => {
+    sidebar.querySelectorAll('.nav-item:not(.nav-group-toggle)').forEach(item => {
       const label = item.textContent.toLowerCase();
       item.style.display = label.includes(q) ? '' : 'none';
+    });
+    // Also show/hide groups
+    sidebar.querySelectorAll('.nav-group').forEach(group => {
+      const label = group.textContent.toLowerCase();
+      group.style.display = label.includes(q) ? '' : 'none';
     });
   });
 

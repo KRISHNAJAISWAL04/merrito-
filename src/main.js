@@ -10,6 +10,8 @@ import './styles/courses.css';
 import './styles/reports.css';
 import './styles/marketing.css';
 import './styles/login.css';
+import './styles/sqi.css';
+import './styles/userDashboard.css';
 
 import { registerRoute, initRouter } from './router.js';
 import { renderSidebar } from './components/sidebar.js';
@@ -28,6 +30,8 @@ import { renderStudentPortal } from './pages/studentPortal.js';
 import { renderMarketing } from './pages/marketing.js';
 import { renderAccessControl, renderAiAssistant, renderCalendar, renderCampaigns, renderFormDesk, renderIntegrations, renderMobileApp, renderTemplates } from './pages/platformSections.js';
 import { renderAuditLog } from './pages/auditLog.js';
+import { renderStudentQualityIndex } from './pages/studentQualityIndex.js';
+import { renderUserDashboard } from './pages/userDashboard.js';
 import { getCurrentUser } from './lib/auth.js';
 import { API_BASE } from './lib/api.js';
 import { showLogin, showSignup } from './pages/login.js';
@@ -57,7 +61,9 @@ const routes = [
   ['/download', renderMobileApp],
   ['/ai-assistant', renderAiAssistant],
   ['/integrations', renderIntegrations],
-  ['/audit-log', renderAuditLog]
+  ['/audit-log', renderAuditLog],
+  ['/sqi', renderStudentQualityIndex],
+  ['/user-dashboard', renderUserDashboard]
 ];
 routes.forEach(([path, fn]) => registerRoute(path, fn));
 

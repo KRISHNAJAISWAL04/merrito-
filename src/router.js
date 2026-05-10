@@ -8,7 +8,8 @@ const ROUTE_PERMISSIONS = {
   admin: ['*'],
   counselor: [
     '/dashboard', '/leads', '/pipeline', '/applications', '/courses',
-    '/calendar', '/queries', '/marketing', '/ai-assistant', '/download'
+    '/calendar', '/queries', '/marketing', '/ai-assistant', '/download',
+    '/user-dashboard', '/sqi'
   ],
   student: [
     '/portal', '/applications', '/courses', '/queries', '/payments',
