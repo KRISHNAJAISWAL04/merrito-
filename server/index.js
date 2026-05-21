@@ -2,6 +2,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import multer from 'multer';
 import * as db from './supabase.js';
 import { generateId, getDB, saveDB } from './db.js';
 import {
@@ -18,12 +19,71 @@ import {
 } from './auth.js';
 import * as appStore from './appStore.js';
 import { assertLeadPayload, assertRequired } from './validate.js';
+import { chatWithAsha } from './controllers/aiController.js';
+import {
+  sendWelcomeEmail,
+  sendStageChangeEmail,
+  sendTestEmail,
+  isEmailConfigured
+} from './utils/emailService.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
+const rateBuckets = new Map();
 
 app.use(cors());
 app.use(express.json());
+app.use(express.static('public'));
+app.use('/uploads', express.static('uploads'));
+
+// --- Multer File Upload ---
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, 'uploads/documents');
+  },
+  filename: (req, file, cb) => {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    const ext = file.originalname.split('.').pop();
+    cb(null, uniqueSuffix + '-' + file.originalname.replace(/[^a-zA-Z0-9._-]/g, '_'));
+  }
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+  fileFilter: (req, file, cb) => {
+    const allowed = ['.pdf', '.jpg', '.jpeg', '.png', '.doc', '.docx'];
+    const ext = '.' + file.originalname.split('.').pop().toLowerCase();
+    if (allowed.includes(ext)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only PDF, JPG, JPEG, PNG, DOC, DOCX files are allowed'));
+    }
+  }
+});
+
+function rateLimit({ windowMs = 60_000, max = 60 } = {}) {
+  return (req, res, next) => {
+    const key = `${req.ip || req.socket?.remoteAddress || 'local'}:${req.path}`;
+    const now = Date.now();
+    const bucket = rateBuckets.get(key) || { count: 0, resetAt: now + windowMs };
+    if (now > bucket.resetAt) {
+      bucket.count = 0;
+      bucket.resetAt = now + windowMs;
+    }
+    bucket.count += 1;
+    rateBuckets.set(key, bucket);
+    if (bucket.count > max) return res.status(429).json({ error: 'Too many requests. Please try again later.' });
+    next();
+  };
+}
+
+function requireWebhookSecret(req, res, next) {
+  const expected = process.env.WEBHOOK_SECRET;
+  if (!expected) return next();
+  const provided = req.headers['x-webhook-secret'] || req.query.secret;
+  if (provided !== expected) return res.status(401).json({ error: 'Invalid webhook secret' });
+  next();
+}
 
 // --- LEAD SCORING LOGIC ---
 function calculateLeadScore(lead) {
@@ -48,6 +108,56 @@ function calculateLeadScore(lead) {
   return Math.min(100, score);
 }
 
+function normalizePhone(value = '') {
+  const digits = String(value).replace(/\D/g, '');
+  return digits.length > 10 ? digits.slice(-10) : digits;
+}
+
+function normalizeEmail(value = '') {
+  return String(value).trim().toLowerCase();
+}
+
+async function findDuplicateLead({ phone, email }, excludeId = null) {
+  const phoneKey = normalizePhone(phone);
+  const emailKey = normalizeEmail(email);
+  if (!phoneKey && !emailKey) return null;
+
+  const leads = await db.getLeads({});
+  return leads.find(l => {
+    if (excludeId && l.id === excludeId) return false;
+    const samePhone = phoneKey && normalizePhone(l.phone) === phoneKey;
+    const sameEmail = emailKey && normalizeEmail(l.email) === emailKey;
+    return samePhone || sameEmail;
+  }) || null;
+}
+
+function getAutomationForStage(stage, leadName) {
+  const rules = {
+    enquiry: { title: `Call ${leadName}`, type: 'call', hours: 4, notes: 'New enquiry. Qualify course interest, budget, location, and admission timeline.' },
+    counseling_scheduled: { title: `Prepare counseling for ${leadName}`, type: 'meeting', hours: 12, notes: 'Share agenda and keep course/fee details ready.' },
+    counseling_done: { title: `Send application link to ${leadName}`, type: 'whatsapp', hours: 6, notes: 'Nudge the student to submit the application form.' },
+    application_submitted: { title: `Verify documents for ${leadName}`, type: 'other', hours: 8, notes: 'Check required documents and mark missing items.' },
+    documents_verified: { title: `Collect admission fee from ${leadName}`, type: 'call', hours: 12, notes: 'Explain fee slip, scholarship status, and payment deadline.' },
+    admitted: { title: `Complete enrollment formalities for ${leadName}`, type: 'meeting', hours: 24, notes: 'Confirm joining, orientation, and pending forms.' }
+  };
+  return rules[stage] || null;
+}
+
+async function createAutomatedTaskForLead(lead, stage = lead.stage) {
+  const leadName = `${lead.first_name || ''} ${lead.last_name || ''}`.trim() || 'student';
+  const rule = getAutomationForStage(stage, leadName);
+  if (!rule || stage === 'enrolled') return null;
+  const due = new Date(Date.now() + rule.hours * 60 * 60 * 1000).toISOString();
+  return db.createTask({
+    lead_id: lead.id,
+    title: rule.title,
+    type: rule.type,
+    due_date: due,
+    status: 'pending',
+    notes: rule.notes
+  });
+}
+
 // Health check
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.post('/api/health', (req, res) => res.json({ ok: true, body: req.body }));
@@ -59,7 +169,7 @@ await seedDemoUsers();
 //  AUTH
 // ============================================================
 
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', rateLimit({ windowMs: 60_000, max: 12 }), async (req, res) => {
   try {
     const { email, password, branch } = req.body;
     if (!email || !password) return res.status(400).json({ error: 'Email and password required' });
@@ -93,7 +203,9 @@ app.get('/api/auth/me', requireAuth, (req, res) => {
   res.json(req.user);
 });
 
-app.post('/api/auth/signup', async (req, res) => {
+app.post('/api/ai/chat', chatWithAsha);
+
+app.post('/api/auth/signup', rateLimit({ windowMs: 60_000, max: 8 }), async (req, res) => {
   try {
     const { email, password, name, phone, branch } = req.body;
     if (!email || !password || !name) return res.status(400).json({ error: 'Name, email and password required' });
@@ -222,6 +334,20 @@ app.get('/api/leads/:id', requireAuth, async (req, res) => {
 app.post('/api/leads', requireAuth, async (req, res) => {
   try {
     assertLeadPayload(req.body);
+    const duplicate = await findDuplicateLead(req.body);
+    if (duplicate && !req.body.allow_duplicate) {
+      return res.status(409).json({
+        error: 'Duplicate lead found',
+        duplicate: {
+          id: duplicate.id,
+          name: `${duplicate.first_name} ${duplicate.last_name}`.trim(),
+          phone: duplicate.phone,
+          email: duplicate.email,
+          stage: duplicate.stage,
+          created_at: duplicate.created_at
+        }
+      });
+    }
     
     // Auto-assignment logic: if no counselor_id, assign to the one with least active leads
     let assignedCounselorId = req.body.counselor_id;
@@ -258,8 +384,20 @@ app.post('/api/leads', requireAuth, async (req, res) => {
       message: `New lead ${lead.first_name} ${lead.last_name} added via ${lead.source}${assignedCounselorId ? ' and auto-assigned' : ''}`
     });
 
+    const task = await createAutomatedTaskForLead(lead, 'enquiry');
+    if (task) {
+      await db.createActivity({
+        lead_id: lead.id,
+        type: 'task_added',
+        message: `Automation created follow-up: ${task.title}`
+      });
+    }
+
     const counselor = lead.counselor_id ? await db.getCounselor(lead.counselor_id) : null;
     const course = lead.course_id ? await db.getCourse(lead.course_id) : null;
+
+    // Send welcome email (non-blocking)
+    if (lead.email) sendWelcomeEmail(lead).catch(() => {});
 
     res.status(201).json({
       ...lead,
@@ -302,6 +440,16 @@ app.put('/api/leads/:id', requireAuth, async (req, res) => {
         type: 'stage_change',
         message: `${updated.first_name} ${updated.last_name} moved to ${stageLabels[updated.stage] || updated.stage}`
       });
+      const task = await createAutomatedTaskForLead(updated, updated.stage);
+      if (task) {
+        await db.createActivity({
+          lead_id: updated.id,
+          type: 'task_added',
+          message: `Automation created follow-up: ${task.title}`
+        });
+      }
+      // Send stage change email to student (non-blocking)
+      if (updated.email) sendStageChangeEmail(updated, updated.stage).catch(() => {});
     }
 
     const counselor = updated.counselor_id ? await db.getCounselor(updated.counselor_id) : null;
@@ -343,7 +491,7 @@ app.post('/api/leads/bulk-delete', requireAdmin, async (req, res) => {
 //  WEBHOOK — Lead Capture (for n8n, website forms, etc.)
 // ============================================================
 
-app.post('/api/webhook/lead', async (req, res) => {
+app.post('/api/webhook/lead', rateLimit({ windowMs: 60_000, max: 30 }), requireWebhookSecret, async (req, res) => {
   try {
     const {
       first_name, last_name, name, email, phone,
@@ -361,6 +509,21 @@ app.post('/api/webhook/lead', async (req, res) => {
 
     if (!String(fname || '').trim() || !String(phone || '').trim()) {
       return res.status(400).json({ error: 'name and phone are required' });
+    }
+
+    const duplicate = await findDuplicateLead({ phone, email });
+    if (duplicate) {
+      await db.createActivity({
+        lead_id: duplicate.id,
+        type: 'duplicate_blocked',
+        message: `Duplicate lead blocked from ${source || 'Website'} for ${fname} ${lname}`.trim()
+      });
+      return res.status(200).json({
+        success: true,
+        duplicate: true,
+        lead_id: duplicate.id,
+        message: 'Duplicate lead detected. Existing lead retained.'
+      });
     }
 
     // Find course by name if course_id not provided
@@ -390,6 +553,18 @@ app.post('/api/webhook/lead', async (req, res) => {
       type: 'lead_added',
       message: `New lead ${fname} ${lname} captured via webhook (${source || 'Website'})`
     });
+
+    const task = await createAutomatedTaskForLead(lead, 'enquiry');
+    if (task) {
+      await db.createActivity({
+        lead_id: lead.id,
+        type: 'task_added',
+        message: `Automation created follow-up: ${task.title}`
+      });
+    }
+
+    // Send welcome email (non-blocking)
+    if (lead.email) sendWelcomeEmail(lead).catch(() => {});
 
     res.status(201).json({ success: true, lead_id: lead.id, message: 'Lead captured successfully' });
   } catch (error) {
@@ -575,6 +750,79 @@ app.get('/api/activities', requireAuth, async (req, res) => {
 });
 
 // ============================================================
+//  TASKS / FOLLOW-UPS
+// ============================================================
+
+app.get('/api/tasks', requireAuth, async (req, res) => {
+  try {
+    const { lead_id, status } = req.query;
+    const tasks = await db.getTasks({ lead_id, status });
+    const leads = await db.getLeads();
+    const leadMap = Object.fromEntries(leads.map(l => [l.id, l]));
+
+    const enriched = tasks.map(t => ({
+      ...t,
+      lead_name: leadMap[t.lead_id] ? `${leadMap[t.lead_id].first_name} ${leadMap[t.lead_id].last_name}` : 'Unknown Lead'
+    }));
+
+    res.json(enriched);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.post('/api/tasks', requireAuth, async (req, res) => {
+  try {
+    assertRequired(req.body, ['title', 'lead_id', 'due_date']);
+    const task = await db.createTask({
+      title: req.body.title,
+      lead_id: req.body.lead_id,
+      due_date: req.body.due_date,
+      type: req.body.type || 'call',
+      status: req.body.status || 'pending',
+      notes: req.body.notes || ''
+    });
+
+    await db.createActivity({
+      lead_id: task.lead_id,
+      type: 'task_added',
+      message: `New task added: ${task.title} (Due: ${new Date(task.due_date).toLocaleDateString('en-IN')})`
+    });
+
+    res.status(201).json(task);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.patch('/api/tasks/:id', requireAuth, async (req, res) => {
+  try {
+    const task = await db.updateTask(req.params.id, req.body);
+
+    if (req.body.status === 'completed') {
+      await db.createActivity({
+        lead_id: task.lead_id,
+        type: 'task_completed',
+        message: `Task completed: ${task.title}`
+      });
+    }
+
+    res.json(task);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+app.delete('/api/tasks/:id', requireAdmin, async (req, res) => {
+  try {
+    await db.deleteTask(req.params.id);
+    res.json({ success: true });
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ============================================================
 //  PIPELINE
 // ============================================================
 
@@ -644,6 +892,26 @@ app.post('/api/applications', requireAuth, async (req, res) => {
     const item = await appStore.insertApplication(req.user, req.body);
     res.status(201).json(item);
   } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// --- File Upload ---
+app.post('/api/upload', requireAuth, upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'No file provided' });
+    const fullUrl = `${req.protocol}://${req.get('host')}/uploads/documents/${req.file.filename}`;
+    res.status(201).json({
+      success: true,
+      url: fullUrl,
+      filename: req.file.originalname,
+      size: req.file.size,
+      mimetype: req.file.mimetype
+    });
+  } catch (error) {
+    if (error.code === 'LIMIT_FILE_SIZE') {
+      return res.status(400).json({ error: 'File too large. Maximum size is 10MB.' });
+    }
     res.status(500).json({ error: error.message });
   }
 });
@@ -1552,6 +1820,33 @@ app.get('/api/marketing/inbox', requireAuth, (req, res) => {
   }
 });
 
+app.get('/api/marketing/inbound-logs', requireAuth, async (req, res) => {
+  try {
+    const dbData = getDB();
+    res.json(dbData.inboundLogs || []);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/marketing/publishers', requireAuth, async (req, res) => {
+  try {
+    const dbData = getDB();
+    if (!dbData.publishers) {
+      dbData.publishers = [
+        { id: 'pub1', name: 'Shiksha.com', status: 'active', leads_captured: 124, last_sync: new Date().toISOString() },
+        { id: 'pub2', name: 'CollegeDekho', status: 'active', leads_captured: 89, last_sync: new Date().toISOString() },
+        { id: 'pub3', name: 'Facebook Ads', status: 'active', leads_captured: 245, last_sync: new Date().toISOString() },
+        { id: 'pub4', name: 'JustDial', status: 'pending', leads_captured: 0, last_sync: null }
+      ];
+      saveDB(dbData);
+    }
+    res.json(dbData.publishers);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/marketing/inbox', requireAuth, (req, res) => {
   try {
     const dbData = ensureMarketingModules();
@@ -1710,6 +2005,38 @@ app.put('/api/marketing/notifications/:id', requireAuth, (req, res) => {
 });
 
 // ============================================================
+//  EMAIL
+// ============================================================
+
+app.get('/api/email/status', requireAdmin, (req, res) => {
+  res.json({
+    configured: isEmailConfigured(),
+    sender: process.env.GMAIL_USER || null,
+    message: isEmailConfigured()
+      ? 'Email integration is active.'
+      : 'Add GMAIL_USER and GMAIL_APP_PASSWORD to your .env file to enable emails.'
+  });
+});
+
+app.post('/api/email/test', requireAdmin, async (req, res) => {
+  const to = req.body?.to || req.user?.email;
+  if (!to) return res.status(400).json({ error: 'Provide a "to" email address' });
+  if (!isEmailConfigured()) {
+    return res.status(400).json({ error: 'Email not configured. Add GMAIL_USER and GMAIL_APP_PASSWORD to .env' });
+  }
+  try {
+    const result = await sendTestEmail(to);
+    if (result.success) {
+      res.json({ success: true, message: `Test email sent to ${to}` });
+    } else {
+      res.status(500).json({ error: result.error || 'Failed to send test email' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ============================================================
 //  START
 // ============================================================
 
@@ -1718,5 +2045,10 @@ app.listen(PORT, () => {
   console.log(`  Webhook: POST http://localhost:${PORT}/api/webhook/lead`);
   console.log(`  Auth: POST http://localhost:${PORT}/api/auth/login`);
   if (db.USE_SUPABASE) console.log(`  Supabase session: POST http://localhost:${PORT}/api/auth/supabase`);
+  if (isEmailConfigured()) {
+    console.log(`  Email: ✅ Gmail SMTP active (${process.env.GMAIL_USER})`);
+  } else {
+    console.log(`  Email: ⚠️  Not configured — add GMAIL_USER + GMAIL_APP_PASSWORD to .env`);
+  }
   console.log('');
 });

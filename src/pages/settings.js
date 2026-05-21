@@ -21,6 +21,7 @@ export async function renderSettings(container) {
           <button class="settings-tab" data-tab="stages"><i data-lucide="git-branch" style="width:18px;height:18px;"></i> Pipeline Stages</button>
           ${isAdmin ? `<button class="settings-tab" data-tab="users"><i data-lucide="users" style="width:18px;height:18px;"></i> User Management</button>` : ''}
           <button class="settings-tab" data-tab="webhook"><i data-lucide="webhook" style="width:18px;height:18px;"></i> Lead Automation</button>
+          <button class="settings-tab" data-tab="email"><i data-lucide="mail" style="width:18px;height:18px;"></i> Email</button>
           <button class="settings-tab" data-tab="notifications"><i data-lucide="bell" style="width:18px;height:18px;"></i> Notifications</button>
         </div>
         <div class="settings-content" id="settings-content">
@@ -30,6 +31,7 @@ export async function renderSettings(container) {
           <div class="settings-section hidden" id="tab-stages">${renderStagesTab()}</div>
           ${isAdmin ? `<div class="settings-section hidden" id="tab-users"><div style="display:flex;align-items:center;justify-content:center;padding:40px;"><div class="spinner"></div></div></div>` : ''}
           <div class="settings-section hidden" id="tab-webhook">${renderWebhookTab()}</div>
+          <div class="settings-section hidden" id="tab-email"><div style="display:flex;align-items:center;justify-content:center;padding:40px;"><div class="spinner"></div></div></div>
           <div class="settings-section hidden" id="tab-notifications">${renderNotificationsTab()}</div>
         </div>
       </div>
@@ -67,6 +69,9 @@ export async function renderSettings(container) {
       document.getElementById('tab-users').innerHTML = `<p style="color:#dc2626;">Failed to load users: ${e.message}</p>`;
     }
   }
+
+  // Load email tab
+  loadEmailTab(container);
 }
 
 function renderInstituteTab(container, settings, isAdmin) {
@@ -215,6 +220,144 @@ function openUserModal(user, onSave) {
       const data = { name, email, role: body.querySelector('#u-role').value };
       if (!isEdit) data.password = body.querySelector('#u-pw').value || 'counselor123';
       await onSave(data);
+    }
+  });
+}
+
+async function loadEmailTab(container) {
+  const tab = container.querySelector('#tab-email');
+  if (!tab) return;
+  try {
+    const res = await fetch('/api/email/status', {
+      headers: { Authorization: `Bearer ${sessionStorage.getItem('rbmi_token')}` }
+    });
+    const status = res.ok ? await res.json() : { configured: false, message: 'Could not fetch status.' };
+    renderEmailTab(tab, status);
+  } catch (e) {
+    renderEmailTab(tab, { configured: false, message: e.message });
+  }
+}
+
+function renderEmailTab(tab, status) {
+  tab.innerHTML = `
+    <h2 class="settings-section-title">Email Integration</h2>
+    <p class="settings-section-desc">Automated emails to students — welcome messages, stage updates, and more.</p>
+
+    <div class="webhook-section">
+      <!-- Status card -->
+      <div class="webhook-card">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:12px;">📡 Connection Status</h3>
+        <div style="display:flex;align-items:center;gap:10px;padding:14px 18px;border-radius:8px;background:${status.configured ? '#f0fdf4' : '#fef9c3'};border:1px solid ${status.configured ? '#bbf7d0' : '#fde68a'};">
+          <span style="font-size:22px;">${status.configured ? '✅' : '⚠️'}</span>
+          <div>
+            <div style="font-weight:600;font-size:14px;color:${status.configured ? '#15803d' : '#92400e'};">
+              ${status.configured ? 'Gmail SMTP — Active' : 'Not configured'}
+            </div>
+            <div style="font-size:13px;color:#64748b;margin-top:2px;">
+              ${status.configured ? `Sending from: <strong>${status.sender}</strong>` : status.message}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Setup guide -->
+      ${!status.configured ? `
+      <div class="webhook-card">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:12px;">🔧 Setup Guide (2 minutes)</h3>
+        <div style="display:flex;flex-direction:column;gap:12px;">
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#6366f1;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">1</span>
+            <div><strong>Enable 2-Step Verification</strong> on your Gmail account at <a href="https://myaccount.google.com/security" target="_blank" style="color:#6366f1;">myaccount.google.com/security</a></div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#6366f1;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">2</span>
+            <div>Go to <a href="https://myaccount.google.com/apppasswords" target="_blank" style="color:#6366f1;">App Passwords</a> → Select "Mail" → Generate a 16-character password</div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#6366f1;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">3</span>
+            <div>Open your <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;">.env</code> file and fill in:
+              <pre style="background:#1e293b;color:#e2e8f0;padding:12px 16px;border-radius:8px;font-size:13px;margin:8px 0 0;">GMAIL_USER=your-gmail@gmail.com
+GMAIL_APP_PASSWORD=xxxx-xxxx-xxxx-xxxx
+INSTITUTE_NAME=RBMI Admissions</pre>
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;align-items:flex-start;">
+            <span style="background:#6366f1;color:#fff;border-radius:50%;width:24px;height:24px;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">4</span>
+            <div>Restart the server: <code style="background:#f1f5f9;padding:2px 6px;border-radius:4px;">npm start</code></div>
+          </div>
+        </div>
+      </div>` : ''}
+
+      <!-- What gets sent -->
+      <div class="webhook-card">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:12px;">📧 Automated Emails</h3>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          ${[
+            { trigger: 'New lead added', desc: 'Welcome email with next steps sent to the student', icon: '👋' },
+            { trigger: 'Lead via webhook', desc: 'Welcome email when a lead comes from website/JustDial/etc.', icon: '🔗' },
+            { trigger: 'Stage → Counseling Scheduled', desc: 'Notifies student their session is booked', icon: '📅' },
+            { trigger: 'Stage → Application Submitted', desc: 'Confirms receipt of application', icon: '📋' },
+            { trigger: 'Stage → Documents Verified', desc: 'Prompts student to pay admission fee', icon: '✅' },
+            { trigger: 'Stage → Admitted', desc: 'Congratulations email with enrollment instructions', icon: '🎉' },
+            { trigger: 'Stage → Enrolled', desc: 'Final confirmation with orientation details', icon: '🎓' },
+          ].map(e => `
+            <div style="display:flex;gap:12px;align-items:center;padding:10px 14px;background:#f8fafc;border-radius:8px;">
+              <span style="font-size:18px;">${e.icon}</span>
+              <div>
+                <div style="font-weight:600;font-size:13px;">${e.trigger}</div>
+                <div style="font-size:12px;color:#64748b;">${e.desc}</div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+
+      <!-- Test email -->
+      ${status.configured ? `
+      <div class="webhook-card">
+        <h3 style="font-size:15px;font-weight:600;margin-bottom:8px;">🧪 Send Test Email</h3>
+        <p style="font-size:13px;color:#64748b;margin-bottom:12px;">Send a test email to verify everything is working:</p>
+        <div style="display:flex;gap:10px;align-items:center;">
+          <input type="email" id="test-email-to" class="form-input" placeholder="recipient@example.com" style="max-width:280px;" />
+          <button class="btn btn-primary" id="btn-send-test-email">Send Test</button>
+        </div>
+        <div id="email-test-result" style="margin-top:12px;font-size:13px;"></div>
+      </div>` : ''}
+    </div>
+  `;
+
+  window.renderIcons?.();
+
+  // Test email button handler
+  tab.querySelector('#btn-send-test-email')?.addEventListener('click', async () => {
+    const btn = tab.querySelector('#btn-send-test-email');
+    const toInput = tab.querySelector('#test-email-to');
+    const result = tab.querySelector('#email-test-result');
+    const to = toInput?.value?.trim();
+    if (!to) { result.innerHTML = '<span style="color:#dc2626;">Please enter an email address.</span>'; return; }
+    btn.disabled = true;
+    btn.textContent = 'Sending...';
+    result.textContent = '';
+    try {
+      const res = await fetch('/api/email/test', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${sessionStorage.getItem('rbmi_token')}`
+        },
+        body: JSON.stringify({ to })
+      });
+      const data = await res.json();
+      if (res.ok) {
+        result.innerHTML = `<span style="color:#10b981;">✅ Test email sent to ${to}! Check your inbox.</span>`;
+      } else {
+        result.innerHTML = `<span style="color:#dc2626;">✗ ${data.error}</span>`;
+      }
+    } catch (err) {
+      result.innerHTML = `<span style="color:#dc2626;">✗ ${err.message}</span>`;
+    } finally {
+      btn.disabled = false;
+      btn.textContent = 'Send Test';
     }
   });
 }
