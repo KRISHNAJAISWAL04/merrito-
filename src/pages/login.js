@@ -1,92 +1,256 @@
 import { API_BASE } from '../lib/api.js';
 import { getSupabase } from '../lib/supabase.js';
 
-export function showLogin({ onSuccess, onSignupClick }) {
-  const root = document.getElementById('login-root');
-  root.classList.add('show');
-  root.innerHTML = `
-  <div class="lp">
+// ─── Shared background / 3D scaffolding ──────────────────────────────────────
+function buildBackground() {
+  return `
+    <!-- Cursor glow -->
+    <div class="lp-cursor-glow" id="lp-cursor-glow"></div>
+
+    <!-- Animated background -->
+    <div class="lp-bg-canvas">
+      <div class="lp-grid"></div>
+      <div class="lp-orb lp-orb-1"></div>
+      <div class="lp-orb lp-orb-2"></div>
+      <div class="lp-orb lp-orb-3"></div>
+    </div>
+
+    <!-- Floating particles -->
+    <div class="lp-particles" id="lp-particles"></div>
+  `;
+}
+
+function buildLeftPanel(title, subtitle, stats, eyebrow = 'Admission Platform') {
+  return `
     <div class="lp-left">
       <div class="lp-brand">
-        <img src="/logo.png" alt="RBMI Logo" style="width:108px;height:108px;object-fit:cover;border-radius:50%;border:2px solid rgba(255,255,255,0.3);padding:0;transform:scale(1.10);display:block;" />
-        <div class="lp-brand-text">
+        <div class="lp-logo-wrap">
+          <div class="lp-logo-ring"></div>
+          <div class="lp-logo-inner">
+            <img src="/logo.png" alt="RBMI Logo" />
+          </div>
+        </div>
+        <div>
           <div class="lp-brand-name">RBMI Admission Hub</div>
           <div class="lp-brand-sub">Admissions, applications and student journeys</div>
         </div>
       </div>
+
       <div class="lp-hero">
-        <h1>Admissions<br/>That Move</h1>
-        <p>Run leads, applications, fee checkpoints and student communication from one focused enrollment workspace.</p>
+        <div class="lp-hero-eyebrow">
+          <span></span>${eyebrow}
+        </div>
+        <h1>${title}</h1>
+        <p>${subtitle}</p>
         <div class="lp-stats">
-          <div class="lp-stat"><span class="ls-n">2</span><span class="ls-l">Campuses</span></div>
-          <div class="lp-stat"><span class="ls-n">500+</span><span class="ls-l">Leads/Year</span></div>
-          <div class="lp-stat"><span class="ls-n">95%</span><span class="ls-l">Follow-up Rate</span></div>
+          ${stats.map(s => `
+            <div class="lp-stat">
+              <span class="ls-n">${s.n}</span>
+              <span class="ls-l">${s.l}</span>
+            </div>
+          `).join('')}
         </div>
       </div>
+
       <div class="lp-branches">
-        <div class="lp-branch"><span>📍</span><div><strong>Bareilly Campus</strong><small>Pilibhit Bypass Road, Bareilly, UP</small></div></div>
-        <div class="lp-branch"><span>📍</span><div><strong>Greater Noida Campus</strong><small>Knowledge Park, Greater Noida, UP</small></div></div>
-      </div>
-    </div>
-    <div class="lp-right">
-      <div class="lp-card">
-        <div class="lp-card-logo">
-          <img src="/logo.png" alt="Logo" style="width:72px;height:72px;object-fit:cover;border-radius:50%;padding:0;transform:scale(1.10);display:block;" />
-          <div>
-            <div style="font-weight:700;font-size:17px">RBMI Admission Hub</div>
-            <div style="font-size:12px;color:#64748b">Admin, counselor and student panels</div>
-          </div>
+        <div class="lp-branch">
+          <div class="lp-branch-icon">📍</div>
+          <div><strong>Bareilly Campus</strong><small>Pilibhit Bypass Road, Bareilly, UP</small></div>
         </div>
-        <h2 class="lp-title">Sign in to your account</h2>
-        <div id="lerr" class="lp-err"></div>
-
-        <button id="lgoogle" class="lp-btn lp-btn-google">
-          <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" style="width:18px;height:18px;"/>
-          Sign in with Google
-        </button>
-
-        <div class="lp-div"><span>Or with email</span></div>
-        <form id="lform" class="lp-form">
-          <div class="lp-group">
-            <label>Campus</label>
-            <select id="lbranch" class="lp-input">
-              <option value="bareilly">📍 Bareilly Campus</option>
-              <option value="greater_noida">📍 Greater Noida Campus</option>
-            </select>
-          </div>
-          <div class="lp-group">
-            <label>Email</label>
-            <input type="email" id="lemail" class="lp-input" placeholder="admin@rbmi.edu.in" required/>
-          </div>
-          <div class="lp-group">
-            <label>Password</label>
-            <input type="password" id="lpass" class="lp-input" placeholder="Enter password" required/>
-          </div>
-          <button type="submit" class="lp-btn" id="lbtn">Sign In</button>
-        </form>
-        <div class="lp-div"><span>Demo Accounts</span></div>
-        <div class="lp-demos">
-          <button class="lp-demo" data-e="admin@rbmi.edu.in" data-p="admin123"><span class="lp-badge admin">Admin</span><div><div class="lp-demo-name">Admin RBMI</div><div class="lp-demo-email">admin@rbmi.edu.in</div></div></button>
-          <button class="lp-demo" data-e="priya@rbmi.edu.in" data-p="counselor123"><span class="lp-badge counselor">Counselor</span><div><div class="lp-demo-name">Neha Khan</div><div class="lp-demo-email">priya@rbmi.edu.in</div></div></button>
-          <button class="lp-demo" data-e="rajesh@rbmi.edu.in" data-p="counselor123"><span class="lp-badge counselor">Counselor</span><div><div class="lp-demo-name">Rajesh Kumar</div><div class="lp-demo-email">rajesh@rbmi.edu.in</div></div></button>
-          <button class="lp-demo" data-e="student@demo.in" data-p="student123"><span class="lp-badge student">Student</span><div><div class="lp-demo-name">krishna jaiswal</div><div class="lp-demo-email">student@demo.in</div></div></button>
-        </div>
-        <div class="lp-footer-link">
-          <span>Student? </span><a href="#/signup" id="go-signup">Create your account</a>
+        <div class="lp-branch">
+          <div class="lp-branch-icon">📍</div>
+          <div><strong>Greater Noida Campus</strong><small>Knowledge Park, Greater Noida, UP</small></div>
         </div>
       </div>
     </div>
-  </div>`;
+  `;
+}
 
-  setTimeout(() => window.renderIcons(), 0);
+// ─── 3D effects initialiser ───────────────────────────────────────────────────
+function init3DEffects() {
+  // Mouse-tracking cursor glow
+  const glow = document.getElementById('lp-cursor-glow');
+  if (glow) {
+    document.addEventListener('mousemove', (e) => {
+      glow.style.left = e.clientX + 'px';
+      glow.style.top  = e.clientY + 'px';
+    }, { passive: true });
+  }
 
-  root.querySelectorAll('.lp-demo').forEach(b => {
-    b.addEventListener('click', () => {
-      document.getElementById('lemail').value = b.dataset.e;
-      document.getElementById('lpass').value = b.dataset.p;
+  // Floating particles
+  const container = document.getElementById('lp-particles');
+  if (container) {
+    const count = 28;
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'lp-particle';
+      const size = Math.random() * 3 + 1;
+      const left = Math.random() * 100;
+      const duration = Math.random() * 12 + 8;
+      const delay = Math.random() * -20;
+      const hue = Math.random() > 0.5 ? '99,102,241' : '139,92,246';
+      p.style.cssText = `
+        left: ${left}%;
+        width: ${size}px;
+        height: ${size}px;
+        background: rgba(${hue}, ${Math.random() * 0.5 + 0.3});
+        animation-duration: ${duration}s;
+        animation-delay: ${delay}s;
+      `;
+      container.appendChild(p);
+    }
+  }
+
+  // 3D card tilt on mouse move
+  const card = document.querySelector('.lp-card-3d');
+  const wrap = document.querySelector('.lp-card-3d-wrap');
+  if (card && wrap) {
+    wrap.addEventListener('mousemove', (e) => {
+      const rect = wrap.getBoundingClientRect();
+      const x = (e.clientX - rect.left) / rect.width  - 0.5;
+      const y = (e.clientY - rect.top)  / rect.height - 0.5;
+      const rotX = -y * 10;
+      const rotY =  x * 10;
+      card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(8px)`;
+    });
+    wrap.addEventListener('mouseleave', () => {
+      card.style.transform = 'rotateX(0deg) rotateY(0deg) translateZ(0)';
+    });
+  }
+
+  // Hover glow on demo buttons
+  document.querySelectorAll('.lp-demo').forEach(btn => {
+    btn.addEventListener('mousemove', (e) => {
+      const rect = btn.getBoundingClientRect();
+      const x = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1);
+      const y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1);
+      btn.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(99,102,241,0.18), rgba(255,255,255,0.04) 70%)`;
+    });
+    btn.addEventListener('mouseleave', () => {
+      btn.style.background = '';
     });
   });
 
+  // Input focus glow ripple
+  document.querySelectorAll('.lp-input').forEach(input => {
+    input.addEventListener('focus', () => {
+      input.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.2), 0 0 24px rgba(99,102,241,0.12)';
+    });
+    input.addEventListener('blur', () => {
+      input.style.boxShadow = '';
+    });
+  });
+}
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────────
+export function showLogin({ onSuccess, onSignupClick }) {
+  const root = document.getElementById('login-root');
+  const showDemoLogin = import.meta.env.VITE_SHOW_DEMO_LOGIN !== 'false';
+  root.classList.add('show');
+
+  root.innerHTML = `
+    ${buildBackground()}
+    <div class="lp">
+      ${buildLeftPanel(
+        'Admissions<br/>That Move',
+        'Run leads, applications, fee checkpoints and student communication from one focused enrollment workspace.',
+        [
+          { n: '2',    l: 'Campuses' },
+          { n: '500+', l: 'Leads/Year' },
+          { n: '95%',  l: 'Follow-up Rate' }
+        ]
+      )}
+
+      <div class="lp-right">
+        <div class="lp-card-3d-wrap">
+          <div class="lp-card-3d">
+            <div class="lp-card">
+
+              <div class="lp-card-logo">
+                <div class="lp-card-logo-img">
+                  <img src="/logo.png" alt="RBMI Logo" />
+                </div>
+                <div class="lp-card-logo-text">
+                  <strong>RBMI Admission Hub</strong>
+                  <span>Admin, counselor and student panels</span>
+                </div>
+              </div>
+
+              <h2 class="lp-title">Sign in to your account</h2>
+              <div id="lerr" class="lp-err"></div>
+
+              <button id="lgoogle" class="lp-btn lp-btn-google">
+                <img src="https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg" style="width:18px;height:18px;"/>
+                Sign in with Google
+              </button>
+
+              <div class="lp-div"><span>Or with email</span></div>
+
+              <form id="lform" class="lp-form">
+                <div class="lp-group">
+                  <label>Campus</label>
+                  <select id="lbranch" class="lp-input">
+                    <option value="bareilly">📍 Bareilly Campus</option>
+                    <option value="greater_noida">📍 Greater Noida Campus</option>
+                  </select>
+                </div>
+                <div class="lp-group">
+                  <label>Email</label>
+                  <input type="email" id="lemail" class="lp-input" placeholder="admin@rbmi.edu.in" required />
+                </div>
+                <div class="lp-group">
+                  <label>Password</label>
+                  <input type="password" id="lpass" class="lp-input" placeholder="Enter password" required />
+                </div>
+                <button type="submit" class="lp-btn" id="lbtn">Sign In</button>
+              </form>
+
+              ${showDemoLogin ? `
+              <div class="lp-div"><span>Quick Demo</span></div>
+              <div class="lp-demos">
+                <button class="lp-demo" data-e="admin@rbmi.edu.in" data-p="admin123">
+                  <span class="lp-badge admin">Admin</span>
+                  <div><div class="lp-demo-name">Admin RBMI</div><div class="lp-demo-email">admin@rbmi.edu.in</div></div>
+                </button>
+                <button class="lp-demo" data-e="priya@rbmi.edu.in" data-p="counselor123">
+                  <span class="lp-badge counselor">Counselor</span>
+                  <div><div class="lp-demo-name">Neha Khan</div><div class="lp-demo-email">priya@rbmi.edu.in</div></div>
+                </button>
+                <button class="lp-demo" data-e="rajesh@rbmi.edu.in" data-p="counselor123">
+                  <span class="lp-badge counselor">Counselor</span>
+                  <div><div class="lp-demo-name">Rajesh Kumar</div><div class="lp-demo-email">rajesh@rbmi.edu.in</div></div>
+                </button>
+                <button class="lp-demo" data-e="student@demo.in" data-p="student123">
+                  <span class="lp-badge student">Student</span>
+                  <div><div class="lp-demo-name">krishna jaiswal</div><div class="lp-demo-email">student@demo.in</div></div>
+                </button>
+              </div>` : ''}
+
+              <div class="lp-footer-link">
+                <span>Student? </span><a href="#/signup" id="go-signup">Create your account</a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    window.renderIcons?.();
+    init3DEffects();
+  }, 0);
+
+  // Demo fill
+  root.querySelectorAll('.lp-demo').forEach(b => {
+    b.addEventListener('click', () => {
+      document.getElementById('lemail').value = b.dataset.e;
+      document.getElementById('lpass').value  = b.dataset.p;
+    });
+  });
+
+  // Google login
   document.getElementById('lgoogle')?.addEventListener('click', () => {
     const branch = document.getElementById('lbranch').value;
     const supabase = getSupabase();
@@ -99,22 +263,23 @@ export function showLogin({ onSuccess, onSignupClick }) {
         }
       });
     } else {
-      // Mock Google SSO if Supabase is not configured
-      document.getElementById('lemail').value = 'student@demo.in';
-      document.getElementById('lpass').value = 'student123';
-      document.getElementById('lform').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+      const err = document.getElementById('lerr');
+      err.textContent = 'Google login needs Supabase credentials.';
+      err.style.display = 'block';
     }
   });
 
+  // Email login
   document.getElementById('lform').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const email = document.getElementById('lemail').value.trim();
-    const pass = document.getElementById('lpass').value;
+    const email  = document.getElementById('lemail').value.trim();
+    const pass   = document.getElementById('lpass').value;
     const branch = document.getElementById('lbranch').value;
-    const err = document.getElementById('lerr');
-    const btn = document.getElementById('lbtn');
+    const err    = document.getElementById('lerr');
+    const btn    = document.getElementById('lbtn');
     err.style.display = 'none';
-    btn.disabled = true; btn.textContent = 'Signing in...';
+    btn.disabled = true;
+    btn.textContent = 'Signing in...';
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
         method: 'POST',
@@ -129,7 +294,8 @@ export function showLogin({ onSuccess, onSignupClick }) {
     } catch (ex) {
       err.textContent = '⚠ ' + ex.message;
       err.style.display = 'block';
-      btn.disabled = false; btn.textContent = 'Sign In';
+      btn.disabled = false;
+      btn.textContent = 'Sign In';
     }
   });
 
@@ -139,99 +305,115 @@ export function showLogin({ onSuccess, onSignupClick }) {
   });
 }
 
+// ─── SIGNUP ───────────────────────────────────────────────────────────────────
 export function showSignup({ onSuccess, onLoginClick }) {
   const root = document.getElementById('login-root');
   root.classList.add('show');
-  root.innerHTML = `
-  <div class="lp">
-    <div class="lp-left">
-      <div class="lp-brand">
-        <img src="/logo.png" alt="RBMI Logo" style="width:108px;height:108px;object-fit:contain;border-radius:50%;border:2px solid rgba(255,255,255,0.3);padding:0;transform:scale(1.08);" />
-        <div class="lp-brand-text">
-          <div class="lp-brand-name">RBMI Admission Hub</div>
-          <div class="lp-brand-sub">Admissions, applications and student journeys</div>
-        </div>
-      </div>
-      <div class="lp-hero">
-        <h1>Start Your<br/>Admission Journey</h1>
-        <p>Create your student account to track applications, documents, fees and communicate with your counselor.</p>
-        <div class="lp-stats">
-          <div class="lp-stat"><span class="ls-n">8+</span><span class="ls-l">Programs</span></div>
-          <div class="lp-stat"><span class="ls-n">2</span><span class="ls-l">Campuses</span></div>
-          <div class="lp-stat"><span class="ls-n">100%</span><span class="ls-l">Online Process</span></div>
-        </div>
-      </div>
-      <div class="lp-branches">
-        <div class="lp-branch"><span>📍</span><div><strong>Bareilly Campus</strong><small>Pilibhit Bypass Road, Bareilly, UP</small></div></div>
-        <div class="lp-branch"><span>📍</span><div><strong>Greater Noida Campus</strong><small>Knowledge Park, Greater Noida, UP</small></div></div>
-      </div>
-    </div>
-    <div class="lp-right">
-      <div class="lp-card">
-        <div class="lp-card-logo">
-          <img src="/logo.png" alt="Logo" style="width:72px;height:72px;object-fit:contain;border-radius:50%;padding:0;transform:scale(1.06);" />
-          <div>
-            <div style="font-weight:700;font-size:17px">Student Registration</div>
-            <div style="font-size:12px;color:#64748b">Create your student account</div>
-          </div>
-        </div>
-        <h2 class="lp-title">Create Account</h2>
-        <div id="serr" class="lp-err"></div>
-        <form id="sform" class="lp-form">
-          <div class="lp-group">
-            <label>Full Name</label>
-            <input type="text" id="sname" class="lp-input" placeholder="Rahul Sharma" required/>
-          </div>
-          <div class="lp-group">
-            <label>Email</label>
-            <input type="email" id="semail" class="lp-input" placeholder="rahul@gmail.com" required/>
-          </div>
-          <div class="lp-group">
-            <label>Phone</label>
-            <input type="tel" id="sphone" class="lp-input" placeholder="+91 98765 43210"/>
-          </div>
-          <div class="lp-group">
-            <label>Campus</label>
-            <select id="sbranch" class="lp-input">
-              <option value="bareilly">📍 Bareilly Campus</option>
-              <option value="greater_noida">📍 Greater Noida Campus</option>
-            </select>
-          </div>
-          <div class="lp-group">
-            <label>Password</label>
-            <input type="password" id="spass" class="lp-input" placeholder="Min 6 characters" required minlength="6"/>
-          </div>
-          <div class="lp-group">
-            <label>Confirm Password</label>
-            <input type="password" id="spass2" class="lp-input" placeholder="Re-enter password" required/>
-          </div>
-          <button type="submit" class="lp-btn" id="sbtn">Create Account</button>
-        </form>
-        <div class="lp-footer-link">
-          <span>Already have an account? </span><a href="#/login" id="go-login">Sign in</a>
-        </div>
-      </div>
-    </div>
-  </div>`;
 
-  setTimeout(() => window.renderIcons(), 0);
+  root.innerHTML = `
+    ${buildBackground()}
+    <div class="lp">
+      ${buildLeftPanel(
+        'Start Your<br/>Journey',
+        'Create your student account to track applications, documents, fees and communicate with your counselor.',
+        [
+          { n: '8+',   l: 'Programs' },
+          { n: '2',    l: 'Campuses' },
+          { n: '100%', l: 'Online Process' }
+        ],
+        'Student Registration'
+      )}
+
+      <div class="lp-right">
+        <div class="lp-card-3d-wrap">
+          <div class="lp-card-3d">
+            <div class="lp-card">
+
+              <div class="lp-card-logo">
+                <div class="lp-card-logo-img">
+                  <img src="/logo.png" alt="RBMI Logo" />
+                </div>
+                <div class="lp-card-logo-text">
+                  <strong>Student Registration</strong>
+                  <span>Create your student account</span>
+                </div>
+              </div>
+
+              <h2 class="lp-title">Create Account</h2>
+              <div id="serr" class="lp-err"></div>
+
+              <form id="sform" class="lp-form">
+                <div class="lp-group">
+                  <label>Full Name</label>
+                  <input type="text" id="sname" class="lp-input" placeholder="Rahul Sharma" required />
+                </div>
+                <div class="lp-group">
+                  <label>Email</label>
+                  <input type="email" id="semail" class="lp-input" placeholder="rahul@gmail.com" required />
+                </div>
+                <div class="lp-group">
+                  <label>Phone</label>
+                  <input type="tel" id="sphone" class="lp-input" placeholder="+91 98765 43210" />
+                </div>
+                <div class="lp-group">
+                  <label>Campus</label>
+                  <select id="sbranch" class="lp-input">
+                    <option value="bareilly">📍 Bareilly Campus</option>
+                    <option value="greater_noida">📍 Greater Noida Campus</option>
+                  </select>
+                </div>
+                <div class="lp-group">
+                  <label>Password</label>
+                  <input type="password" id="spass" class="lp-input" placeholder="Min 6 characters" required minlength="6" />
+                </div>
+                <div class="lp-group">
+                  <label>Confirm Password</label>
+                  <input type="password" id="spass2" class="lp-input" placeholder="Re-enter password" required />
+                </div>
+                <button type="submit" class="lp-btn" id="sbtn">Create Account</button>
+              </form>
+
+              <div class="lp-footer-link">
+                <span>Already have an account? </span><a href="#/login" id="go-login">Sign in</a>
+              </div>
+
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+
+  setTimeout(() => {
+    window.renderIcons?.();
+    init3DEffects();
+  }, 0);
 
   document.getElementById('sform').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const name = document.getElementById('sname').value.trim();
-    const email = document.getElementById('semail').value.trim();
-    const phone = document.getElementById('sphone').value.trim();
+    const name   = document.getElementById('sname').value.trim();
+    const email  = document.getElementById('semail').value.trim();
+    const phone  = document.getElementById('sphone').value.trim();
     const branch = document.getElementById('sbranch').value;
-    const pass = document.getElementById('spass').value;
-    const pass2 = document.getElementById('spass2').value;
-    const err = document.getElementById('serr');
-    const btn = document.getElementById('sbtn');
+    const pass   = document.getElementById('spass').value;
+    const pass2  = document.getElementById('spass2').value;
+    const err    = document.getElementById('serr');
+    const btn    = document.getElementById('sbtn');
     err.style.display = 'none';
 
-    if (pass !== pass2) { err.textContent = '⚠ Passwords do not match'; err.style.display = 'block'; return; }
-    if (pass.length < 6) { err.textContent = '⚠ Password must be at least 6 characters'; err.style.display = 'block'; return; }
+    if (pass !== pass2) {
+      err.textContent = '⚠ Passwords do not match';
+      err.style.display = 'block';
+      return;
+    }
+    if (pass.length < 6) {
+      err.textContent = '⚠ Password must be at least 6 characters';
+      err.style.display = 'block';
+      return;
+    }
 
-    btn.disabled = true; btn.textContent = 'Creating account...';
+    btn.disabled = true;
+    btn.textContent = 'Creating account...';
     try {
       const res = await fetch(`${API_BASE}/auth/signup`, {
         method: 'POST',
@@ -246,7 +428,8 @@ export function showSignup({ onSuccess, onLoginClick }) {
     } catch (ex) {
       err.textContent = '⚠ ' + ex.message;
       err.style.display = 'block';
-      btn.disabled = false; btn.textContent = 'Create Account';
+      btn.disabled = false;
+      btn.textContent = 'Create Account';
     }
   });
 
