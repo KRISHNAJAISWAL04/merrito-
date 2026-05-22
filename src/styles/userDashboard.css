@@ -14,7 +14,7 @@
 .ud-stage-info { display: flex; align-items: center; gap: 8px; }
 .ud-stage-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
 .ud-stage-name { font-size: 13px; font-weight: 500; color: var(--color-text); }
-.ud-stage-bar-wrap { height: 22px; background: var(--color-bg-alt); border-radius: 4px; overflow: hidden; }
+.ud-stage-bar-wrap { height: 22px; background: var(--color-border-light); border-radius: 4px; overflow: hidden; }
 .ud-stage-bar { height: 100%; border-radius: 4px; transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1); }
 .ud-stage-count { font-size: 14px; font-weight: 700; color: var(--color-text); text-align: right; }
 .ud-stage-pct { font-size: 12px; color: var(--color-text-muted); text-align: right; }

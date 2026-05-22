@@ -1,0 +1,870 @@
+/* ===== DARK MODE COMPREHENSIVE FIXES ===== */
+/* Covers all elements with hardcoded light colors that break in dark mode */
+
+/* ─── Form inputs / selects / textareas ─────────────────────────────────── */
+:root.dark-mode .form-input,
+:root.dark-mode .form-select,
+:root.dark-mode .form-textarea,
+:root.dark-mode input.form-input,
+:root.dark-mode select.form-input,
+:root.dark-mode textarea.form-input,
+:root.dark-mode .filter-select,
+:root.dark-mode .lp-input,
+:root.dark-mode .filter-search,
+:root.dark-mode .search-input {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .form-input:focus,
+:root.dark-mode .form-select:focus,
+:root.dark-mode .form-textarea:focus,
+:root.dark-mode .filter-select:focus {
+  background: var(--color-surface);
+  border-color: var(--color-primary);
+}
+
+:root.dark-mode .form-input::placeholder,
+:root.dark-mode .filter-search::placeholder,
+:root.dark-mode .search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .form-label {
+  color: var(--color-text-secondary);
+}
+
+/* ─── Modal ─────────────────────────────────────────────────────────────── */
+:root.dark-mode .modal-container {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+}
+
+:root.dark-mode .modal-header {
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .modal-title {
+  color: var(--color-text);
+}
+
+:root.dark-mode .modal-footer {
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .modal-close:hover {
+  background: var(--color-bg);
+}
+
+/* ─── Detail notes / info boxes ─────────────────────────────────────────── */
+:root.dark-mode .detail-notes {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+/* ─── Portal panels & steps ─────────────────────────────────────────────── */
+:root.dark-mode .portal-panel {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .portal-step {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .portal-step strong {
+  color: var(--color-text);
+}
+
+:root.dark-mode .portal-step small,
+:root.dark-mode .doc-row small {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .portal-step span {
+  background: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .portal-step.active {
+  background: rgba(15, 118, 110, 0.15);
+  border-color: #0f766e;
+}
+
+:root.dark-mode .portal-step.active span {
+  background: #0f766e;
+  color: #fff;
+}
+
+:root.dark-mode .portal-muted {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .portal-form label {
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .doc-row {
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .doc-row strong {
+  color: var(--color-text);
+}
+
+/* ─── Ops (Applications / Queries / Payments) ───────────────────────────── */
+:root.dark-mode .ops-header {
+  background: linear-gradient(135deg, var(--color-surface), var(--color-bg));
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .ops-header h1 {
+  color: var(--color-text);
+}
+
+:root.dark-mode .ops-header p {
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .ops-stats div {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .ops-stats strong {
+  color: var(--color-text);
+}
+
+:root.dark-mode .ops-stats span {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .ops-table-wrap,
+:root.dark-mode .ops-list {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .ops-card {
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .ops-card h3 {
+  color: var(--color-text);
+}
+
+:root.dark-mode .ops-card p {
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .ops-card-side small {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .ops-response {
+  background: rgba(15, 118, 110, 0.1);
+  border-color: rgba(15, 118, 110, 0.25);
+}
+
+:root.dark-mode .ops-empty {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .ops-badge.ok  { background: rgba(16,185,129,0.15); color: #34d399; }
+:root.dark-mode .ops-badge.warn { background: rgba(245,158,11,0.15); color: #fbbf24; }
+:root.dark-mode .ops-badge.bad  { background: rgba(239,68,68,0.15);  color: #f87171; }
+:root.dark-mode .ops-badge.info { background: rgba(59,130,246,0.15); color: #60a5fa; }
+
+/* ─── Suite / Platform sections ─────────────────────────────────────────── */
+:root.dark-mode .suite-stats div,
+:root.dark-mode .suite-card,
+:root.dark-mode .suite-panel,
+:root.dark-mode .ai-chat-demo,
+:root.dark-mode .phone-preview {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .suite-stats strong {
+  color: var(--color-text);
+}
+
+:root.dark-mode .suite-stats span,
+:root.dark-mode .suite-stats small {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .suite-card h3 {
+  color: var(--color-text);
+}
+
+:root.dark-mode .suite-card p {
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .suite-card-icon {
+  background: rgba(15, 118, 110, 0.15);
+  color: #5eead4;
+}
+
+:root.dark-mode .suite-card small {
+  background: rgba(15, 118, 110, 0.15);
+  color: #5eead4;
+}
+
+:root.dark-mode .suite-pill.ok   { background: rgba(16,185,129,0.15); color: #34d399; }
+:root.dark-mode .suite-pill.warn { background: rgba(245,158,11,0.15); color: #fbbf24; }
+:root.dark-mode .suite-pill.info { background: rgba(59,130,246,0.15); color: #60a5fa; }
+
+:root.dark-mode .suite-rows {
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .suite-rows div {
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .suite-rows span {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .suite-timeline div {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .suite-timeline span {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .suite-bars i {
+  background: linear-gradient(90deg, #14b8a6 var(--w), var(--color-border) var(--w));
+}
+
+:root.dark-mode .permission-grid {
+  border-color: var(--color-border);
+  background: var(--color-border);
+}
+
+:root.dark-mode .permission-grid > * {
+  background: var(--color-surface);
+  color: var(--color-text);
+}
+
+:root.dark-mode .permission-grid > span {
+  background: rgba(15, 118, 110, 0.15);
+  color: #5eead4;
+}
+
+/* ─── AI chat demo ───────────────────────────────────────────────────────── */
+:root.dark-mode .ai-msg.student {
+  background: rgba(59, 130, 246, 0.15);
+  color: #93c5fd;
+}
+
+:root.dark-mode .ai-msg.bot {
+  background: rgba(15, 118, 110, 0.15);
+  color: #5eead4;
+}
+
+:root.dark-mode .ai-suggestions button {
+  background: rgba(15, 118, 110, 0.1);
+  border-color: rgba(15, 118, 110, 0.3);
+  color: #5eead4;
+}
+
+/* ─── Phone preview ──────────────────────────────────────────────────────── */
+:root.dark-mode .phone-screen {
+  background: linear-gradient(180deg, #1e293b, #0f172a);
+}
+
+:root.dark-mode .phone-screen strong {
+  color: #5eead4;
+}
+
+:root.dark-mode .phone-screen div {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text);
+}
+
+/* ─── Webhook / Settings cards ───────────────────────────────────────────── */
+:root.dark-mode .webhook-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .webhook-url-box {
+  background: #020617;
+}
+
+:root.dark-mode .webhook-code {
+  background: #020617;
+  color: #67e8f9;
+}
+
+:root.dark-mode .integration-item {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+}
+
+/* ─── Settings page ──────────────────────────────────────────────────────── */
+:root.dark-mode .settings-section-title {
+  color: var(--color-text);
+}
+
+:root.dark-mode .settings-section-desc {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .stage-config-item {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .stage-config-name {
+  color: var(--color-text);
+}
+
+:root.dark-mode .stage-config-desc {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .stage-order {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .notif-label {
+  color: var(--color-text);
+}
+
+:root.dark-mode .notif-desc {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .notif-item {
+  border-color: var(--color-border-light);
+}
+
+/* ─── Data table small text ──────────────────────────────────────────────── */
+:root.dark-mode .data-table td small {
+  color: var(--color-text-muted);
+}
+
+/* ─── Buttons ────────────────────────────────────────────────────────────── */
+:root.dark-mode .btn-secondary {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .btn-secondary:hover {
+  background: var(--color-surface-hover);
+  color: var(--color-text);
+}
+
+:root.dark-mode .btn-danger {
+  background: rgba(239, 68, 68, 0.15);
+  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.3);
+}
+
+:root.dark-mode .btn-danger:hover {
+  background: rgba(239, 68, 68, 0.22);
+}
+
+/* ─── Header ─────────────────────────────────────────────────────────────── */
+:root.dark-mode .header-user-chip {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .header-username {
+  color: var(--color-text);
+}
+
+:root.dark-mode .header-role-badge.admin {
+  background: rgba(124, 58, 237, 0.15);
+  color: #a78bfa;
+}
+
+:root.dark-mode .header-role-badge.counselor {
+  background: rgba(22, 163, 74, 0.15);
+  color: #4ade80;
+}
+
+:root.dark-mode .header-role-badge.student {
+  background: rgba(16, 185, 129, 0.15);
+  color: #34d399;
+}
+
+:root.dark-mode .header-search-input {
+  background: var(--color-bg);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .header-search-input::placeholder {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .search-results-overlay {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .search-result-item:hover {
+  background: var(--color-bg);
+}
+
+:root.dark-mode .search-result-name {
+  color: var(--color-text);
+}
+
+:root.dark-mode .search-result-meta {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .date-badge {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+/* ─── Counselors page ────────────────────────────────────────────────────── */
+:root.dark-mode .counselor-card-top {
+  background: linear-gradient(180deg, var(--color-bg) 0%, var(--color-surface) 100%);
+}
+
+:root.dark-mode .counselor-name {
+  color: var(--color-text);
+}
+
+:root.dark-mode .counselor-role {
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .counselor-card-stats {
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .counselor-stat-divider {
+  background: var(--color-border);
+}
+
+:root.dark-mode .stat-num {
+  color: var(--color-text);
+}
+
+:root.dark-mode .stat-lbl {
+  color: var(--color-text-muted);
+}
+
+/* ─── Courses page ───────────────────────────────────────────────────────── */
+:root.dark-mode .course-code {
+  background: var(--color-bg);
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .course-name {
+  color: var(--color-text);
+}
+
+:root.dark-mode .fee-cell,
+:root.dark-mode .seats-cell {
+  color: var(--color-text);
+}
+
+/* ─── Reports / Metrics ──────────────────────────────────────────────────── */
+:root.dark-mode .metric-card {
+  background: var(--color-bg);
+}
+
+:root.dark-mode .metric-card:hover {
+  background: var(--color-surface);
+}
+
+:root.dark-mode .metric-value {
+  color: var(--color-text);
+}
+
+:root.dark-mode .metric-label {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .funnel-stage-name {
+  color: var(--color-text);
+}
+
+:root.dark-mode .funnel-stage-count {
+  color: var(--color-text-muted);
+}
+
+/* ─── User Dashboard ─────────────────────────────────────────────────────── */
+:root.dark-mode .ud-stage-bar-wrap {
+  background: var(--color-border);
+}
+
+:root.dark-mode .ud-stage-name {
+  color: var(--color-text);
+}
+
+:root.dark-mode .ud-stage-count {
+  color: var(--color-text);
+}
+
+:root.dark-mode .ud-stage-pct {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .ud-chart-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .ud-legend-item {
+  color: var(--color-text);
+}
+
+/* ─── SQI page ───────────────────────────────────────────────────────────── */
+:root.dark-mode .sqi-chart-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .sqi-chart-title {
+  color: var(--color-text);
+}
+
+:root.dark-mode .sqi-kpi-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .sqi-kpi-value {
+  color: var(--color-text);
+}
+
+:root.dark-mode .sqi-kpi-label {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .sqi-legend-item {
+  color: var(--color-text);
+}
+
+:root.dark-mode .sqi-section-title {
+  color: var(--color-text);
+}
+
+:root.dark-mode .sqi-insight-text {
+  color: var(--color-text-secondary);
+}
+
+/* ─── Skeleton loaders ───────────────────────────────────────────────────── */
+:root.dark-mode .skeleton-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .skeleton-block {
+  background: linear-gradient(90deg, var(--color-bg) 25%, var(--color-border) 50%, var(--color-bg) 75%);
+  background-size: 200% 100%;
+}
+
+/* ─── Kanban ─────────────────────────────────────────────────────────────── */
+:root.dark-mode .kanban-column {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .kanban-col-header {
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .kanban-col-title {
+  color: var(--color-text);
+}
+
+:root.dark-mode .kanban-col-count {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .kanban-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .kanban-card-name {
+  color: var(--color-text);
+}
+
+:root.dark-mode .kanban-card-course,
+:root.dark-mode .kanban-card-counselor,
+:root.dark-mode .kanban-card-days {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .kanban-cards.drag-over {
+  background: var(--color-primary-soft);
+}
+
+/* ─── Score meter (leads 360) ────────────────────────────────────────────── */
+:root.dark-mode .score-meter {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .score-meter span {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .s360-sidebar {
+  background: var(--color-bg);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .s360-tabs {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .tab-btn {
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .tab-btn.active {
+  color: var(--color-primary);
+}
+
+:root.dark-mode .comm-log-item {
+  background: var(--color-bg);
+}
+
+:root.dark-mode .doc-row-mini {
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+:root.dark-mode .info-item label {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .info-item span {
+  color: var(--color-text);
+}
+
+/* ─── Audit log / activity ───────────────────────────────────────────────── */
+:root.dark-mode .activity-msg {
+  color: var(--color-text);
+}
+
+:root.dark-mode .activity-time {
+  color: var(--color-text-muted);
+}
+
+/* ─── Page header ────────────────────────────────────────────────────────── */
+:root.dark-mode .page-title {
+  color: var(--color-text);
+}
+
+:root.dark-mode .page-subtitle {
+  color: var(--color-text-secondary);
+}
+
+/* ─── Stat chips (leads page) ────────────────────────────────────────────── */
+:root.dark-mode .stat-chip {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .stat-chip-value {
+  color: var(--color-text);
+}
+
+:root.dark-mode .stat-chip-label {
+  color: var(--color-text-muted);
+}
+
+/* ─── Marketing section cards ────────────────────────────────────────────── */
+:root.dark-mode .mk-analytics-mini div {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .mk-analytics-mini strong {
+  color: var(--color-text);
+}
+
+:root.dark-mode .mk-analytics-mini span {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .mk-list-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .mk-list-card p {
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .mk-list-card strong {
+  color: var(--color-text);
+}
+
+:root.dark-mode .mk-integration-card {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .mk-integration-card strong {
+  color: var(--color-text);
+}
+
+:root.dark-mode .mk-integration-card small {
+  color: var(--color-text-muted);
+}
+
+:root.dark-mode .mk-chip-row {
+  background: transparent;
+}
+
+/* ─── Notification panel ─────────────────────────────────────────────────── */
+:root.dark-mode .notif-item-row {
+  border-color: var(--color-border);
+}
+
+/* ─── Toggle slider ──────────────────────────────────────────────────────── */
+:root.dark-mode .toggle-slider {
+  background: var(--color-border);
+}
+
+/* ─── Pagination ─────────────────────────────────────────────────────────── */
+:root.dark-mode .page-btn {
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .page-btn:hover:not(:disabled) {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* ─── Table info text ────────────────────────────────────────────────────── */
+:root.dark-mode .table-info {
+  color: var(--color-text-muted);
+}
+
+/* ─── Error state ────────────────────────────────────────────────────────── */
+:root.dark-mode .error-state h3 {
+  color: var(--color-text);
+}
+
+:root.dark-mode .error-state p {
+  color: var(--color-text-secondary);
+}
+
+:root.dark-mode .error-state code {
+  background: var(--color-bg);
+  color: var(--color-primary);
+}
+
+/* ─── Inline hardcoded colors in JS-rendered HTML ────────────────────────── */
+/* These target common patterns where JS pages use inline style colors */
+:root.dark-mode [style*="color:#64748b"],
+:root.dark-mode [style*="color: #64748b"] {
+  color: var(--color-text-muted) !important;
+}
+
+:root.dark-mode [style*="color:#0f172a"],
+:root.dark-mode [style*="color: #0f172a"],
+:root.dark-mode [style*="color:#1e293b"],
+:root.dark-mode [style*="color: #1e293b"] {
+  color: var(--color-text) !important;
+}
+
+:root.dark-mode [style*="color:#475569"],
+:root.dark-mode [style*="color: #475569"],
+:root.dark-mode [style*="color:#334155"],
+:root.dark-mode [style*="color: #334155"] {
+  color: var(--color-text-secondary) !important;
+}
+
+:root.dark-mode [style*="background:#f8fafc"],
+:root.dark-mode [style*="background: #f8fafc"],
+:root.dark-mode [style*="background:#f1f5f9"],
+:root.dark-mode [style*="background: #f1f5f9"] {
+  background: var(--color-surface) !important;
+}
+
+:root.dark-mode [style*="background:#fff"],
+:root.dark-mode [style*="background: #fff"],
+:root.dark-mode [style*="background:#ffffff"],
+:root.dark-mode [style*="background: #ffffff"] {
+  background: var(--color-surface) !important;
+}
+
+:root.dark-mode [style*="border.*#e2e8f0"] {
+  border-color: var(--color-border) !important;
+}
+
+/* ─── Highlight boxes (used in email settings tab) ───────────────────────── */
+:root.dark-mode .highlight-box,
+:root.dark-mode [style*="background:#f0fdf4"],
+:root.dark-mode [style*="background: #f0fdf4"],
+:root.dark-mode [style*="background:#fef9c3"],
+:root.dark-mode [style*="background: #fef9c3"] {
+  background: var(--color-surface) !important;
+  border-color: var(--color-border) !important;
+}
+
+:root.dark-mode [style*="background:#f0fdf4"] p,
+:root.dark-mode [style*="background: #f0fdf4"] p {
+  color: var(--color-text-secondary) !important;
+}
+
+/* ─── Code blocks in settings ────────────────────────────────────────────── */
+:root.dark-mode pre[style*="background:#1e293b"],
+:root.dark-mode pre[style*="background: #1e293b"] {
+  background: #020617 !important;
+}
+
+/* ─── Inline status/info boxes ───────────────────────────────────────────── */
+:root.dark-mode [style*="background:#f0fdfa"],
+:root.dark-mode [style*="background: #f0fdfa"] {
+  background: rgba(15, 118, 110, 0.12) !important;
+  border-color: rgba(15, 118, 110, 0.25) !important;
+}
+
+:root.dark-mode [style*="background:#ede9fe"],
+:root.dark-mode [style*="background: #ede9fe"] {
+  background: rgba(124, 58, 237, 0.15) !important;
+}
+
+:root.dark-mode [style*="background:#dcfce7"],
+:root.dark-mode [style*="background: #dcfce7"] {
+  background: rgba(16, 185, 129, 0.15) !important;
+}
+
+:root.dark-mode [style*="background:#dbeafe"],
+:root.dark-mode [style*="background: #dbeafe"] {
+  background: rgba(59, 130, 246, 0.15) !important;
+}
+
+:root.dark-mode [style*="background:#fef3c7"],
+:root.dark-mode [style*="background: #fef3c7"] {
+  background: rgba(245, 158, 11, 0.15) !important;
+}
+
+:root.dark-mode [style*="background:#fee2e2"],
+:root.dark-mode [style*="background: #fee2e2"] {
+  background: rgba(239, 68, 68, 0.15) !important;
+}

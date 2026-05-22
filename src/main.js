@@ -2,6 +2,7 @@
 import './styles/index.css';
 import './styles/sidebar.css';
 import './styles/components.css';
+import './styles/darkmode.css';
 import './styles/dashboard.css';
 import './styles/leads.css';
 import './styles/pipeline.css';
@@ -37,6 +38,18 @@ import { API_BASE } from './lib/api.js';
 import { showLogin, showSignup } from './pages/login.js';
 import { createIcons } from './lib/icons.js';
 import { getSupabase } from './lib/supabase.js';
+
+// ---- Dark Mode Initialization ----
+function initDarkMode() {
+  const saved = localStorage.getItem('rbmi_dark_mode');
+  if (saved === 'true') {
+    document.documentElement.classList.add('dark-mode');
+  } else if (saved === null && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+    document.documentElement.classList.add('dark-mode');
+    localStorage.setItem('rbmi_dark_mode', 'true');
+  }
+}
+initDarkMode();
 
 window.renderIcons = () => createIcons(document);
 
@@ -98,8 +111,11 @@ function saveSession(payload, branch) {
 }
 
 async function handleAuthCallback() {
-  const hash = window.location.hash.slice(1);
-  if (!hash) return false;
+  const hashParams = new URLSearchParams(window.location.hash.slice(1));
+  const searchParams = new URLSearchParams(window.location.search);
+  const isCallbackRoute = window.location.pathname.endsWith('/auth/callback');
+  const hasAuthResponse = isCallbackRoute || searchParams.has('code') || searchParams.has('error') || hashParams.has('access_token');
+  if (!hasAuthResponse) return false;
 
   try {
     const supabase = getSupabase();
@@ -148,9 +164,10 @@ function showLoginPage() {
 setTimeout(() => {
   hideBoot(async () => {
     const hash = window.location.hash.slice(1);
-    const params = new URLSearchParams(hash);
+    const hashParams = new URLSearchParams(hash);
+    const searchParams = new URLSearchParams(window.location.search);
 
-    if (params.get('access_token')) {
+    if (window.location.pathname.endsWith('/auth/callback') || searchParams.has('code') || searchParams.has('error') || hashParams.get('access_token')) {
       handleAuthCallback();
       return;
     }
