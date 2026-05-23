@@ -22,6 +22,8 @@ npm run dev        # Frontend only — http://localhost:3000
 
 ---
 
+For real Supabase database/auth setup, see [SUPABASE_SETUP.md](./SUPABASE_SETUP.md).
+
 ## Login Credentials
 
 | Role | Email | Password | Campus |
@@ -48,6 +50,7 @@ Leads are captured automatically via the **webhook endpoint** from:
 ```
 POST http://localhost:3001/api/webhook/lead
 Content-Type: application/json
+X-Webhook-Secret: your-secret-if-WEBHOOK_SECRET-is-set
 
 {
   "name": "Rahul Sharma",
@@ -58,6 +61,8 @@ Content-Type: application/json
   "city": "Bareilly"
 }
 ```
+
+Set `WEBHOOK_SECRET` in `.env` to require the `X-Webhook-Secret` header on public lead webhooks. Login, signup, and webhook endpoints also include basic rate limiting.
 
 ---
 

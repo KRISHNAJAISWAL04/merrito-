@@ -6,7 +6,11 @@ export default defineConfig({
   server: {
     port: 3005,
     strictPort: false,
-    open: true
+    open: true,
+    proxy: {
+      '/uploads': 'http://localhost:3001',
+      '/api': 'http://localhost:3001'
+    }
   },
   build: { outDir: 'dist' }
 });

@@ -1,4 +1,4 @@
-import { createApplication, fetchApplications, fetchCourses, updateApplication, exportApplicationsCSV } from '../lib/api.js';
+import { createApplication, fetchApplications, fetchCourses, updateApplication, exportApplicationsCSV, uploadFile } from '../lib/api.js';
 import { openModal } from '../components/modal.js';
 
 function userRole() {
@@ -6,8 +6,25 @@ function userRole() {
 }
 
 function badge(value) {
-  const map = { submitted: 'info', review: 'warn', approved: 'ok', rejected: 'bad', pending: 'warn', verified: 'ok' };
+  const map = { submitted: 'info', review: 'warn', approved: 'ok', rejected: 'bad', pending: 'warn', verified: 'ok', missing: 'warn' };
   return `<span class="ops-badge ${map[value] || 'info'}">${String(value || 'pending').replace(/_/g, ' ')}</span>`;
+}
+
+function normalizeDocs(item) {
+  const fallback = ['Class 10 marksheet', 'Class 12 marksheet', 'ID proof', 'Entrance scorecard', 'Passport photo'];
+  const byName = new Map((item.documents || []).map(doc => [doc.name, doc]));
+  return fallback.map(name => ({ id: name, name, status: 'missing', file_name: '', file_url: '', remarks: '', uploaded_at: null, reviewed_at: null, ...(byName.get(name) || {}) }));
+}
+
+function docsSummary(docs) {
+  const verified = docs.filter(doc => doc.status === 'verified').length;
+  const submitted = docs.filter(doc => doc.status === 'submitted').length;
+  return `${verified}/${docs.length} verified${submitted ? `, ${submitted} waiting` : ''}`;
+}
+
+async function saveDocuments(application, documents, updates = {}) {
+  await updateApplication(application.id, { ...updates, documents });
+  window.dispatchEvent(new CustomEvent('rbmi:refresh'));
 }
 
 export async function renderApplications(el) {
@@ -42,7 +59,10 @@ export async function renderApplications(el) {
       <div class="ops-stats"><div><strong>${total}</strong><span>Total</span></div><div><strong>${approved}</strong><span>Approved</span></div><div><strong>${pendingDocs}</strong><span>Docs pending</span></div></div>
       <div class="ops-table-wrap">
         <table class="data-table"><thead><tr><th>Student</th><th>Program</th><th>Status</th><th>Documents</th><th>Counselor</th><th>Priority</th><th>Action</th></tr></thead><tbody>
-          ${items.length ? items.map(item => `<tr><td><strong>${item.student_name}</strong><small>${item.email || ''}</small></td><td>${item.course_name || courseMap[item.course_id] || 'Program not selected'}</td><td>${badge(item.status)}</td><td>${badge(item.documents_status)}</td><td>${item.counselor_name}</td><td>${item.priority}</td><td><button class="btn btn-secondary btn-sm app-action" data-id="${item.id}">${role === 'student' ? 'Upload Docs' : 'Review'}</button></td></tr>`).join('') : '<tr><td colspan="7" class="ops-empty">No applications yet</td></tr>'}
+          ${items.length ? items.map(item => {
+            const docs = normalizeDocs(item);
+            return `<tr><td><strong>${item.student_name}</strong><small>${item.email || ''}</small></td><td>${item.course_name || courseMap[item.course_id] || 'Program not selected'}</td><td>${badge(item.status)}</td><td>${badge(item.documents_status)}<small>${docsSummary(docs)}</small></td><td>${item.counselor_name}</td><td>${item.priority}</td><td><button class="btn btn-secondary btn-sm app-action" data-id="${item.id}">${role === 'student' ? 'Upload Docs' : 'Review'}</button></td></tr>`;
+          }).join('') : '<tr><td colspan="7" class="ops-empty">No applications yet</td></tr>'}
         </tbody></table>
       </div>
     </div>`;
@@ -71,18 +91,127 @@ export async function renderApplications(el) {
 
   el.querySelectorAll('.app-action').forEach(button => button.addEventListener('click', async () => {
     const id = button.dataset.id;
-    if (role === 'student') await updateApplication(id, { documents_status: 'verified' });
-    else {
-      openModal('Review Application', `
-        <p>Approve and verify documents for this application?</p>
+    const application = items.find(item => item.id === id);
+    const docs = normalizeDocs(application);
+
+    if (role === 'student') {
+      openModal('Upload Documents', `
+        <div class="doc-list">
+          ${docs.map(doc => `
+            <div class="doc-row">
+              <div>
+                <strong>${doc.name}</strong>
+                <small>
+                  ${doc.file_url ? `<a href="${doc.file_url}" target="_blank" style="color:var(--color-primary);text-decoration:underline;">${doc.file_name || 'Download'}</a>` : (doc.file_name || 'No file uploaded')}
+                  ${doc.remarks ? ' - ' + doc.remarks : ''}
+                </small>
+              </div>
+              ${badge(doc.status)}
+            </div>
+          `).join('')}
+        </div>
+        <div class="form-group" style="margin-top:16px;">
+          <label class="form-label">Document</label>
+          <select class="form-input" id="app-doc-name">
+            ${docs.filter(doc => doc.status !== 'verified').map(doc => `<option value="${doc.name}">${doc.name}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">File</label>
+          <input class="form-input" type="file" id="app-doc-file" accept=".pdf,.jpg,.jpeg,.png" />
+        </div>
       `, {
-        submitLabel: 'Verify & Approve',
-        onSubmit: async () => {
-          await updateApplication(id, { status: 'approved', documents_status: 'verified' });
-          window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+        submitLabel: 'Submit Document',
+        onSubmit: async (body) => {
+          const fileInput = body.querySelector('#app-doc-file');
+          const file = fileInput?.files?.[0];
+          const name = body.querySelector('#app-doc-name').value;
+          if (!file) {
+            alert('Please choose a file.');
+            return false;
+          }
+          
+          // Upload the file to the server
+          const submitBtn = body.parentElement.querySelector('#modal-submit-btn');
+          if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = 'Uploading...';
+          }
+          
+          try {
+            const uploadResult = await uploadFile(file, { document_name: name, application_id: application.id });
+            const nextDocs = docs.map(doc => doc.name === name ? {
+              ...doc,
+              status: 'submitted',
+              file_name: file.name,
+              file_url: uploadResult.url,
+              remarks: '',
+              uploaded_at: new Date().toISOString(),
+              reviewed_at: null
+            } : doc);
+            await saveDocuments(application, nextDocs);
+          } catch (err) {
+            alert('Upload failed: ' + err.message);
+            if (submitBtn) {
+              submitBtn.disabled = false;
+              submitBtn.innerText = 'Submit Document';
+            }
+            return false;
+          }
         }
       });
+      return;
     }
+
+    openModal('Review Documents', `
+      <div class="doc-list">
+        ${docs.map(doc => `
+          <div class="doc-row">
+            <div>
+              <strong>${doc.name}</strong>
+              <small>
+                ${doc.file_url ? `<a href="${doc.file_url}" target="_blank" style="color:var(--color-primary);text-decoration:underline;">${doc.file_name || 'Download'}</a>` : (doc.file_name || 'No file uploaded')}
+                ${doc.remarks ? ' - ' + doc.remarks : ''}
+              </small>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;">
+              ${badge(doc.status)}
+              ${doc.status === 'submitted' ? `<button class="btn btn-secondary btn-sm doc-reject" data-doc="${doc.name}" type="button">Reject</button><button class="btn btn-primary btn-sm doc-verify" data-doc="${doc.name}" type="button">Verify</button>` : ''}
+            </div>
+          </div>
+        `).join('')}
+      </div>
+      <div class="form-group" style="margin-top:16px;">
+        <label class="form-label">Application status</label>
+        <select id="app-review-status" class="form-input">
+          <option value="submitted" ${application.status === 'submitted' ? 'selected' : ''}>Submitted</option>
+          <option value="review" ${application.status === 'review' ? 'selected' : ''}>Review</option>
+          <option value="approved" ${application.status === 'approved' ? 'selected' : ''}>Approved</option>
+          <option value="rejected" ${application.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+        </select>
+      </div>
+      `, {
+        submitLabel: 'Save Review',
+        width: '720px',
+        onOpen: (body) => {
+          body.querySelectorAll('.doc-verify').forEach(btn => {
+            btn.onclick = async () => {
+              const nextDocs = docs.map(doc => doc.name === btn.dataset.doc ? { ...doc, status: 'verified', remarks: '', reviewed_at: new Date().toISOString() } : doc);
+              await saveDocuments(application, nextDocs, { status: body.querySelector('#app-review-status').value });
+            };
+          });
+          body.querySelectorAll('.doc-reject').forEach(btn => {
+            btn.onclick = async () => {
+              const remark = prompt('Reason for rejection?', 'Please upload a clearer document.') || 'Rejected during review.';
+              const nextDocs = docs.map(doc => doc.name === btn.dataset.doc ? { ...doc, status: 'rejected', remarks: remark, reviewed_at: new Date().toISOString() } : doc);
+              await saveDocuments(application, nextDocs, { status: 'review' });
+            };
+          });
+        },
+        onSubmit: async (body) => {
+          await saveDocuments(application, docs, { status: body.querySelector('#app-review-status').value });
+        }
+      });
   }));
 }
 

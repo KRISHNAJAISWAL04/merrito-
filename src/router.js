@@ -75,7 +75,7 @@ export function initRouter() {
 
     const handler = routes[hash];
     if (!handler) {
-      el.innerHTML = `<div style="text-align:center;padding:4rem;"><h2>404</h2><p style="color:#64748b;margin-top:8px;">Page not found</p><button class="btn btn-primary" style="margin-top:16px;" onclick="window.location.hash='/dashboard'">Back to Safety</button></div>`;
+      el.innerHTML = `<div style="text-align:center;padding:4rem;"><h2>404</h2><p style="color:var(--color-text-muted);margin-top:8px;">Page not found</p><button class="btn btn-primary" style="margin-top:16px;" onclick="window.location.hash='/dashboard'">Back to Safety</button></div>`;
       runLucide();
       return;
     }

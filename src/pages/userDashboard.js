@@ -1,5 +1,5 @@
 // ===== USER DASHBOARD PAGE (Productivity Report) =====
-import { fetchDashboardStats, fetchCounselors } from '../lib/api.js';
+import { fetchDashboardStats } from '../lib/api.js';
 import { createBarChart, createHorizontalBarChart, createDoughnutChart } from '../components/charts.js';
 
 const STAGE_META = [
@@ -26,10 +26,8 @@ export async function renderUserDashboard(container) {
   `;
 
   try {
-    const [stats, counselors] = await Promise.all([
-      fetchDashboardStats(),
-      fetchCounselors()
-    ]);
+    const stats = await fetchDashboardStats();
+    const counselors = Array.isArray(stats.counselorStats) ? stats.counselorStats : [];
 
     const stageDistrib = stats.stageDistribution || {};
     const counselorNames = counselors.map(c => c.name.split(' ')[0]);
@@ -166,7 +164,7 @@ export async function renderUserDashboard(container) {
             plugins: {
               legend: { display: false },
               tooltip: {
-                backgroundColor: '#0f172a',
+                backgroundColor: '#1e293b',
                 titleFont: { family: 'Inter', size: 13 },
                 bodyFont: { family: 'Inter', size: 12 },
                 padding: 12,
@@ -176,12 +174,12 @@ export async function renderUserDashboard(container) {
             scales: {
               x: {
                 grid: { display: false },
-                ticks: { font: { family: 'Inter', size: 12 }, color: '#64748b' }
+                ticks: { font: { family: 'Inter', size: 12 }, color: getComputedStyle(document.documentElement).getPropertyValue('--color-text-secondary').trim() || '#64748b' }
               },
               y: {
                 beginAtZero: true,
-                grid: { color: '#f1f5f9' },
-                ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' }
+                grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--color-border-light').trim() || '#f1f5f9' },
+                ticks: { font: { family: 'Inter', size: 11 }, color: getComputedStyle(document.documentElement).getPropertyValue('--color-text-muted').trim() || '#94a3b8' }
               }
             }
           }

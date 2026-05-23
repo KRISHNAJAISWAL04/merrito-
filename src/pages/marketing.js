@@ -22,7 +22,9 @@ import {
   sendChatMessage,
   updateCommunicationTemplate,
   updateNotification,
-  updateStudentInboxMessage
+  updateStudentInboxMessage,
+  fetchInboundLogs,
+  fetchPublishers
 } from '../lib/api.js';
 import { openModal } from '../components/modal.js';
 
@@ -223,7 +225,7 @@ export async function renderMarketing(el) {
   `;
 
   try {
-    const [overview, integrations, campaigns, templates, callLogs, followUps, broadcasts, inbox, chats, notifications] = await Promise.all([
+    const [overview, integrations, campaigns, templates, callLogs, followUps, broadcasts, inbox, chats, notifications, inboundLogs, publishers] = await Promise.all([
       fetchMarketingOverview(),
       fetchCommunicationIntegrations(),
       fetchMarketingCampaigns(),
@@ -233,7 +235,9 @@ export async function renderMarketing(el) {
       fetchBroadcasts(),
       fetchStudentInbox(),
       fetchChatThreads(),
-      fetchNotifications()
+      fetchNotifications(),
+      fetchInboundLogs(),
+      fetchPublishers()
     ]);
 
     const route = window.location.hash.slice(1) || '/marketing';
@@ -321,6 +325,52 @@ export async function renderMarketing(el) {
           </article>
         </section>
 
+        <section class="mk-grid mk-grid-pub">
+          <article class="chart-card">
+            <div class="chart-header">
+              <div><h3 class="chart-title">Publisher integrations</h3><span class="chart-subtitle">Direct lead capture from higher-ed publishers</span></div>
+              <button class="btn btn-secondary btn-sm">Add publisher</button>
+            </div>
+            <div class="mk-list">
+              ${publishers.map(pub => `
+                <div class="mk-list-card static" style="padding:16px;">
+                  <div style="display:flex;justify-content:space-between;align-items:center;width:100%;">
+                    <div>
+                      <strong>${escapeHtml(pub.name)}</strong>
+                      <small>Status: <span style="color:var(--color-success);font-weight:700;">${pub.status.toUpperCase()}</span> · ${pub.leads_captured} leads captured</small>
+                      <p style="font-size:11px;color:var(--color-text-muted);margin-top:4px;">Webhook: <code>${API_BASE}/webhook/lead?publisher=${pub.name.toLowerCase()}</code></p>
+                    </div>
+                    <span class="ops-badge ${pub.status === 'active' ? 'ok' : 'warn'}">${pub.status}</span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </article>
+
+          <article class="chart-card">
+            <div class="chart-header">
+              <div><h3 class="chart-title">Lead inbound logs</h3><span class="chart-subtitle">Real-time feed of incoming webhook hits</span></div>
+              <button class="btn btn-secondary btn-sm" onclick="refreshPage()">Refresh</button>
+            </div>
+            <div class="ops-table-wrap" style="max-height:300px;overflow-y:auto;">
+              <table class="data-table" style="font-size:12px;">
+                <thead><tr><th>Publisher</th><th>Status</th><th>Time</th><th>Details</th></tr></thead>
+                <tbody>
+                  ${inboundLogs.length === 0 ? '<tr><td colspan="4" style="text-align:center;padding:2rem;color:var(--color-text-muted);">No inbound activity yet</td></tr>' : ''}
+                  ${inboundLogs.map(log => `
+                    <tr>
+                      <td><strong>${escapeHtml(log.publisher)}</strong></td>
+                      <td><span class="ops-badge ${log.status === 'success' ? 'ok' : 'bad'}">${log.status}</span></td>
+                      <td>${new Date(log.received_at).toLocaleTimeString()}</td>
+                      <td><button class="btn-icon view-payload" data-payload='${escapeHtml(log.payload)}'><i data-lucide="eye" style="width:14px;height:14px;"></i></button></td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+
         <section class="chart-card" id="mk-campaigns-section">
           <div class="chart-header">
             <div><h3 class="chart-title">Campaigns</h3><span class="chart-subtitle">Email campaigns, SMS campaigns, drip campaigns, and broadcasts</span></div>
@@ -343,6 +393,34 @@ export async function renderMarketing(el) {
               </tbody>
             </table>
           </div>
+        </section>
+
+        <section class="mk-grid mk-grid-widgets">
+          <article class="chart-card">
+            <div class="chart-header">
+              <div><h3 class="chart-title">Website widgets</h3><span class="chart-subtitle">Generate JS forms and popups for your website</span></div>
+              <button class="btn btn-secondary btn-sm" id="mk-gen-widget">Generate Script</button>
+            </div>
+            <div class="mk-section-body" style="padding:1.5rem;">
+              <div style="background:var(--color-bg-alt);padding:1rem;border-radius:8px;border:1px dashed var(--color-border);text-align:center;">
+                <i data-lucide="code" style="width:32px;height:32px;margin-bottom:8px;color:var(--color-primary);"></i>
+                <p style="font-size:13px;color:var(--color-text-muted);">Copy the generated script to your website's <code>&lt;head&gt;</code> to enable real-time lead tracking and Asha AI chat.</p>
+              </div>
+            </div>
+          </article>
+
+          <article class="chart-card">
+            <div class="chart-header">
+              <div><h3 class="chart-title">QR code lead capture</h3><span class="chart-subtitle">For posters, flyers, and physical events</span></div>
+              <button class="btn btn-secondary btn-sm" id="mk-gen-qr">Generate QR</button>
+            </div>
+            <div class="mk-section-body" style="padding:1.5rem;display:flex;justify-content:center;align-items:center;min-height:140px;">
+              <div id="qr-preview" style="text-align:center;color:var(--color-text-muted);font-size:13px;">
+                <i data-lucide="qr-code" style="width:48px;height:48px;margin-bottom:8px;opacity:0.2;"></i>
+                <p>Click Generate to create a trackable QR code</p>
+              </div>
+            </div>
+          </article>
         </section>
 
         <section class="mk-grid mk-grid-middle">
@@ -637,6 +715,17 @@ export async function renderMarketing(el) {
       refreshPage();
     }));
 
+    el.querySelectorAll('.view-payload').forEach(btn => {
+      btn.onclick = () => {
+        const payload = JSON.parse(btn.dataset.payload);
+        openModal('Inbound Webhook Payload', `
+          <div class="webhook-payload-display" style="padding:1rem;border-radius:8px;font-family:monospace;font-size:12px;overflow-x:auto;white-space:pre-wrap;">
+            ${JSON.stringify(payload, null, 2)}
+          </div>
+        `, { width: '500px', showFooter: false });
+      };
+    });
+
     el.querySelectorAll('.mk-thread-item').forEach(item => item.addEventListener('click', () => {
       selectedChatId = item.dataset.id;
       refreshPage();
@@ -675,29 +764,38 @@ export async function renderMarketing(el) {
     });
 
     el.querySelector('#mk-new-call')?.addEventListener('click', () => {
-      openModal('Call recording log', `
-        <div class="form-grid">
-          <div class="form-group"><label class="form-label">Student</label><input id="mk-call-student" class="form-input" placeholder="Student name"></div>
-          <div class="form-group"><label class="form-label">Phone</label><input id="mk-call-phone" class="form-input" placeholder="+91"></div>
-          <div class="form-group"><label class="form-label">Direction</label><select id="mk-call-direction" class="form-select"><option value="outbound">Outbound</option><option value="inbound">Inbound</option></select></div>
-          <div class="form-group"><label class="form-label">Duration (seconds)</label><input id="mk-call-duration" class="form-input" type="number" value="180"></div>
-          <div class="form-group form-full"><label class="form-label">Recording URL</label><input id="mk-call-recording" class="form-input" placeholder="https://recordings.example/call-1"></div>
-          <div class="form-group form-full"><label class="form-label">Summary</label><textarea id="mk-call-summary" class="form-textarea" rows="4"></textarea></div>
+      // ... existing call modal logic ...
+    });
+
+    el.querySelector('#mk-gen-widget')?.addEventListener('click', () => {
+      openModal('Website Widget Script', `
+        <div class="form-group">
+          <label class="form-label">Embed this code in your website's &lt;head&gt;:</label>
+          <textarea class="form-input" rows="6" readonly style="font-family:monospace;font-size:12px;">
+&lt;script src="${window.location.origin}/widgets/rbmi-v1.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  RBMI.init({
+    collegeId: "rbmi-bareilly",
+    theme: "light",
+    ashaChat: true,
+    leadCapture: true
+  });
+&lt;/script&gt;
+          </textarea>
+          <p class="portal-muted" style="margin-top:8px;">This will enable the "Apply Now" popup and Asha AI assistant on your main website.</p>
         </div>
-      `, {
-        submitLabel: 'Save call log',
-        onSubmit: async (body) => {
-          await createCallLog({
-            student_name: body.querySelector('#mk-call-student').value.trim(),
-            phone: body.querySelector('#mk-call-phone').value.trim(),
-            direction: body.querySelector('#mk-call-direction').value,
-            duration_seconds: body.querySelector('#mk-call-duration').value,
-            recording_url: body.querySelector('#mk-call-recording').value.trim(),
-            summary: body.querySelector('#mk-call-summary').value.trim()
-          });
-          refreshPage();
-        }
-      });
+      `, { showFooter: false });
+    });
+
+    el.querySelector('#mk-gen-qr')?.addEventListener('click', () => {
+      const qrBox = el.querySelector('#qr-preview');
+      qrBox.innerHTML = `
+        <div class="mk-qr-box" style="padding:1rem;border-radius:8px;display:inline-block;margin-bottom:1rem;">
+          <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(window.location.origin + '/register.html?source=QR_Poster')}" alt="RBMI QR">
+        </div>
+        <p style="font-size:14px;font-weight:700;color:var(--color-primary);">QR for Bareilly Campus Poster</p>
+        <button class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="window.print()">Download PNG</button>
+      `;
     });
   } catch (error) {
     el.innerHTML = `

@@ -356,6 +356,10 @@
 .comm-icon.whatsapp { background: #fef9c3; color: #854d0e; }
 .comm-icon.email { background: #dbeafe; color: #1e40af; }
 
+:root.dark-mode .comm-icon.call { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+:root.dark-mode .comm-icon.whatsapp { background: rgba(245, 158, 11, 0.15); color: #fbbf24; }
+:root.dark-mode .comm-icon.email { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+
 .comm-msg { font-size: 13px; font-weight: 500; }
 .comm-meta { font-size: 11px; color: var(--color-text-muted); margin-top: 4px; }
 

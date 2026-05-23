@@ -119,14 +119,14 @@ async function loadCounselors(container) {
       data: {
         labels: counselors.map(c => c.name.split(' ')[0]),
         datasets: [
-          { label: 'Leads Assigned', data: counselors.map(c => c.leads_assigned), backgroundColor: '#6366f1', borderRadius: 6, borderSkipped: false },
-          { label: 'Conversions', data: counselors.map(c => c.conversions), backgroundColor: '#10b981', borderRadius: 6, borderSkipped: false }
+          { label: 'Leads Assigned', data: counselors.map(c => c.leads_assigned), backgroundColor: '#818cf8', borderRadius: 6, borderSkipped: false },
+          { label: 'Conversions', data: counselors.map(c => c.conversions), backgroundColor: '#34d399', borderRadius: 6, borderSkipped: false }
         ]
       },
       options: {
         responsive: true, maintainAspectRatio: false,
         plugins: { legend: { position: 'top', align: 'end', labels: { usePointStyle: true, pointStyle: 'circle', padding: 20, font: { family: 'Inter', size: 12 } } } },
-        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#f1f5f9' } } }
+        scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: getComputedStyle(document.documentElement).getPropertyValue('--color-border-light').trim() || '#f1f5f9' } } }
       }
     });
   }, 100);
@@ -152,15 +152,15 @@ function renderCounselorCard(c, i, isAdmin) {
       </div>
       <div class="counselor-card-footer">
         <div class="counselor-rating">
-          ${[1,2,3,4,5].map(s => `<i data-lucide="star" style="width:14px;height:14px;${s <= Math.round(c.rating) ? 'fill:#f59e0b;color:#f59e0b;' : 'color:#e2e8f0;'}"></i>`).join('')}
+          ${[1,2,3,4,5].map(s => `<i data-lucide="star" style="width:14px;height:14px;${s <= Math.round(c.rating) ? 'fill:#f59e0b;color:#f59e0b;' : 'color:var(--color-border);'}"></i>`).join('')}
           <span>${c.rating}</span>
         </div>
         <div class="counselor-contact">
           <a href="mailto:${c.email}" class="contact-btn" title="Email" style="font-size:13px;text-decoration:none;"><i data-lucide="mail" style="width:14px;height:14px;"></i> Mail</a>
           <a href="tel:${c.phone}" class="contact-btn" title="Call" style="font-size:13px;text-decoration:none;"><i data-lucide="phone" style="width:14px;height:14px;"></i> Call</a>
           ${isAdmin ? `
-          <button class="contact-btn btn-edit-counselor" data-id="${c.id}" title="Edit" style="font-size:11px;font-weight:600;background:#ede9fe;color:#7c3aed;border:1px solid #ddd6fe;">Edit</button>
-          <button class="contact-btn btn-delete-counselor" data-id="${c.id}" title="Delete" style="font-size:11px;font-weight:600;background:#fef2f2;color:#dc2626;border:1px solid #fecaca;">Del</button>
+          <button class="contact-btn btn-edit-counselor" data-id="${c.id}" title="Edit" style="font-size:11px;font-weight:600;">Edit</button>
+          <button class="contact-btn btn-delete-counselor" data-id="${c.id}" title="Delete" style="font-size:11px;font-weight:600;">Del</button>
           ` : ''}
         </div>
       </div>

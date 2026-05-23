@@ -12,7 +12,8 @@ const DEFAULT_DB = {
   leads: [],
   counselors: [],
   courses: [],
-  activities: []
+  activities: [],
+  tasks: []
 };
 
 function readDB() {
@@ -78,7 +79,7 @@ export function seedIfEmpty() {
   ];
 
   // Start with ZERO leads and ZERO activities — user adds their own data
-  const seeded = { leads: [], counselors, courses, activities: [] };
+  const seeded = { leads: [], counselors, courses, activities: [], tasks: [] };
   writeDB(seeded);
   console.log(`  Initialized: 0 leads, ${counselors.length} counselors, ${courses.length} courses (clean start)`);
 }

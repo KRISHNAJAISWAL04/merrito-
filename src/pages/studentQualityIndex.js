@@ -1,5 +1,5 @@
 // ===== STUDENT QUALITY INDEX PAGE =====
-import { fetchDashboardStats, fetchLeads } from '../lib/api.js';
+import { fetchDashboardStats, fetchLeads, chatWithAI } from '../lib/api.js';
 import { createHorizontalBarChart, createDoughnutChart } from '../components/charts.js';
 
 export async function renderStudentQualityIndex(container) {
@@ -11,6 +11,9 @@ export async function renderStudentQualityIndex(container) {
           <p class="page-subtitle">We recommend you to read the information for better understanding and visualization.</p>
         </div>
         <div class="header-actions">
+          <button class="btn btn-primary" id="sqi-ai-analyze-btn" style="background: var(--color-primary); color: white; border: none;">
+            <i data-lucide="sparkles" style="width:16px;height:16px;margin-right:8px;"></i> Analyze with Asha AI
+          </button>
           <button class="btn btn-secondary" id="sqi-filter-btn"><i data-lucide="filter" style="width:16px;height:16px;"></i> Filter</button>
         </div>
       </div>
@@ -93,7 +96,25 @@ export async function renderStudentQualityIndex(container) {
             <p class="page-subtitle">We recommend you to read the information for better understanding and visualization.</p>
           </div>
           <div class="header-actions">
+            <button class="btn btn-primary" id="sqi-ai-analyze-btn" style="background: var(--color-primary); color: white; border: none; display: flex; align-items: center; gap: 8px;">
+              <i data-lucide="sparkles" style="width:16px;height:16px;"></i> Analyze with Asha AI
+            </button>
             <button class="btn btn-secondary" id="sqi-filter-btn"><i data-lucide="filter" style="width:16px;height:16px;"></i> Filter</button>
+          </div>
+        </div>
+
+        <!-- AI Insight Section (Hidden by default) -->
+        <div id="sqi-ai-insight-container" style="display: none; margin-bottom: 2rem;">
+          <div class="sqi-chart-card animate-fade-in" style="border-left: 4px solid var(--color-primary); background: linear-gradient(to right, rgba(99, 102, 241, 0.05), white);">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+              <h3 class="sqi-chart-title" style="margin: 0; color: var(--color-primary); display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="brain"></i> Asha AI Insights
+              </h3>
+              <button class="btn-icon" id="close-ai-insight"><i data-lucide="x" style="width:16px;height:16px;"></i></button>
+            </div>
+            <div id="ai-insight-content" class="sqi-insight-text" style="font-size: 1rem; line-height: 1.6; color: var(--color-text);">
+              Analyzing your data...
+            </div>
           </div>
         </div>
 
@@ -183,6 +204,39 @@ export async function renderStudentQualityIndex(container) {
     `;
 
     window.renderIcons();
+
+    // AI Analysis Event Listener
+    document.getElementById('sqi-ai-analyze-btn').addEventListener('click', async () => {
+      const insightContainer = document.getElementById('sqi-ai-insight-container');
+      const insightContent = document.getElementById('ai-insight-content');
+      
+      insightContainer.style.display = 'block';
+      insightContent.innerHTML = '<div class="spinner" style="width:20px;height:20px;margin-right:10px;display:inline-block;"></div> Asha AI is analyzing your recruitment data...';
+      insightContainer.scrollIntoView({ behavior: 'smooth' });
+
+      try {
+        const prompt = `Analyze this Student Quality Index data for RBMI and provide 3 actionable recruitment insights:
+        - Total Leads: ${stats.totalLeads}
+        - Admissions: ${stats.admissions}
+        - Conversion Rate: ${stats.conversionRate}%
+        - Gender Ratio: ${ratioM}:${ratioF}
+        - Average Age: ${avgAge}
+        - Top Sources: ${JSON.stringify(sourceData)}
+        - Stage Breakdown: ${JSON.stringify(stageData)}
+        Focus on improving conversion and targeting the right demographic. Keep it professional and concise.`;
+
+        const res = await chatWithAI([{ role: 'user', content: prompt }]);
+        insightContent.innerHTML = res.message.replace(/\n/g, '<br>');
+      } catch (err) {
+        console.error('AI Analysis Error:', err);
+        insightContent.innerHTML = `<span style="color:var(--color-danger)">Failed to generate AI insights: ${err.message}</span>`;
+      }
+      window.renderIcons();
+    });
+
+    document.getElementById('close-ai-insight')?.addEventListener('click', () => {
+      document.getElementById('sqi-ai-insight-container').style.display = 'none';
+    });
 
     setTimeout(() => {
       // Age Bifurcation - horizontal grouped bar

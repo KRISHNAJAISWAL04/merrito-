@@ -162,8 +162,9 @@ async function createAutomatedTaskForLead(lead, stage = lead.stage) {
 app.get('/api/health', (req, res) => res.json({ ok: true }));
 app.post('/api/health', (req, res) => res.json({ ok: true, body: req.body }));
 
-// Seed demo users on startup
-await seedDemoUsers();
+// Seed demo users only for local/demo mode. Real Supabase deployments should create users in Supabase Auth.
+const shouldSeedDemoUsers = process.env.SEED_DEMO_USERS === 'true' || (!db.USE_SUPABASE && process.env.USE_DEMO_DATA !== 'false' && process.env.REAL_DATA_MODE !== 'true');
+if (shouldSeedDemoUsers) await seedDemoUsers();
 
 // ============================================================
 //  AUTH
@@ -578,8 +579,9 @@ app.post('/api/webhook/lead', rateLimit({ windowMs: 60_000, max: 30 }), requireW
 
 app.get('/api/dashboard/stats', requireAuth, async (req, res) => {
   try {
-    const filterCounselorId = req.user.role === 'counselor' ? req.user.counselor_id : undefined;
-    const leads = await db.getLeads({ counselor_id: filterCounselorId });
+    // Dashboard is a command-center overview for every staff role.
+    // Role-specific scoping remains on My Leads/Pipeline pages.
+    const leads = await db.getLeads({});
     const counselors = await db.getCounselors();
 
     const totalLeads = leads.length;
@@ -614,6 +616,9 @@ app.get('/api/dashboard/stats', requireAuth, async (req, res) => {
     });
 
     res.json({
+      scope: 'global',
+      requestRole: req.user.role,
+      requestCounselorId: req.user.counselor_id || null,
       totalLeads, activeApplications, admissions,
       conversionRate: parseFloat(conversionRate),
       stageDistribution, sourceDistribution, priorityDistribution,
@@ -1216,6 +1221,18 @@ function ensureMarketingModules() {
       }
     ];
     changed = true;
+  }
+
+  if (db.REAL_DATA_MODE) {
+    if (!dbData.communicationCampaigns) dbData.communicationCampaigns = [];
+    if (!dbData.callLogs) dbData.callLogs = [];
+    if (!dbData.autoFollowUps) dbData.autoFollowUps = [];
+    if (!dbData.broadcastMessages) dbData.broadcastMessages = [];
+    if (!dbData.studentInbox) dbData.studentInbox = [];
+    if (!dbData.chatThreads) dbData.chatThreads = [];
+    if (!dbData.notificationCenter) dbData.notificationCenter = [];
+    saveDB(dbData);
+    return dbData;
   }
 
   if (!dbData.communicationCampaigns || dbData.communicationCampaigns.length === 0) {

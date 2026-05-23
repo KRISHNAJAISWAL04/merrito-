@@ -48,11 +48,13 @@ export function verifyToken(token) {
 
 function buildAppPayload(user, branch) {
   const meta = user.user_metadata || {};
+  const rawRole = String(meta.role || 'student').toLowerCase();
+  const role = rawRole === 'counsellor' ? 'counselor' : rawRole;
   return {
     id: user.id,
     email: user.email || '',
     name: meta.name || user.email?.split('@')[0] || 'User',
-    role: meta.role || 'student',
+    role: ['admin', 'counselor', 'student'].includes(role) ? role : 'student',
     counselor_id: meta.counselor_id ?? null,
     branch: meta.branch || branch || 'bareilly'
   };

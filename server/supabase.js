@@ -1,13 +1,20 @@
 import { createClient } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import path from 'path';
+import { fileURLToPath } from 'url';
 import { generateId, getDB, saveDB, seedIfEmpty } from './db.js';
 
-dotenv.config();
-const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = process.env.VITE_SUPABASE_ANON_KEY;
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Always load env from project root and override preloaded values from other cwd/shell contexts.
+dotenv.config({ path: path.resolve(__dirname, '../.env'), override: true });
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_KEY = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
 export const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_KEY);
+export const REAL_DATA_MODE = process.env.REAL_DATA_MODE === 'true' || process.env.USE_DEMO_DATA === 'false';
 
 if (!USE_SUPABASE) {
   console.warn('Supabase credentials missing. Using local JSON database fallback.');
@@ -33,6 +40,18 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function hasAnyLocalData(key) {
+  const db = getDB();
+  return Array.isArray(db[key]) && db[key].length > 0;
+}
+
+function localCollection(key, sortKey = 'created_at', limit = null) {
+  const db = getDB();
+  const rows = Array.isArray(db[key]) ? db[key] : [];
+  const sorted = sortByDateDesc(rows, sortKey);
+  return typeof limit === 'number' ? sorted.slice(0, limit) : sorted;
+}
+
 // ===== LEADS =====
 export async function getLeads(filters = {}) {
   if (USE_SUPABASE) {
@@ -44,6 +63,8 @@ export async function getLeads(filters = {}) {
 
     const { data, error } = await query.order('created_at', { ascending: false });
     if (error) throw error;
+    // debug log: show server-side fetched lead count for troubleshooting
+    try { console.log('SUPABASE_GET_LEADS ->', Array.isArray(data) ? data.length : 'no-data', 'filters=', filters); } catch (e) {}
     return data || [];
   }
 
@@ -61,9 +82,8 @@ export async function getLead(id) {
       .from('leads')
       .select('*')
       .eq('id', id)
-      .single();
     if (error) throw error;
-    return data;
+    if ((data || []).length > 0 || !hasAnyLocalData('leads')) return data || [];
   }
 
   const db = getDB();
@@ -71,11 +91,12 @@ export async function getLead(id) {
 }
 
 export async function createLead(leadData) {
+  const id = generateId();
   if (USE_SUPABASE) {
     const now = nowIso();
     const { data, error } = await supabase
       .from('leads')
-      .insert([{ ...leadData, created_at: now, updated_at: now }])
+      .insert([{ id, ...leadData, created_at: now, updated_at: now }])
       .select()
       .single();
     if (error) throw error;
@@ -85,13 +106,12 @@ export async function createLead(leadData) {
   const db = getDB();
   const now = nowIso();
   const lead = {
-    id: generateId(),
+    id,
     ...leadData,
     created_at: now,
     updated_at: now
   };
   db.leads = [lead, ...(db.leads || [])];
-  saveDB(db);
   return lead;
 }
 
@@ -106,7 +126,6 @@ export async function updateLead(id, leadData) {
     if (error) throw error;
     return data;
   }
-
   const db = getDB();
   const idx = (db.leads || []).findIndex(l => l.id === id);
   if (idx === -1) throw new Error('Lead not found');
@@ -323,6 +342,7 @@ export async function getActivities(limit = 10) {
 export async function createActivity(activityData) {
   if (USE_SUPABASE) {
     const payload = {
+      id: generateId(),
       ...activityData,
       lead_id: activityData.lead_id ?? null,
       message: activityData.message || activityData.description || '',
@@ -348,4 +368,80 @@ export async function createActivity(activityData) {
   db.activities = [activity, ...(db.activities || [])];
   saveDB(db);
   return activity;
+}
+
+// ===== TASKS / FOLLOW-UPS =====
+export async function getTasks(filters = {}) {
+  if (USE_SUPABASE) {
+    let query = supabase.from('tasks').select('*');
+    if (filters.lead_id) query = query.eq('lead_id', filters.lead_id);
+    if (filters.status) query = query.eq('status', filters.status);
+    const { data, error } = await query.order('due_date', { ascending: true });
+    if (error) throw error;
+    return data || [];
+  }
+
+  const db = getDB();
+  let tasks = db.tasks || [];
+  if (filters.lead_id) tasks = tasks.filter(t => t.lead_id === filters.lead_id);
+  if (filters.status) tasks = tasks.filter(t => t.status === filters.status);
+  return [...tasks].sort((a, b) => new Date(a.due_date || 0) - new Date(b.due_date || 0));
+}
+
+export async function createTask(taskData) {
+  const now = nowIso();
+  const task = {
+    id: generateId(),
+    title: taskData.title,
+    lead_id: taskData.lead_id,
+    due_date: taskData.due_date,
+    type: taskData.type || 'call',
+    status: taskData.status || 'pending',
+    notes: taskData.notes || '',
+    created_at: now,
+    updated_at: now
+  };
+
+  if (USE_SUPABASE) {
+    const { data, error } = await supabase.from('tasks').insert([task]).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  const db = getDB();
+  db.tasks = [task, ...(db.tasks || [])];
+  saveDB(db);
+  return task;
+}
+
+export async function updateTask(id, updates) {
+  const payload = { ...updates, updated_at: nowIso() };
+
+  if (USE_SUPABASE) {
+    const { data, error } = await supabase.from('tasks').update(payload).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+
+  const db = getDB();
+  const idx = (db.tasks || []).findIndex(t => t.id === id);
+  if (idx === -1) throw new Error('Task not found');
+  db.tasks[idx] = { ...db.tasks[idx], ...payload };
+  saveDB(db);
+  return db.tasks[idx];
+}
+
+export async function deleteTask(id) {
+  if (USE_SUPABASE) {
+    const { error } = await supabase.from('tasks').delete().eq('id', id);
+    if (error) throw error;
+    return true;
+  }
+
+  const db = getDB();
+  const before = (db.tasks || []).length;
+  db.tasks = (db.tasks || []).filter(t => t.id !== id);
+  if (db.tasks.length === before) throw new Error('Task not found');
+  saveDB(db);
+  return true;
 }

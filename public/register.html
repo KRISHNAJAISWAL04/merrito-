@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RBMI Admissions — Student Registration</title>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
+  <style>
+    :root {
+      --primary: #4f46e5;
+      --primary-hover: #4338ca;
+      --bg: #f8fafc;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --card-bg: #ffffff;
+      --border: #e2e8f0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 40px 20px; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    
+    .container { width: 100%; max-width: 500px; background: var(--card-bg); padding: 40px; border-radius: 16px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); }
+    
+    .header { text-align: center; margin-bottom: 32px; }
+    .header img { height: 48px; margin-bottom: 16px; }
+    .header h1 { font-size: 24px; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
+    .header p { color: var(--text-muted); font-size: 14px; }
+    
+    .form-group { margin-bottom: 20px; }
+    .form-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 8px; color: #334155; }
+    .form-input { width: 100%; padding: 12px 16px; border: 1px solid var(--border); border-radius: 8px; font-size: 15px; transition: all 0.2s; outline: none; }
+    .form-input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1); }
+    
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    
+    .btn { width: 100%; padding: 14px; background: var(--primary); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all 0.2s; margin-top: 12px; }
+    .btn:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn:active { transform: translateY(0); }
+    .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+    .success-msg { display: none; text-align: center; padding: 20px; }
+    .success-msg h2 { color: #059669; margin-bottom: 12px; }
+    .success-msg p { color: var(--text-muted); line-height: 1.6; }
+
+    .footer-text { text-align: center; margin-top: 24px; font-size: 12px; color: var(--text-muted); }
+  </style>
+</head>
+<body>
+
+  <div class="container" id="form-container">
+    <div class="header">
+      <img src="/logo.png" alt="RBMI Logo" onerror="this.src='https://via.placeholder.com/150x50?text=RBMI+GROUP'">
+      <h1>Join RBMI Group</h1>
+      <p>Secure your future with North India's premier educational institute.</p>
+    </div>
+
+    <form id="admission-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">First Name</label>
+          <input type="text" name="first_name" class="form-input" placeholder="Aarav" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Last Name</label>
+          <input type="text" name="last_name" class="form-input" placeholder="Mehta" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Email Address</label>
+        <input type="email" name="email" class="form-input" placeholder="aarav.m@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Phone Number</label>
+        <input type="tel" name="phone" class="form-input" placeholder="+91 XXXXX XXXXX" required>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">City</label>
+        <input type="text" name="city" class="form-input" placeholder="Bareilly / Lucknow / Noida">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Interested Course</label>
+        <select name="course" class="form-input" required id="course-select">
+          <option value="">Select a program</option>
+          <option>MBA (General)</option>
+          <option>B.Tech CSE</option>
+          <option>BBA</option>
+          <option>BCA</option>
+          <option>MCA</option>
+          <option>B.Pharm</option>
+        </select>
+      </div>
+
+      <button type="submit" class="btn" id="submit-btn">Apply Now</button>
+    </form>
+
+    <div class="footer-text">
+      By clicking "Apply Now", you agree to be contacted by RBMI Group admissions team.
+    </div>
+  </div>
+
+  <div class="container" id="success-container" style="display: none;">
+    <div class="success-msg">
+      <div style="font-size: 64px; margin-bottom: 20px;">✅</div>
+      <h2>Application Received!</h2>
+      <p>Thank you for your interest in RBMI Group. Our admissions counselor will contact you within 24 hours to guide you through the next steps.</p>
+      <button class="btn" style="background: #f1f5f9; color: #475569; margin-top: 32px;" onclick="window.location.reload()">Back to Form</button>
+    </div>
+  </div>
+
+  <script>
+    const form = document.getElementById('admission-form');
+    const submitBtn = document.getElementById('submit-btn');
+    const formContainer = document.getElementById('form-container');
+    const successContainer = document.getElementById('success-container');
+
+    form.onsubmit = async (e) => {
+      e.preventDefault();
+      submitBtn.disabled = true;
+      submitBtn.innerText = 'Submitting...';
+
+      const formData = new FormData(form);
+      const data = Object.fromEntries(formData.entries());
+      data.source = 'Website Form';
+
+      try {
+        const response = await fetch('/api/webhook/lead', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+
+        if (response.ok) {
+          formContainer.style.display = 'none';
+          successContainer.style.display = 'block';
+        } else {
+          const err = await response.json();
+          alert('Error: ' + err.error);
+        }
+      } catch (error) {
+        alert('Could not connect to the server. Please check if the server is running.');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerText = 'Apply Now';
+      }
+    };
+
+    // Load real courses if possible
+    async function fetchCourses() {
+      try {
+        const res = await fetch('/api/courses'); // Note: This might require auth if the API is strict, but usually public forms use a specialized endpoint
+        if (res.ok) {
+          const courses = await res.json();
+          const select = document.getElementById('course-select');
+          select.innerHTML = '<option value="">Select a program</option>' + 
+            courses.map(c => `<option value="${c.name}">${c.name}</option>`).join('');
+        }
+      } catch (e) {
+        // Fallback to hardcoded courses in HTML
+      }
+    }
+    // fetchCourses(); // Skip for now to keep it simple and avoid auth issues
+  </script>
+</body>
+</html>

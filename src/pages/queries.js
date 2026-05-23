@@ -1,4 +1,4 @@
-import { createQuery, fetchQueries, updateQuery } from '../lib/api.js';
+import { createQuery, fetchQueries, updateQuery, chatWithAI } from '../lib/api.js';
 import { openModal } from '../components/modal.js';
 
 function userRole() {
@@ -40,10 +40,57 @@ export async function renderQueries(el) {
   });
 
   el.querySelectorAll('.query-action').forEach(button => button.addEventListener('click', () => {
-    openModal(role === 'student' ? 'Add Note' : 'Reply to Query', `<div class="form-group"><label class="form-label">${role === 'student' ? 'Message' : 'Response'}</label><textarea id="q-reply" class="form-input" rows="4"></textarea></div>`, { submitLabel: 'Save', onSubmit: async (body) => {
-      const value = body.querySelector('#q-reply').value;
-      await updateQuery(button.dataset.id, role === 'student' ? { message: value } : { response: value, status: 'answered' });
-      window.dispatchEvent(new CustomEvent('rbmi:refresh'));
-    }});
+    const queryId = button.dataset.id;
+    const queryItem = items.find(i => i.id == queryId);
+    
+    openModal(
+      role === 'student' ? 'Add Note' : 'Reply to Query', 
+      `
+      <div class="form-group">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <label class="form-label">${role === 'student' ? 'Message' : 'Response'}</label>
+          ${role !== 'student' ? `<button class="btn btn-secondary btn-sm" id="ai-draft-query" style="border-color:var(--color-primary);color:var(--color-primary);">
+            <i data-lucide="sparkles" style="width:12px;height:12px;margin-right:4px;"></i> AI Draft
+          </button>` : ''}
+        </div>
+        <textarea id="q-reply" class="form-input" rows="6" placeholder="Type your response..."></textarea>
+      </div>
+      `, 
+      { 
+        submitLabel: 'Save and Send', 
+        onOpen: (body) => {
+          const draftBtn = body.querySelector('#ai-draft-query');
+          const textarea = body.querySelector('#q-reply');
+          
+          if (draftBtn) {
+            draftBtn.onclick = async () => {
+              draftBtn.disabled = true;
+              const originalText = draftBtn.innerHTML;
+              draftBtn.innerHTML = 'Drafting...';
+              
+              try {
+                const prompt = `Student asked: "${queryItem.message}" (Category: ${queryItem.category}). 
+                As an RBMI admission counselor, draft a helpful, professional, and concise response. 
+                Keep it under 3-4 sentences.`;
+                
+                const res = await chatWithAI([{ role: 'user', content: prompt }]);
+                textarea.value = res.message;
+              } catch (err) {
+                alert('AI Draft failed: ' + err.message);
+              } finally {
+                draftBtn.disabled = false;
+                draftBtn.innerHTML = originalText;
+              }
+            };
+          }
+        },
+        onSubmit: async (body) => {
+          const value = body.querySelector('#q-reply').value.trim();
+          if (!value) return false;
+          await updateQuery(queryId, role === 'student' ? { message: value } : { response: value, status: 'answered' });
+          window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+        }
+      }
+    );
   }));
 }

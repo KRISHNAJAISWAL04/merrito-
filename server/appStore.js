@@ -1,6 +1,7 @@
 // ===== Application data: JSON fallback or Supabase =====
 import {
   USE_SUPABASE,
+  REAL_DATA_MODE,
   getServerSupabase,
   createActivity,
   getCourse,
@@ -18,6 +19,67 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+const REQUIRED_APPLICATION_DOCUMENTS = [
+  'Class 10 marksheet',
+  'Class 12 marksheet',
+  'ID proof',
+  'Entrance scorecard',
+  'Passport photo'
+];
+
+function normalizeDocuments(documents = []) {
+  const byName = new Map((Array.isArray(documents) ? documents : []).map(doc => [doc.name, doc]));
+  return REQUIRED_APPLICATION_DOCUMENTS.map(name => {
+    const existing = byName.get(name) || {};
+    return {
+      id: existing.id || generateId(),
+      name,
+      status: existing.status || (existing.file_name ? 'submitted' : 'missing'),
+      file_name: existing.file_name || '',
+      file_url: existing.file_url || '',
+      remarks: existing.remarks || '',
+      uploaded_at: existing.uploaded_at || null,
+      reviewed_at: existing.reviewed_at || null
+    };
+  });
+}
+
+function getDocumentsStatus(documents = []) {
+  const docs = normalizeDocuments(documents);
+  if (docs.every(doc => doc.status === 'verified')) return 'verified';
+  if (docs.some(doc => doc.status === 'rejected')) return 'rejected';
+  if (docs.some(doc => doc.status === 'submitted')) return 'submitted';
+  return 'pending';
+}
+
+function buildInstallments(amount, count = 1, firstDueDate = '') {
+  const total = Number(amount || 0);
+  const parts = Math.max(1, Number(count || 1));
+  const base = Math.floor(total / parts);
+  const remainder = total - base * parts;
+  return Array.from({ length: parts }, (_, index) => {
+    const due = firstDueDate ? new Date(firstDueDate) : new Date();
+    due.setMonth(due.getMonth() + index);
+    return {
+      id: generateId(),
+      title: parts === 1 ? 'Full payment' : `Installment ${index + 1}`,
+      amount: base + (index === 0 ? remainder : 0),
+      status: 'due',
+      due_date: due.toISOString().slice(0, 10),
+      paid_at: null,
+      receipt_no: ''
+    };
+  });
+}
+
+function getPaymentStatus(installments = []) {
+  if (!installments.length) return 'due';
+  if (installments.every(item => item.status === 'paid')) return 'paid';
+  if (installments.some(item => item.status === 'failed')) return 'failed';
+  if (installments.some(item => item.status === 'paid')) return 'partial';
+  return 'due';
+}
+
 function jsonEnsureAdmissions() {
   const dbData = getDB();
   if (!dbData.applications) dbData.applications = [];
@@ -28,6 +90,11 @@ function jsonEnsureAdmissions() {
   if (!dbData.form_templates) dbData.form_templates = [];
   if (!dbData.campaigns) dbData.campaigns = [];
 
+  if (REAL_DATA_MODE) {
+    saveDB(dbData);
+    return dbData;
+  }
+
   if (!dbData.applications.some(a => a.user_id === 'u004-student-demo')) {
     dbData.applications.push({
       id: 'app-demo-aarav',
@@ -37,6 +104,10 @@ function jsonEnsureAdmissions() {
       course_id: 'cr001-mba',
       status: 'submitted',
       documents_status: 'pending',
+      documents: normalizeDocuments([
+        { name: 'Class 10 marksheet', status: 'verified', file_name: 'class-10.pdf', uploaded_at: nowIso(), reviewed_at: nowIso() },
+        { name: 'ID proof', status: 'verified', file_name: 'aadhaar.pdf', uploaded_at: nowIso(), reviewed_at: nowIso() }
+      ]),
       counselor_name: 'Neha Khan',
       priority: 'high',
       created_at: nowIso(),
@@ -69,6 +140,7 @@ function jsonEnsureAdmissions() {
       method: 'Online',
       due_date: '2026-05-15',
       receipt_no: '',
+      installments: buildInstallments(25000, 2, '2026-05-15'),
       created_at: nowIso(),
       updated_at: nowIso()
     });
@@ -210,7 +282,8 @@ export async function updatePortalProfile(user, body) {
 
 function enrichApplication(item, courses) {
   const course = courses.find(c => c.id === item.course_id);
-  return { ...item, course_name: course?.name || 'Program not selected' };
+  const documents = normalizeDocuments(item.documents);
+  return { ...item, documents, documents_status: getDocumentsStatus(documents), course_name: course?.name || 'Program not selected' };
 }
 
 export async function listApplications(reqUser) {
@@ -238,7 +311,8 @@ export async function insertApplication(reqUser, body) {
     email: body.email || profile?.email || reqUser.email,
     course_id: body.course_id || profile?.course_id || null,
     status: body.status || 'submitted',
-    documents_status: body.documents_status || 'pending',
+    documents: normalizeDocuments(body.documents),
+    documents_status: getDocumentsStatus(body.documents),
     counselor_name: body.counselor_name || profile?.counselor_name || 'Admissions team',
     priority: body.priority || 'medium',
     created_at: nowIso(),
@@ -263,9 +337,13 @@ export async function patchApplication(reqUser, id, body) {
     const { data: row, error: fe } = await sb().from('applications').select('*').eq('id', id).single();
     if (fe || !row) throw new Error('Application not found');
     if (reqUser.role === 'student' && row.user_id !== reqUser.id) throw new Error('Access denied');
-    const allowed = reqUser.role === 'student' ? ['documents_status'] : ['status', 'documents_status', 'counselor_name', 'priority'];
+    const allowed = reqUser.role === 'student' ? ['documents'] : ['status', 'documents', 'documents_status', 'counselor_name', 'priority'];
     const updates = {};
     for (const key of allowed) if (Object.prototype.hasOwnProperty.call(body, key)) updates[key] = body[key];
+    if (updates.documents) {
+      updates.documents = normalizeDocuments(updates.documents);
+      updates.documents_status = getDocumentsStatus(updates.documents);
+    }
     const { data, error } = await sb()
       .from('applications')
       .update({ ...updates, updated_at: nowIso() })
@@ -282,9 +360,13 @@ export async function patchApplication(reqUser, id, body) {
   if (idx === -1) throw new Error('Application not found');
   const item = dbData.applications[idx];
   if (reqUser.role === 'student' && item.user_id !== reqUser.id) throw new Error('Access denied');
-  const allowed = reqUser.role === 'student' ? ['documents_status'] : ['status', 'documents_status', 'counselor_name', 'priority'];
+  const allowed = reqUser.role === 'student' ? ['documents'] : ['status', 'documents', 'documents_status', 'counselor_name', 'priority'];
   const updates = {};
   for (const key of allowed) if (Object.prototype.hasOwnProperty.call(body, key)) updates[key] = body[key];
+  if (updates.documents) {
+    updates.documents = normalizeDocuments(updates.documents);
+    updates.documents_status = getDocumentsStatus(updates.documents);
+  }
   dbData.applications[idx] = { ...item, ...updates, updated_at: nowIso() };
   saveDB(dbData);
   const courses = await getCourses();
@@ -375,16 +457,20 @@ export async function listPayments(reqUser) {
 }
 
 export async function insertPayment(reqUser, body) {
+  const installments = Array.isArray(body.installments) && body.installments.length
+    ? body.installments
+    : buildInstallments(body.amount || 0, body.installment_count || 1, body.due_date || '');
   const item = {
     id: generateId(),
     user_id: body.user_id || null,
     student_name: body.student_name || 'Student',
     title: body.title || 'Admission fee',
     amount: Number(body.amount || 0),
-    status: body.status || 'due',
+    status: body.status || getPaymentStatus(installments),
     method: body.method || 'Online',
     due_date: body.due_date || '',
     receipt_no: body.receipt_no || '',
+    installments,
     created_at: nowIso(),
     updated_at: nowIso()
   };
@@ -404,9 +490,10 @@ export async function patchPayment(reqUser, id, body) {
     const { data: row, error: fe } = await sb().from('payments').select('*').eq('id', id).single();
     if (fe || !row) throw new Error('Payment not found');
     if (reqUser.role === 'student' && row.user_id !== reqUser.id) throw new Error('Access denied');
-    const allowed = reqUser.role === 'student' ? ['status', 'method'] : ['status', 'method', 'receipt_no', 'amount', 'due_date', 'title'];
+    const allowed = reqUser.role === 'student' ? ['status', 'method', 'installments'] : ['status', 'method', 'receipt_no', 'amount', 'due_date', 'title', 'installments'];
     const updates = {};
     for (const key of allowed) if (Object.prototype.hasOwnProperty.call(body, key)) updates[key] = body[key];
+    if (updates.installments) updates.status = getPaymentStatus(updates.installments);
     if (updates.status === 'paid' && !updates.receipt_no && !row.receipt_no) {
       updates.receipt_no = `RBMI-${Date.now().toString().slice(-6)}`;
     }
@@ -424,9 +511,10 @@ export async function patchPayment(reqUser, id, body) {
   if (idx === -1) throw new Error('Payment not found');
   const item = dbData.payments[idx];
   if (reqUser.role === 'student' && item.user_id !== reqUser.id) throw new Error('Access denied');
-  const allowed = reqUser.role === 'student' ? ['status', 'method'] : ['status', 'method', 'receipt_no', 'amount', 'due_date', 'title'];
+  const allowed = reqUser.role === 'student' ? ['status', 'method', 'installments'] : ['status', 'method', 'receipt_no', 'amount', 'due_date', 'title', 'installments'];
   const updates = {};
   for (const key of allowed) if (Object.prototype.hasOwnProperty.call(body, key)) updates[key] = body[key];
+  if (updates.installments) updates.status = getPaymentStatus(updates.installments);
   if (updates.status === 'paid' && !updates.receipt_no && !item.receipt_no) {
     updates.receipt_no = `RBMI-${Date.now().toString().slice(-6)}`;
   }

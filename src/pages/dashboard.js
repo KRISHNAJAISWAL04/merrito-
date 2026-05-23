@@ -1,5 +1,5 @@
 // ===== DASHBOARD PAGE — API-connected =====
-import { fetchDashboardStats, fetchActivities } from '../lib/api.js';
+import { fetchDashboardStats, fetchActivities, fetchTasks, updateTask } from '../lib/api.js';
 import { createLineChart, createDoughnutChart, createBarChart } from '../components/charts.js';
 import { getAvatarColor } from '../components/utils.js';
 
@@ -37,6 +37,12 @@ function renderSkeleton() {
   `;
 }
 
+function taskTone(task) {
+  if (task.status === 'completed') return 'ok';
+  if (new Date(task.due_date) < new Date()) return 'bad';
+  return 'warn';
+}
+
 export async function renderDashboard(container) {
   container.innerHTML = renderSkeleton();
 
@@ -44,15 +50,20 @@ export async function renderDashboard(container) {
     const now = Date.now();
     let stats;
     let activities;
+    let tasks;
     if (dashboardDataCache && now - dashboardDataCacheTime < DASHBOARD_CACHE_MS) {
       stats = dashboardDataCache.stats;
       activities = dashboardDataCache.activities;
+      tasks = dashboardDataCache.tasks;
     } else {
-      [stats, activities] = await Promise.all([
-        fetchDashboardStats(),
-        fetchActivities(7)
+      stats = await fetchDashboardStats();
+      const [activitiesResult, tasksResult] = await Promise.allSettled([
+        fetchActivities(7),
+        fetchTasks({ status: 'pending' })
       ]);
-      dashboardDataCache = { stats, activities };
+      activities = activitiesResult.status === 'fulfilled' ? activitiesResult.value : [];
+      tasks = tasksResult.status === 'fulfilled' ? tasksResult.value : [];
+      dashboardDataCache = { stats, activities, tasks };
       dashboardDataCacheTime = now;
     }
 
@@ -60,6 +71,9 @@ export async function renderDashboard(container) {
       lead_added: 'user-plus', stage_change: 'arrow-right-circle', counseling: 'message-circle',
       application: 'file-text', enrollment: 'check-circle', document: 'file-check', note: 'edit-3'
     };
+    const pendingTasks = [...(tasks || [])].sort((a, b) => new Date(a.due_date) - new Date(b.due_date)).slice(0, 8);
+    const overdueCount = pendingTasks.filter(task => new Date(task.due_date) < new Date()).length;
+    const counselorStats = Array.isArray(stats.counselorStats) ? stats.counselorStats : [];
 
     container.innerHTML = `
       <div class="dashboard-page">
@@ -169,6 +183,30 @@ export async function renderDashboard(container) {
           </div>
         </div>
 
+        <!-- Follow-up Control -->
+        <div class="chart-card animate-fade-in">
+          <div class="chart-header">
+            <div>
+              <h3 class="chart-title">Follow-up Control</h3>
+              <span class="chart-subtitle">${overdueCount} overdue, ${pendingTasks.length} pending</span>
+            </div>
+          </div>
+          <div class="task-control-list">
+            ${pendingTasks.length ? pendingTasks.map(task => `
+              <div class="task-control-item">
+                <div>
+                  <strong>${task.title}</strong>
+                  <small>${task.lead_name || 'Lead'} - due ${new Date(task.due_date).toLocaleString('en-IN')}</small>
+                </div>
+                <div class="task-control-actions">
+                  <span class="ops-badge ${taskTone(task)}">${new Date(task.due_date) < new Date() ? 'overdue' : task.type || 'follow-up'}</span>
+                  <button class="btn btn-secondary btn-sm dashboard-task-done" data-id="${task.id}">Done</button>
+                </div>
+              </div>
+            `).join('') : '<div class="ops-empty">No pending follow-ups</div>'}
+          </div>
+        </div>
+
         <!-- Top Counselors -->
         <div class="chart-card animate-fade-in">
           <div class="chart-header">
@@ -181,22 +219,23 @@ export async function renderDashboard(container) {
                 <tr><th>Counselor</th><th>Department</th><th>Leads Assigned</th><th>Conversions</th><th>Conv. Rate</th><th>Rating</th></tr>
               </thead>
               <tbody>
-                ${stats.counselorStats.sort((a, b) => {
+                ${counselorStats.sort((a, b) => {
                   const rateA = a.leads_assigned > 0 ? a.conversions / a.leads_assigned : 0;
                   const rateB = b.leads_assigned > 0 ? b.conversions / b.leads_assigned : 0;
                   return rateB - rateA;
                 }).map(c => {
                   const rate = c.leads_assigned > 0 ? ((c.conversions / c.leads_assigned) * 100).toFixed(1) : '0.0';
-                  const initials = c.name.split(' ').map(n => n[0]).join('');
+                  const counselorName = c.name || c.email || 'Counselor';
+                  const initials = counselorName.split(' ').map(n => n[0]).join('');
                   return `
                   <tr>
                     <td>
                       <div class="table-user">
-                        <div class="avatar-sm" style="background:${getAvatarColor(c.name)}">${initials}</div>
-                        <div><div class="table-user-name">${c.name}</div><div class="table-user-sub">${c.role}</div></div>
+                        <div class="avatar-sm" style="background:${getAvatarColor(counselorName)}">${initials}</div>
+                        <div><div class="table-user-name">${counselorName}</div><div class="table-user-sub">${c.role || 'Counselor'}</div></div>
                       </div>
                     </td>
-                    <td>${c.department}</td>
+                    <td>${c.department || 'Admissions'}</td>
                     <td><span class="number-cell">${c.leads_assigned}</span></td>
                     <td><span class="number-cell">${c.conversions}</span></td>
                     <td>
@@ -216,6 +255,15 @@ export async function renderDashboard(container) {
     `;
 
     window.renderIcons();
+
+    container.querySelectorAll('.dashboard-task-done').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        btn.disabled = true;
+        await updateTask(btn.dataset.id, { status: 'completed' });
+        dashboardDataCache = null;
+        renderDashboard(container);
+      });
+    });
 
     // Render charts
     setTimeout(() => {

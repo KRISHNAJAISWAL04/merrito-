@@ -2,6 +2,51 @@
 
 const chartInstances = {};
 
+function cssVar(name, fallback = '#94a3b8') {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || fallback;
+}
+
+function chartColors() {
+  return {
+    grid: cssVar('--color-border-light', '#f1f5f9'),
+    tick: cssVar('--color-text-muted', '#94a3b8'),
+    tickSecondary: cssVar('--color-text-secondary', '#64748b'),
+    tooltipBg: '#0f172a',
+    legendColor: cssVar('--color-text-muted', '#64748b'),
+    pointBg: cssVar('--color-surface', '#fff')
+  };
+}
+
+function buildTools() {
+  const c = chartColors();
+  return {
+    tooltip: {
+      backgroundColor: '#0f172a',
+      titleFont: { family: 'Inter', size: 13 },
+      bodyFont: { family: 'Inter', size: 12 },
+      padding: 12,
+      cornerRadius: 8,
+      displayColors: true,
+      boxPadding: 4
+    }
+  };
+}
+
+function buildScales() {
+  const c = chartColors();
+  return {
+    x: {
+      grid: { display: false },
+      ticks: { font: { family: 'Inter', size: 11 }, color: c.tick }
+    },
+    y: {
+      beginAtZero: true,
+      grid: { color: c.grid },
+      ticks: { font: { family: 'Inter', size: 11 }, color: c.tick }
+    }
+  };
+}
+
 function destroyChart(id) {
   if (chartInstances[id]) {
     chartInstances[id].destroy();
@@ -14,6 +59,7 @@ export function createLineChart(canvasId, labels, datasets, options = {}) {
   const ctx = document.getElementById(canvasId);
   if (!ctx) return null;
 
+  const colors = chartColors();
   const chart = new Chart(ctx, {
     type: 'line',
     data: {
@@ -26,7 +72,7 @@ export function createLineChart(canvasId, labels, datasets, options = {}) {
         borderWidth: 2.5,
         fill: ds.fill !== undefined ? ds.fill : true,
         tension: 0.4,
-        pointBackgroundColor: '#fff',
+        pointBackgroundColor: colors.pointBg,
         pointBorderColor: ds.color,
         pointBorderWidth: 2,
         pointRadius: 4,
@@ -47,30 +93,13 @@ export function createLineChart(canvasId, labels, datasets, options = {}) {
             usePointStyle: true,
             pointStyle: 'circle',
             padding: 20,
-            font: { family: 'Inter', size: 12 }
+            font: { family: 'Inter', size: 12 },
+            color: colors.tick
           }
         },
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleFont: { family: 'Inter', size: 13 },
-          bodyFont: { family: 'Inter', size: 12 },
-          padding: 12,
-          cornerRadius: 8,
-          displayColors: true,
-          boxPadding: 4
-        }
+        ...buildTools()
       },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' }
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: '#f1f5f9' },
-          ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' }
-        }
-      },
+      scales: buildScales(),
       ...options
     }
   });
@@ -101,25 +130,9 @@ export function createBarChart(canvasId, labels, data, colors, options = {}) {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleFont: { family: 'Inter', size: 13 },
-          bodyFont: { family: 'Inter', size: 12 },
-          padding: 12,
-          cornerRadius: 8
-        }
+        ...buildTools()
       },
-      scales: {
-        x: {
-          grid: { display: false },
-          ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8', maxRotation: 45 }
-        },
-        y: {
-          beginAtZero: true,
-          grid: { color: '#f1f5f9' },
-          ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' }
-        }
-      },
+      scales: buildScales(),
       ...options
     }
   });
@@ -128,18 +141,20 @@ export function createBarChart(canvasId, labels, data, colors, options = {}) {
   return chart;
 }
 
-export function createDoughnutChart(canvasId, labels, data, colors, options = {}) {
+export function createDoughnutChart(canvasId, labels, data, colorPalette, options = {}) {
   destroyChart(canvasId);
   const ctx = document.getElementById(canvasId);
   if (!ctx) return null;
 
+  const c = chartColors();
+  const bgColors = colorPalette || ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
   const chart = new Chart(ctx, {
     type: 'doughnut',
     data: {
       labels,
       datasets: [{
         data,
-        backgroundColor: colors,
+        backgroundColor: bgColors,
         borderWidth: 0,
         hoverOffset: 6
       }]
@@ -156,16 +171,10 @@ export function createDoughnutChart(canvasId, labels, data, colors, options = {}
             pointStyle: 'circle',
             padding: 16,
             font: { family: 'Inter', size: 11 },
-            color: '#64748b'
+            color: c.legendColor
           }
         },
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleFont: { family: 'Inter', size: 13 },
-          bodyFont: { family: 'Inter', size: 12 },
-          padding: 12,
-          cornerRadius: 8
-        }
+        ...buildTools()
       },
       ...options
     }
@@ -180,6 +189,7 @@ export function createHorizontalBarChart(canvasId, labels, data, colors, options
   const ctx = document.getElementById(canvasId);
   if (!ctx) return null;
 
+  const c = chartColors();
   const chart = new Chart(ctx, {
     type: 'bar',
     data: {
@@ -198,23 +208,17 @@ export function createHorizontalBarChart(canvasId, labels, data, colors, options
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: {
-          backgroundColor: '#0f172a',
-          titleFont: { family: 'Inter', size: 13 },
-          bodyFont: { family: 'Inter', size: 12 },
-          padding: 12,
-          cornerRadius: 8
-        }
+        ...buildTools()
       },
       scales: {
         x: {
           beginAtZero: true,
-          grid: { color: '#f1f5f9' },
-          ticks: { font: { family: 'Inter', size: 11 }, color: '#94a3b8' }
+          grid: { color: c.grid },
+          ticks: { font: { family: 'Inter', size: 11 }, color: c.tick }
         },
         y: {
           grid: { display: false },
-          ticks: { font: { family: 'Inter', size: 11 }, color: '#64748b' }
+          ticks: { font: { family: 'Inter', size: 11 }, color: c.tickSecondary }
         }
       },
       ...options

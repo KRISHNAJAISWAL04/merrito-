@@ -32,8 +32,8 @@ const adminNavItems = [
 
 const counselorNavItems = [
   { route: '/dashboard', icon: 'layout-dashboard', label: 'My Desk', children: [
-    { route: '/dashboard', label: 'My Dashboard' },
-    { route: '/user-dashboard', label: 'User Dashboard' },
+    { route: '/dashboard', label: 'Admin Dashboard' },
+    { route: '/user-dashboard', label: 'Counselor Dashboard' },
     { route: '/sqi', label: 'Student Quality Index' }
   ]},
   { route: '/leads', icon: 'users', label: 'My Leads' },

@@ -58,6 +58,7 @@ function seedLocalApplications() {
       course_name: 'Program not selected',
       status: 'submitted',
       documents_status: 'pending',
+      documents: seedLocalDocuments(),
       counselor_name: 'Admissions team',
       priority: 'medium',
       created_at: new Date().toISOString(),
@@ -96,6 +97,7 @@ function seedLocalPayments() {
     method: 'Online',
     due_date: '2026-05-15',
     receipt_no: '',
+    installments: buildLocalInstallments(25000, 2, '2026-05-15'),
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString()
   }];
@@ -168,6 +170,78 @@ export async function bulkDeleteLeads(ids) {
   return request('/leads/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) });
 }
 
+function buildLocalInstallments(amount, count = 1, firstDueDate = '') {
+  const total = Number(amount || 0);
+  const parts = Math.max(1, Number(count || 1));
+  const base = Math.floor(total / parts);
+  const remainder = total - base * parts;
+  return Array.from({ length: parts }, (_, index) => {
+    const due = firstDueDate ? new Date(firstDueDate) : new Date();
+    due.setMonth(due.getMonth() + index);
+    return {
+      id: makeLocalId('inst'),
+      title: parts === 1 ? 'Full payment' : `Installment ${index + 1}`,
+      amount: base + (index === 0 ? remainder : 0),
+      status: 'due',
+      due_date: due.toISOString().slice(0, 10),
+      paid_at: null,
+      receipt_no: ''
+    };
+  });
+}
+
+function getLocalPaymentStatus(installments = []) {
+  if (!installments.length) return 'due';
+  if (installments.every(item => item.status === 'paid')) return 'paid';
+  if (installments.some(item => item.status === 'paid')) return 'partial';
+  if (installments.some(item => item.status === 'failed')) return 'failed';
+  return 'due';
+}
+
+function seedLocalDocuments() {
+  return [
+    { id: makeLocalId('doc'), name: 'Class 10 marksheet', status: 'missing', file_name: '', remarks: '', uploaded_at: null, reviewed_at: null },
+    { id: makeLocalId('doc'), name: 'Class 12 marksheet', status: 'missing', file_name: '', remarks: '', uploaded_at: null, reviewed_at: null },
+    { id: makeLocalId('doc'), name: 'ID proof', status: 'missing', file_name: '', remarks: '', uploaded_at: null, reviewed_at: null },
+    { id: makeLocalId('doc'), name: 'Entrance scorecard', status: 'missing', file_name: '', remarks: '', uploaded_at: null, reviewed_at: null },
+    { id: makeLocalId('doc'), name: 'Passport photo', status: 'missing', file_name: '', remarks: '', uploaded_at: null, reviewed_at: null }
+  ];
+}
+
+function normalizeLocalDocuments(documents) {
+  const seed = seedLocalDocuments();
+  const byName = new Map((Array.isArray(documents) ? documents : []).map(doc => [doc.name, doc]));
+  return seed.map(doc => ({ ...doc, ...(byName.get(doc.name) || {}) }));
+}
+
+function getLocalDocumentsStatus(documents) {
+  const docs = normalizeLocalDocuments(documents);
+  if (docs.every(doc => doc.status === 'verified')) return 'verified';
+  if (docs.some(doc => doc.status === 'rejected')) return 'rejected';
+  if (docs.some(doc => doc.status === 'submitted')) return 'submitted';
+  return 'pending';
+}
+
+// ---- TASKS / FOLLOW-UPS ----
+export async function fetchTasks({ lead_id, status } = {}) {
+  const params = new URLSearchParams();
+  if (lead_id) params.set('lead_id', lead_id);
+  if (status) params.set('status', status);
+  return request(`/tasks?${params.toString()}`);
+}
+
+export async function createTask(data) {
+  return request('/tasks', { method: 'POST', body: JSON.stringify(data) });
+}
+
+export async function updateTask(id, data) {
+  return request(`/tasks/${id}`, { method: 'PATCH', body: JSON.stringify(data) });
+}
+
+export async function deleteTask(id) {
+  return request(`/tasks/${id}`, { method: 'DELETE' });
+}
+
 export function exportLeadsCSV() {
   const token = getToken();
   const url = `${API_BASE}/leads/export/csv`;
@@ -187,7 +261,7 @@ export function exportLeadsCSV() {
 
 // ---- DASHBOARD ----
 export async function fetchDashboardStats() {
-  return request('/dashboard/stats');
+  return request(`/dashboard/stats?_=${Date.now()}`);
 }
 
 // ---- COUNSELORS ----
@@ -335,7 +409,8 @@ export async function createApplication(data) {
       course_id: data.course_id || null,
       course_name: 'Program not selected',
       status: data.status || 'submitted',
-      documents_status: data.documents_status || 'pending',
+      documents: normalizeLocalDocuments(data.documents),
+      documents_status: getLocalDocumentsStatus(data.documents),
       counselor_name: data.counselor_name || 'Admissions team',
       priority: data.priority || 'medium',
       created_at: new Date().toISOString(),
@@ -355,7 +430,12 @@ export async function updateApplication(id, data) {
     const items = getLocalCollection(LOCAL_APPLICATIONS_KEY, seedLocalApplications);
     const idx = items.findIndex(item => item.id === id);
     if (idx === -1) throw new Error('Application not found');
-    items[idx] = { ...items[idx], ...data, updated_at: new Date().toISOString() };
+    const updates = { ...data };
+    if (updates.documents) {
+      updates.documents = normalizeLocalDocuments(updates.documents);
+      updates.documents_status = getLocalDocumentsStatus(updates.documents);
+    }
+    items[idx] = { ...items[idx], ...updates, updated_at: new Date().toISOString() };
     writeLocal(LOCAL_APPLICATIONS_KEY, items);
     return items[idx];
   }
@@ -459,6 +539,7 @@ export async function createPayment(data) {
       method: data.method || 'Online',
       due_date: data.due_date || '',
       receipt_no: data.receipt_no || '',
+      installments: data.installments || buildLocalInstallments(data.amount || 0, data.installment_count || 1, data.due_date || ''),
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString()
     };
@@ -477,6 +558,7 @@ export async function updatePayment(id, data) {
     const idx = items.findIndex(item => item.id === id);
     if (idx === -1) throw new Error('Payment not found');
     const updates = { ...data, updated_at: new Date().toISOString() };
+    if (updates.installments) updates.status = getLocalPaymentStatus(updates.installments);
     if (updates.status === 'paid' && !updates.receipt_no && !items[idx].receipt_no) {
       updates.receipt_no = `RBMI-${Date.now().toString().slice(-6)}`;
     }
@@ -591,6 +673,14 @@ export async function updateNotification(id, data) {
   return request(`/marketing/notifications/${id}`, { method: 'PUT', body: JSON.stringify(data) });
 }
 
+export async function fetchInboundLogs() {
+  return request('/marketing/inbound-logs');
+}
+
+export async function fetchPublishers() {
+  return request('/marketing/publishers');
+}
+
 export function exportPaymentsCSV() {
   const token = getToken();
   const url = `${API_BASE}/payments/export/csv`;
@@ -605,6 +695,31 @@ export function exportPaymentsCSV() {
       a.click();
       URL.revokeObjectURL(blobUrl);
     });
+}
+
+// ---- FILE UPLOAD ----
+export async function uploadFile(file, metadata = {}) {
+  const token = getToken();
+  const formData = new FormData();
+  formData.append('file', file);
+  Object.entries(metadata).forEach(([key, value]) => {
+    if (value) formData.append(key, value);
+  });
+  
+  const res = await fetch(`${API_BASE}/upload`, {
+    method: 'POST',
+    headers: {
+      ...(token ? { Authorization: `Bearer ${token}` } : {})
+      // Note: No Content-Type — browser auto-sets multipart boundary
+    },
+    body: formData
+  });
+  
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({ error: res.statusText }));
+    throw new Error(err.error || 'File upload failed');
+  }
+  return res.json();
 }
 
 // ---- FORM TEMPLATES (FormDesk) ----
@@ -623,4 +738,9 @@ export async function fetchCampaigns() {
 
 export async function createCampaign(data) {
   return request('/campaigns', { method: 'POST', body: JSON.stringify(data) });
+}
+
+// ---- AI ----
+export async function chatWithAI(history) {
+  return request('/ai/chat', { method: 'POST', body: JSON.stringify({ history }) });
 }

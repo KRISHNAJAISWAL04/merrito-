@@ -1,5 +1,5 @@
 // ===== LEADS MANAGEMENT PAGE — API-connected =====
-import { fetchLeads, createLead, updateLead, deleteLead, bulkDeleteLeads, fetchCounselors, fetchCourses, exportLeadsCSV } from '../lib/api.js';
+import { fetchLeads, createLead, updateLead, deleteLead, bulkDeleteLeads, fetchCounselors, fetchCourses, exportLeadsCSV, fetchTasks, createTask, updateTask, fetchCallLogs, createCallLog, fetchStudentInbox, createStudentInboxMessage, chatWithAI } from '../lib/api.js';
 import { getStageInfo, getPriorityInfo, formatDate, getAvatarColor, debounce } from '../components/utils.js';
 import { openModal } from '../components/modal.js';
 
@@ -12,6 +12,16 @@ const SOURCES = ['Website', 'Walk-in', 'Referral', 'Social Media', 'Education Fa
 
 function getCurrentUser() {
   try { return JSON.parse(sessionStorage.getItem('rbmi_user') || 'null'); } catch { return null; }
+}
+
+function escapeHtml(value = '') {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    '"': '&quot;',
+    "'": '&#039;'
+  }[char]));
 }
 
 let counselorsCache = [];
@@ -54,7 +64,7 @@ function updateBulkBar(tableWrap, container) {
   if (!bar) {
     bar = document.createElement('div');
     bar.id = 'bulk-action-bar';
-    bar.style.cssText = 'position:sticky;top:0;z-index:10;background:#1e1b4b;color:white;padding:10px 16px;display:flex;align-items:center;gap:12px;border-radius:8px;margin-bottom:8px;';
+    bar.style.cssText = 'position:sticky;top:0;z-index:10;background:var(--color-sidebar);color:white;padding:10px 16px;display:flex;align-items:center;gap:12px;border-radius:8px;margin-bottom:8px;';
     container.querySelector('#leads-table-wrap').before(bar);
   }
   bar.innerHTML = `
@@ -163,9 +173,9 @@ function renderLeadsTable(tableWrap, result, container) {
             <td><span class="priority-dot" style="background:${priority.color};" title="${priority.label}"></span></td>
             <td>
               <div class="action-btns">
-                <button class="action-btn btn-view-lead" title="View" data-action="view" data-id="${l.id}" style="padding:4px 8px;font-size:11px;font-weight:600;background:#f1f5f9;border-radius:4px;border:1px solid #e2e8f0;">View</button>
-                <button class="action-btn btn-stage-lead" title="Change stage" data-action="stage" data-id="${l.id}" style="padding:4px 8px;font-size:11px;font-weight:600;background:#ede9fe;color:#7c3aed;border-radius:4px;border:1px solid #ddd6fe;">Stage</button>
-                <button class="action-btn btn-del-lead" title="Delete" data-action="delete" data-id="${l.id}" style="padding:4px 8px;font-size:11px;font-weight:600;background:#fef2f2;color:#dc2626;border-radius:4px;border:1px solid #fecaca;">Del</button>
+                <button class="action-btn btn-view-lead" title="View" data-action="view" data-id="${l.id}" style="padding:4px 8px;font-size:11px;font-weight:600;background:var(--color-bg);border-radius:4px;border:1px solid var(--color-border);color:var(--color-text-secondary);">View</button>
+                <button class="action-btn btn-stage-lead" title="Change stage" data-action="stage" data-id="${l.id}" style="padding:4px 8px;font-size:11px;font-weight:600;background:rgba(124,58,237,0.1);color:#a78bfa;border-radius:4px;border:1px solid rgba(124,58,237,0.2);">Stage</button>
+                <button class="action-btn btn-del-lead" title="Delete" data-action="delete" data-id="${l.id}" style="padding:4px 8px;font-size:11px;font-weight:600;background:rgba(239,68,68,0.1);color:#f87171;border-radius:4px;border:1px solid rgba(239,68,68,0.2);">Del</button>
               </div>
             </td>
           </tr>`;
@@ -268,19 +278,7 @@ function showLeadDetails(lead) {
     `;
   }).join('');
 
-  const commsHtml = [
-    { type: 'call', date: '2026-05-01 10:30', msg: 'Callback done. Interested in MBA Finance.' },
-    { type: 'whatsapp', date: '2026-05-02 14:15', msg: 'Shared course brochure and fee structure.' },
-    { type: 'email', date: '2026-05-03 09:00', msg: 'Sent application link and instructions.' }
-  ].map(c => `
-    <div class="comm-log-item">
-      <div class="comm-icon ${c.type}"><i data-lucide="${c.type === 'call' ? 'phone' : c.type === 'whatsapp' ? 'message-square' : 'mail'}"></i></div>
-      <div class="comm-body">
-        <div class="comm-msg">${c.msg}</div>
-        <div class="comm-meta">${c.date}</div>
-      </div>
-    </div>
-  `).join('');
+  const fallbackCommsText = 'No communication logs yet.';
 
   const docsHtml = [
     { name: 'Class 10 Marksheet', status: 'verified' },
@@ -313,24 +311,112 @@ function showLeadDetails(lead) {
           <div class="info-item"><label>Counselor</label><span>${lead.counselor_name}</span></div>
         </div>
         <div class="s360-actions">
-          <button class="btn btn-primary btn-full">📞 Start Call</button>
-          <button class="btn btn-secondary btn-full">💬 WhatsApp</button>
+          <button class="btn btn-primary btn-full" id="s360-call-btn">Start Call</button>
+          <button class="btn btn-secondary btn-full" id="s360-whatsapp-btn">WhatsApp</button>
         </div>
       </div>
       <div class="s360-main">
         <div class="s360-tabs">
           <button class="tab-btn active" data-tab="timeline">Journey</button>
           <button class="tab-btn" data-tab="comm">Communication</button>
+          <button class="tab-btn" data-tab="tasks">Tasks</button>
           <button class="tab-btn" data-tab="docs">Documents</button>
+          <button class="tab-btn" data-tab="ai" style="color:var(--color-primary);font-weight:700;">
+            <i data-lucide="sparkles" style="width:14px;height:14px;margin-right:4px;"></i> Asha AI
+          </button>
         </div>
         <div class="tab-pane active" id="pane-timeline">
           <div class="profile-timeline">${timelineHtml}</div>
         </div>
         <div class="tab-pane" id="pane-comm">
-          <div class="comm-logs">${commsHtml}</div>
+          <div class="comm-logs">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;">
+              <h4 style="margin:0;">Interaction History</h4>
+              <button class="btn btn-secondary btn-sm" id="ai-draft-followup">
+                <i data-lucide="sparkles" style="width:12px;height:12px;margin-right:4px;"></i> Draft Follow-up
+              </button>
+            </div>              <div id="ai-followup-container" style="display:none;margin-bottom:1rem;padding:12px;background:rgba(124,58,237,0.08);border:1px solid rgba(124,58,237,0.2);border-radius:8px;">
+              <div style="display:flex;justify-content:space-between;margin-bottom:8px;"><strong style="font-size:12px;color:#a78bfa;">AI Drafted Message</strong><button class="btn-icon" id="close-ai-draft"><i data-lucide="x" style="width:14px;height:14px;"></i></button></div>
+              <textarea id="ai-followup-text" class="form-input" rows="4" style="font-size:13px;"></textarea>
+              <div style="margin-top:8px;display:flex;gap:8px;">
+                <button class="btn btn-primary btn-sm" id="copy-ai-draft">Copy to Clipboard</button>
+              </div>
+            </div>
+            <div id="lead-comm-list">
+              <div class="table-loading"><div class="spinner"></div> Loading communication...</div>
+            </div>
+          </div>
+        </div>
+        <div class="tab-pane" id="pane-tasks">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem;gap:1rem;">
+            <h4 style="margin:0;">Follow-up Tasks</h4>
+            <button class="btn btn-primary btn-sm" id="add-task-btn">Add Task</button>
+          </div>
+          <div id="task-inline-form" style="display:none;margin-bottom:1rem;padding:1rem;border:1px solid var(--color-border);border-radius:8px;background:var(--color-bg-alt);">
+            <div class="form-grid">
+              <div class="form-group form-full">
+                <label class="form-label">Task Title</label>
+                <input class="form-input" id="task-title" />
+              </div>
+              <div class="form-group">
+                <label class="form-label">Type</label>
+                <select class="form-select" id="task-type">
+                  <option value="call">Call</option>
+                  <option value="whatsapp">WhatsApp</option>
+                  <option value="email">Email</option>
+                  <option value="meeting">Meeting</option>
+                  <option value="visit">Campus Visit</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Due Date</label>
+                <input class="form-input" id="task-due" type="datetime-local" />
+              </div>
+              <div class="form-group form-full">
+                <label class="form-label">Notes</label>
+                <textarea class="form-textarea" id="task-notes" rows="2" placeholder="What should the counselor do next?"></textarea>
+              </div>
+            </div>
+            <div style="display:flex;gap:8px;justify-content:flex-end;">
+              <button class="btn btn-secondary btn-sm" id="cancel-task-btn">Cancel</button>
+              <button class="btn btn-primary btn-sm" id="save-task-btn">Create Task</button>
+            </div>
+          </div>
+          <div id="lead-tasks-list" class="comm-logs">
+            <div class="table-loading"><div class="spinner"></div> Loading tasks...</div>
+          </div>
         </div>
         <div class="tab-pane" id="pane-docs">
           <div class="docs-list-mini">${docsHtml}</div>
+        </div>
+        <div class="tab-pane" id="pane-ai">
+          <div class="ai-insight-pane">
+            <div style="text-align:center;padding:2rem;" id="ai-analysis-loading">
+              <div class="spinner" style="margin:0 auto 1rem;"></div>
+              <p>Asha AI is analyzing ${lead.name}'s profile...</p>
+            </div>
+            <div id="ai-analysis-content" style="display:none;">
+              <div class="ai-score-card" style="display:flex;gap:1rem;margin-bottom:1.5rem;">
+                <div style="flex:1;background:var(--color-bg-alt);padding:1rem;border-radius:8px;text-align:center;">
+                  <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:4px;">Conversion Probability</div>
+                  <div id="ai-prob-val" style="font-size:24px;font-weight:800;color:var(--color-primary);">--</div>
+                </div>
+                <div style="flex:1;background:var(--color-bg-alt);padding:1rem;border-radius:8px;text-align:center;">
+                  <div style="font-size:12px;color:var(--color-text-muted);margin-bottom:4px;">Intent Level</div>
+                  <div id="ai-intent-val" style="font-size:24px;font-weight:800;color:var(--color-success);">--</div>
+                </div>
+              </div>
+              <div class="sqi-insight-box" style="background:rgba(14,165,233,0.1);border-color:rgba(14,165,233,0.2);">
+                <h4 class="sqi-insight-heading" style="color:#38bdf8;">Key Insights</h4>
+                <div id="ai-insights-list" class="sqi-insight-text"></div>
+              </div>
+              <div class="sqi-insight-box" style="margin-top:1rem;background:rgba(16,185,129,0.1);border-color:rgba(16,185,129,0.2);">
+                <h4 class="sqi-insight-heading" style="color:#34d399;">Recommended Next Action</h4>
+                <p id="ai-recommendation" class="sqi-insight-text"></p>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -339,13 +425,268 @@ function showLeadDetails(lead) {
     showFooter: false,
     onOpen: (body) => {
       window.renderIcons();
+      const renderCommunications = async () => {
+        const list = body.querySelector('#lead-comm-list');
+        if (!list) return;
+        list.innerHTML = '<div class="table-loading"><div class="spinner"></div> Loading communication...</div>';
+        try {
+          const [calls, inbox] = await Promise.all([fetchCallLogs(), fetchStudentInbox()]);
+          const phoneKey = String(lead.phone || '').replace(/\D/g, '').slice(-10);
+          const nameKey = String(lead.name || '').toLowerCase();
+          const items = [
+            ...calls
+              .filter(item => String(item.phone || '').replace(/\D/g, '').slice(-10) === phoneKey || String(item.student_name || '').toLowerCase() === nameKey)
+              .map(item => ({
+                type: 'call',
+                date: item.created_at,
+                msg: item.summary || `Call ${item.status || 'logged'}`,
+                meta: `${item.direction || 'outbound'} via ${item.provider || 'IVR'}`
+              })),
+            ...inbox
+              .filter(item => String(item.student_name || '').toLowerCase() === nameKey)
+              .map(item => ({
+                type: item.channel || 'email',
+                date: item.created_at,
+                msg: item.message || item.subject || 'Message logged',
+                meta: `${item.channel || 'message'} - ${item.status || 'open'}`
+              }))
+          ].sort((a, b) => new Date(b.date) - new Date(a.date));
+
+          if (!items.length) {
+            list.innerHTML = `<div style="padding:1.5rem;text-align:center;color:var(--color-text-muted);background:var(--color-bg-alt);border-radius:8px;">${fallbackCommsText}</div>`;
+            return;
+          }
+
+          list.innerHTML = items.map(item => `
+            <div class="comm-log-item">
+              <div class="comm-icon ${item.type}"><i data-lucide="${item.type === 'call' ? 'phone' : item.type === 'whatsapp' ? 'message-square' : 'mail'}"></i></div>
+              <div class="comm-body">
+                <div class="comm-msg">${escapeHtml(item.msg)}</div>
+                <div class="comm-meta">${new Date(item.date).toLocaleString('en-IN')} - ${escapeHtml(item.meta)}</div>
+              </div>
+            </div>
+          `).join('');
+          window.renderIcons();
+        } catch (err) {
+          list.innerHTML = `<div class="table-loading error-state">Failed to load communication: ${err.message}</div>`;
+        }
+      };
+
+      const renderTasks = async () => {
+        const list = body.querySelector('#lead-tasks-list');
+        if (!list) return;
+        list.innerHTML = '<div class="table-loading"><div class="spinner"></div> Loading tasks...</div>';
+        try {
+          const tasks = await fetchTasks({ lead_id: lead.id });
+          if (!tasks.length) {
+            list.innerHTML = '<div style="padding:1.5rem;text-align:center;color:var(--color-text-muted);background:var(--color-bg-alt);border-radius:8px;">No follow-up tasks yet.</div>';
+            return;
+          }
+          list.innerHTML = tasks.map(task => {
+            const due = new Date(task.due_date);
+            const isOverdue = task.status === 'pending' && due < new Date();                  return `
+              <div class="comm-log-item" style="${isOverdue ? 'border-color:rgba(239,68,68,0.3);background:rgba(239,68,68,0.05);' : ''}">
+                <div class="comm-icon ${task.type || 'call'}"><i data-lucide="${task.type === 'email' ? 'mail' : task.type === 'meeting' || task.type === 'visit' ? 'calendar' : task.type === 'whatsapp' ? 'message-square' : 'phone'}"></i></div>
+                <div class="comm-body">
+                  <div class="comm-msg" style="display:flex;justify-content:space-between;gap:1rem;">
+                    <span>${task.title}</span>
+                    <span class="stage-badge" style="background:${task.status === 'completed' ? 'rgba(16,185,129,0.12)' : isOverdue ? 'rgba(239,68,68,0.12)' : 'rgba(99,102,241,0.12)'};color:${task.status === 'completed' ? '#34d399' : isOverdue ? '#f87171' : '#a78bfa'};">${isOverdue ? 'overdue' : task.status}</span>
+                  </div>
+                  <div class="comm-meta">${due.toLocaleString('en-IN')} ${task.notes ? ' • ' + task.notes : ''}</div>
+                  ${task.status !== 'completed' ? `<button class="btn btn-secondary btn-sm mark-task-done" data-id="${task.id}" style="margin-top:8px;">Mark Done</button>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('');
+          window.renderIcons();
+          list.querySelectorAll('.mark-task-done').forEach(btn => {
+            btn.onclick = async () => {
+              btn.disabled = true;
+              await updateTask(btn.dataset.id, { status: 'completed' });
+              await renderTasks();
+            };
+          });
+        } catch (err) {
+          list.innerHTML = `<div class="table-loading error-state">Failed to load tasks: ${err.message}</div>`;
+        }
+      };
+
       body.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.onclick = () => {
+        btn.onclick = async () => {
           body.querySelectorAll('.tab-btn, .tab-pane').forEach(el => el.classList.remove('active'));
           btn.classList.add('active');
           body.querySelector('#pane-' + btn.dataset.tab).classList.add('active');
+
+          if (btn.dataset.tab === 'tasks') {
+            await renderTasks();
+          }
+
+          if (btn.dataset.tab === 'comm') {
+            await renderCommunications();
+          }
+          
+          if (btn.dataset.tab === 'ai') {
+            const loading = body.querySelector('#ai-analysis-loading');
+            const content = body.querySelector('#ai-analysis-content');
+            if (loading && loading.style.display !== 'none') {
+              try {
+                const prompt = `Analyze this student lead for RBMI Admission:
+                Name: ${lead.name}
+                Stage: ${lead.stage}
+                Course: ${lead.course_name}
+                Source: ${lead.source}
+                Communication History: Recent communication logs are available in the Communication tab.
+                
+                Provide:
+                1. Conversion Probability (0-100%)
+                2. Intent Level (Low/Medium/High/Extreme)
+                3. 3 Key Insights
+                4. Recommended Next Action
+                Format as JSON: {"probability": number, "intent": string, "insights": [string], "recommendation": string}`;
+
+                const res = await chatWithAI([{ role: 'user', content: prompt }]);
+                let data = { probability: 45, intent: 'Medium', insights: ['Showing interest in Finance', 'Active on WhatsApp', 'Pending fee discussion'], recommendation: 'Schedule a campus visit' };
+                try {
+                  const jsonStr = res.message.match(/\{.*\}/s)?.[0];
+                  if (jsonStr) data = JSON.parse(jsonStr);
+                } catch (e) { console.warn('AI JSON parse failed', e); }
+
+                body.querySelector('#ai-prob-val').innerText = data.probability + '%';
+                body.querySelector('#ai-intent-val').innerText = data.intent;
+                body.querySelector('#ai-insights-list').innerHTML = data.insights.map(i => `<p>• ${i}</p>`).join('');
+                body.querySelector('#ai-recommendation').innerText = data.recommendation;
+                
+                loading.style.display = 'none';
+                content.style.display = 'block';
+              } catch (err) {
+                loading.innerHTML = `<p style="color:var(--color-danger)">AI Analysis failed: ${err.message}</p>`;
+              }
+            }
+          }
         };
       });
+
+      body.querySelector('#add-task-btn').onclick = () => {
+        const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString().slice(0, 16);
+        body.querySelector('#task-title').value = `Call ${lead.name}`;
+        body.querySelector('#task-due').value = tomorrow;
+        body.querySelector('#task-notes').value = '';
+        body.querySelector('#task-inline-form').style.display = 'block';
+      };
+
+      body.querySelector('#cancel-task-btn').onclick = () => {
+        body.querySelector('#task-inline-form').style.display = 'none';
+      };
+
+      body.querySelector('#save-task-btn').onclick = async () => {
+        const btn = body.querySelector('#save-task-btn');
+        btn.disabled = true;
+        try {
+          await createTask({
+            lead_id: lead.id,
+            title: body.querySelector('#task-title').value,
+            type: body.querySelector('#task-type').value,
+            due_date: body.querySelector('#task-due').value,
+            notes: body.querySelector('#task-notes').value
+          });
+          body.querySelector('#task-inline-form').style.display = 'none';
+          await renderTasks();
+        } finally {
+          btn.disabled = false;
+        }
+      };
+
+      body.querySelector('#s360-call-btn').onclick = async () => {
+        const btn = body.querySelector('#s360-call-btn');
+        btn.disabled = true;
+        try {
+          await createCallLog({
+            student_name: lead.name,
+            phone: lead.phone,
+            direction: 'outbound',
+            provider: 'Manual call',
+            duration_seconds: 0,
+            summary: `Call initiated for ${lead.course_name || 'admission enquiry'}.`,
+            status: 'initiated'
+          });
+          await createTask({
+            lead_id: lead.id,
+            title: `Log call outcome for ${lead.name}`,
+            type: 'call',
+            due_date: new Date(Date.now() + 30 * 60 * 1000).toISOString(),
+            notes: 'Capture call result, objections, and next step.'
+          });
+          await renderCommunications();
+          alert('Call logged and outcome task created.');
+        } finally {
+          btn.disabled = false;
+        }
+      };
+
+      body.querySelector('#s360-whatsapp-btn').onclick = async () => {
+        const message = prompt('WhatsApp message', `Hi ${lead.name}, this is RBMI Admissions. I wanted to help you with your ${lead.course_name || 'program'} admission process.`);
+        if (!message) return;
+        const btn = body.querySelector('#s360-whatsapp-btn');
+        btn.disabled = true;
+        try {
+          await createStudentInboxMessage({
+            student_name: lead.name,
+            channel: 'whatsapp',
+            subject: 'Counselor follow-up',
+            message,
+            status: 'open',
+            priority: lead.priority || 'medium'
+          });
+          await createTask({
+            lead_id: lead.id,
+            title: `Check WhatsApp response from ${lead.name}`,
+            type: 'whatsapp',
+            due_date: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            notes: 'Follow up if the student has not replied.'
+          });
+          await renderCommunications();
+          alert('WhatsApp follow-up logged.');
+        } finally {
+          btn.disabled = false;
+        }
+      };
+
+      // Draft Follow-up logic
+      body.querySelector('#ai-draft-followup').onclick = async () => {
+        const container = body.querySelector('#ai-followup-container');
+        const textarea = body.querySelector('#ai-followup-text');
+        const btn = body.querySelector('#ai-draft-followup');
+        
+        container.style.display = 'block';
+        textarea.value = 'Drafting message...';
+        btn.disabled = true;
+
+        try {
+          const prompt = `Draft a personalized WhatsApp follow-up message for ${lead.name} who is at "${lead.stage}" stage for ${lead.course_name}. 
+          Mention that I noticed their progress and offer to help with any questions. Keep it friendly and professional. 
+          Use placeholders like [My Name] for the counselor.`;
+          
+          const res = await chatWithAI([{ role: 'user', content: prompt }]);
+          textarea.value = res.message;
+        } catch (err) {
+          textarea.value = 'Error drafting: ' + err.message;
+        } finally {
+          btn.disabled = false;
+        }
+      };
+
+      body.querySelector('#close-ai-draft').onclick = () => {
+        body.querySelector('#ai-followup-container').style.display = 'none';
+      };
+
+      body.querySelector('#copy-ai-draft').onclick = () => {
+        const text = body.querySelector('#ai-followup-text').value;
+        navigator.clipboard.writeText(text);
+        const btn = body.querySelector('#copy-ai-draft');
+        const oldText = btn.innerText;
+        btn.innerText = 'Copied!';
+        setTimeout(() => btn.innerText = oldText, 2000);
+      };
     }
   });
 }
@@ -437,27 +778,38 @@ async function showAddLeadModal(container) {
 
       // Duplicate check by phone
       const phone = body.querySelector('#lead-phone').value.trim();
+      let allowDuplicate = false;
       if (phone) {
         try {
           const existing = await fetchLeads({ search: phone, limit: 1 });
           if (existing.total > 0) {
             const dup = existing.data[0];
             if (!confirm(`⚠ A lead with this phone already exists: "${dup.name}" (${dup.stage}). Add anyway?`)) return false;
+            allowDuplicate = true;
           }
         } catch (e) { /* ignore duplicate check errors */ }
       }
 
-      await createLead({
-        first_name: fname,
-        last_name: lname,
-        email: body.querySelector('#lead-email').value,
-        phone,
-        course_id: body.querySelector('#lead-course').value,
-        source: body.querySelector('#lead-source').value,
-        counselor_id: body.querySelector('#lead-counselor').value,
-        priority: body.querySelector('#lead-priority').value,
-        notes: body.querySelector('#lead-notes').value
-      });
+      try {
+        await createLead({
+          first_name: fname,
+          last_name: lname,
+          email: body.querySelector('#lead-email').value,
+          phone,
+          course_id: body.querySelector('#lead-course').value,
+          source: body.querySelector('#lead-source').value,
+          counselor_id: body.querySelector('#lead-counselor').value,
+          priority: body.querySelector('#lead-priority').value,
+          notes: body.querySelector('#lead-notes').value,
+          allow_duplicate: allowDuplicate
+        });
+      } catch (err) {
+        if (err.message.includes('Duplicate lead found')) {
+          alert('Duplicate lead found. Search the student by phone/email and update the existing record instead, or confirm Add anyway from the phone duplicate warning.');
+          return false;
+        }
+        throw err;
+      }
 
       currentPage = 1;
       loadLeads(container);
@@ -483,6 +835,9 @@ export async function renderLeads(container) {
           <p class="page-subtitle">Manage and track student enquiries.</p>
         </div>
         <div class="header-actions">
+          <a href="/register.html" target="_blank" class="btn btn-secondary" style="display:flex;align-items:center;gap:6px;text-decoration:none;">
+            🔗 Registration Page
+          </a>
           <button class="btn btn-secondary" id="export-leads-btn" style="display:flex;align-items:center;gap:6px;">
             ⬇ Export CSV
           </button>

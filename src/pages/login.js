@@ -20,7 +20,7 @@ function buildBackground() {
   `;
 }
 
-function buildLeftPanel(title, subtitle, stats, eyebrow = 'Admission Platform') {
+function buildLeftPanel(title, subtitle, stats) {
   return `
     <div class="lp-left">
       <div class="lp-brand">
@@ -37,9 +37,6 @@ function buildLeftPanel(title, subtitle, stats, eyebrow = 'Admission Platform') 
       </div>
 
       <div class="lp-hero">
-        <div class="lp-hero-eyebrow">
-          <span></span>${eyebrow}
-        </div>
         <h1>${title}</h1>
         <p>${subtitle}</p>
         <div class="lp-stats">
@@ -68,77 +65,78 @@ function buildLeftPanel(title, subtitle, stats, eyebrow = 'Admission Platform') 
 
 // ─── 3D effects initialiser ───────────────────────────────────────────────────
 function init3DEffects() {
-  // Mouse-tracking cursor glow
+  const root = document.getElementById('login-root');
+
+  // ── Mouse-tracking cursor glow ──
   const glow = document.getElementById('lp-cursor-glow');
-  if (glow) {
-    document.addEventListener('mousemove', (e) => {
+  if (glow && root) {
+    root.addEventListener('mousemove', (e) => {
       glow.style.left = e.clientX + 'px';
       glow.style.top  = e.clientY + 'px';
     }, { passive: true });
   }
 
-  // Floating particles
+  // ── Floating particles ──
   const container = document.getElementById('lp-particles');
   if (container) {
-    const count = 28;
-    for (let i = 0; i < count; i++) {
+    for (let i = 0; i < 30; i++) {
       const p = document.createElement('div');
       p.className = 'lp-particle';
-      const size = Math.random() * 3 + 1;
-      const left = Math.random() * 100;
-      const duration = Math.random() * 12 + 8;
-      const delay = Math.random() * -20;
-      const hue = Math.random() > 0.5 ? '99,102,241' : '139,92,246';
+      const size     = Math.random() * 3 + 1;
+      const left     = Math.random() * 100;
+      const duration = Math.random() * 14 + 8;
+      const delay    = -(Math.random() * 20);
+      const colors   = [
+        'rgba(129,140,248,0.7)',
+        'rgba(99,102,241,0.6)',
+        'rgba(79,70,229,0.65)',
+        'rgba(255,255,255,0.3)'
+      ];
+      const color = colors[Math.floor(Math.random() * colors.length)];
       p.style.cssText = `
-        left: ${left}%;
-        width: ${size}px;
-        height: ${size}px;
-        background: rgba(${hue}, ${Math.random() * 0.5 + 0.3});
-        animation-duration: ${duration}s;
-        animation-delay: ${delay}s;
+        left:${left}%;
+        width:${size}px;
+        height:${size}px;
+        background:${color};
+        animation-duration:${duration}s;
+        animation-delay:${delay}s;
       `;
       container.appendChild(p);
     }
   }
 
-  // 3D card tilt on mouse move
-  const card = document.querySelector('.lp-card-3d');
+  // ── 3D card tilt ──
   const wrap = document.querySelector('.lp-card-3d-wrap');
-  if (card && wrap) {
+  const card = document.querySelector('.lp-card-3d');
+  if (wrap && card) {
     wrap.addEventListener('mousemove', (e) => {
       const rect = wrap.getBoundingClientRect();
       const x = (e.clientX - rect.left) / rect.width  - 0.5;
       const y = (e.clientY - rect.top)  / rect.height - 0.5;
-      const rotX = -y * 10;
-      const rotY =  x * 10;
-      card.style.transform = `rotateX(${rotX}deg) rotateY(${rotY}deg) translateZ(8px)`;
-    });
+      card.style.transform = `rotateX(${-y * 12}deg) rotateY(${x * 12}deg) translateZ(10px)`;
+    }, { passive: true });
     wrap.addEventListener('mouseleave', () => {
       card.style.transform = 'rotateX(0deg) rotateY(0deg) translateZ(0)';
     });
   }
 
-  // Hover glow on demo buttons
+  // ── Radial hover glow on demo buttons ──
   document.querySelectorAll('.lp-demo').forEach(btn => {
     btn.addEventListener('mousemove', (e) => {
-      const rect = btn.getBoundingClientRect();
-      const x = ((e.clientX - rect.left) / rect.width  * 100).toFixed(1);
-      const y = ((e.clientY - rect.top)  / rect.height * 100).toFixed(1);
-      btn.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(99,102,241,0.18), rgba(255,255,255,0.04) 70%)`;
-    });
-    btn.addEventListener('mouseleave', () => {
-      btn.style.background = '';
-    });
+      const r = btn.getBoundingClientRect();
+      const x = ((e.clientX - r.left) / r.width  * 100).toFixed(1);
+      const y = ((e.clientY - r.top)  / r.height * 100).toFixed(1);
+      btn.style.background = `radial-gradient(circle at ${x}% ${y}%, rgba(99,102,241,0.22), rgba(255,255,255,0.05) 70%)`;
+    }, { passive: true });
+    btn.addEventListener('mouseleave', () => { btn.style.background = ''; });
   });
 
-  // Input focus glow ripple
+  // ── Input focus glow ──
   document.querySelectorAll('.lp-input').forEach(input => {
     input.addEventListener('focus', () => {
-      input.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.2), 0 0 24px rgba(99,102,241,0.12)';
+      input.style.boxShadow = '0 0 0 3px rgba(99,102,241,0.22), 0 0 24px rgba(99,102,241,0.12)';
     });
-    input.addEventListener('blur', () => {
-      input.style.boxShadow = '';
-    });
+    input.addEventListener('blur', () => { input.style.boxShadow = ''; });
   });
 }
 
@@ -320,8 +318,7 @@ export function showSignup({ onSuccess, onLoginClick }) {
           { n: '8+',   l: 'Programs' },
           { n: '2',    l: 'Campuses' },
           { n: '100%', l: 'Online Process' }
-        ],
-        'Student Registration'
+        ]
       )}
 
       <div class="lp-right">

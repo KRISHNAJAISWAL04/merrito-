@@ -1,5 +1,6 @@
 import { openModal } from '../components/modal.js';
 import { fetchFormTemplates, createFormTemplate, fetchCampaigns, createCampaign, createUser } from '../lib/api.js';
+import { openAshaAI } from '../components/ashaAi.js';
 
 function escapeHtml(s) {
   return String(s ?? '')
@@ -340,79 +341,7 @@ export function renderAiAssistant(el) {
     ],
     before: `<section class="ai-chat-demo"><div class="ai-chat-head"><strong>Asha AI</strong>${statusPill('UI Ready')}</div><div class="ai-msg student">What documents are pending for my admission?</div><div class="ai-msg bot">Your Class 12 marksheet is pending. Upload it from My Application, then the document team can verify your file.</div><div class="ai-suggestions"><button>Draft reminder</button><button>Score lead</button><button>Classify query</button></div></section>`,
     onPrimaryClick: () => {
-      let chatHistory = [
-        { role: 'bot', text: 'Hello! I am Asha AI, your admission assistant. How can I help you today?' }
-      ];
-      const suggestedQuestions = [
-        'What documents are required?',
-        'What are the course fees?',
-        'Can I apply for MBA?',
-        'How do I track my application?'
-      ];
-
-      function renderChat(body) {
-        const wrap = body.querySelector('#ai-chat-history');
-        if (!wrap) return;
-        wrap.innerHTML = chatHistory.map(m => `
-          <div class="ai-msg ${m.role}">
-            ${escapeHtml(m.text)}
-          </div>
-        `).join('');
-        wrap.scrollTop = wrap.scrollHeight;
-      }
-
-      openModal(
-        'Asha AI Assistant',
-        `
-        <div class="ai-modal">
-          <div class="ai-chat-history" id="ai-chat-history" style="height:320px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:12px;background:var(--color-bg-alt);border-radius:8px;margin-bottom:12px;"></div>
-          <div class="ai-suggestions-modal" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
-            ${suggestedQuestions.map(q => `<button class="ai-suggest-btn" style="background:#fff;border:1px solid var(--color-border);padding:6px 12px;border-radius:999px;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.2s;">${q}</button>`).join('')}
-          </div>
-          <div class="form-group" style="display:flex;gap:8px;">
-            <input type="text" class="form-input" id="ai-input" placeholder="Type your question..." style="flex:1">
-            <button class="btn btn-primary" id="ai-send-btn">Send</button>
-          </div>
-          <p class="portal-muted" style="font-size:11px;margin-top:8px;">Powered by RBMI Intelligence. Connect OpenAI API to enable real-time learning.</p>
-        </div>
-        `,
-        {
-          width: '680px',
-          showFooter: false,
-          onOpen: (body) => {
-            renderChat(body);
-            const input = body.querySelector('#ai-input');
-            const btn = body.querySelector('#ai-send-btn');
-
-            const handleSend = (overrideText) => {
-              const text = overrideText || input.value.trim();
-              if (!text) return;
-              chatHistory.push({ role: 'student', text });
-              if (!overrideText) input.value = '';
-              renderChat(body);
-
-              // Simulate AI thinking
-              setTimeout(() => {
-                let reply = 'I am processing your request. Connect your OpenAI API key in Settings to get real-time admission guidance.';
-                const low = text.toLowerCase();
-                if (low.includes('document')) reply = 'Pending documents for most students include Class 12 marksheet and ID proof. You can check your specific checklist in the Student Portal.';
-                else if (low.includes('fee') || low.includes('pay')) reply = 'Fees can be paid online via the Portal or offline at the Bareilly/Greater Noida campuses. MBA fees are currently approx. ₹25,000 per semester.';
-                else if (low.includes('course') || low.includes('mba') || low.includes('bba')) reply = 'RBMI offers top-tier MBA, BBA, BCA, and B.Tech programs. Would you like to speak with a counselor about eligibility?';
-                else if (low.includes('track')) reply = 'You can track your application in real-time from the "Admission Pipeline" if you are a counselor, or "My Application" section if you are a student.';
-
-                chatHistory.push({ role: 'bot', text: reply });
-                renderChat(body);
-              }, 800);
-            };
-
-            btn.onclick = () => handleSend();
-            input.onkeypress = (e) => { if (e.key === 'Enter') handleSend(); };
-            body.querySelectorAll('.ai-suggest-btn').forEach(sbtn => {
-              sbtn.onclick = () => handleSend(sbtn.innerText);
-            });
-          }
-        }
-      );
+      openAshaAI();
     }
   });
 }

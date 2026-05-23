@@ -6,3 +6,4 @@ dist/
 *.log
 docker-compose.yml
 .env.n8n
+scripts/real-users.local.json

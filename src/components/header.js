@@ -30,6 +30,7 @@ export function renderHeader(user = null) {
       </div>
     </div>
     <div class="header-right">
+      <button class="header-btn" id="btn-dark-mode" title="Toggle dark mode"><i data-lucide="moon" style="width:18px;height:18px;"></i></button>
       <button class="header-btn" id="btn-notifications" title="Notifications"><i data-lucide="bell" style="width:18px;height:18px;"></i></button>
       <div class="header-divider"></div>
       ${canCreateLead ? `
@@ -140,19 +141,43 @@ export function renderHeader(user = null) {
     });
   }
 
+  // ---- Dark Mode Toggle (no CSS transitions — instant switch) ----
+  const darkBtn = document.getElementById('btn-dark-mode');
+  if (darkBtn) {
+    const updateDarkIcon = () => {
+      const isDark = document.documentElement.classList.contains('dark-mode');
+      darkBtn.innerHTML = `<i data-lucide="${isDark ? 'sun' : 'moon'}" style="width:18px;height:18px;"></i>`;
+      setTimeout(window.renderIcons, 0);
+    };
+    darkBtn.addEventListener('click', () => {
+      // Suppress all CSS transitions momentarily to prevent
+      // broken CSS-variable->value interpolation on <html> class toggle
+      const root = document.documentElement;
+      root.style.transition = 'none';
+      root.classList.toggle('dark-mode');
+      // Force reflow so the class change takes effect before un-suppressing
+      void root.offsetHeight;
+      root.style.transition = '';
+      const isDark = root.classList.contains('dark-mode');
+      localStorage.setItem('rbmi_dark_mode', isDark ? 'true' : 'false');
+      updateDarkIcon();
+    });
+    updateDarkIcon();
+  }
+
   document.getElementById('btn-notifications')?.addEventListener('click', () => {
     const studentContent = `
       <div style="display:flex;flex-direction:column;gap:12px;">
-        <div class="notif-item-row"><span class="notif-dot new"></span><div><strong>Document review pending</strong><br/><small style="color:#64748b;">Upload your Class 12 marksheet</small></div></div>
-        <div class="notif-item-row"><span class="notif-dot"></span><div><strong>Callback slot reserved</strong><br/><small style="color:#64748b;">Admissions team will contact you today</small></div></div>
-        <div class="notif-item-row"><span class="notif-dot"></span><div><strong>Fee slip available</strong><br/><small style="color:#64748b;">Open Fee Desk for payment details</small></div></div>
+        <div class="notif-item-row"><span class="notif-dot new"></span><div><strong>Document review pending</strong><br/><small style="color:var(--color-text-muted);">Upload your Class 12 marksheet</small></div></div>
+        <div class="notif-item-row"><span class="notif-dot"></span><div><strong>Callback slot reserved</strong><br/><small style="color:var(--color-text-muted);">Admissions team will contact you today</small></div></div>
+        <div class="notif-item-row"><span class="notif-dot"></span><div><strong>Fee slip available</strong><br/><small style="color:var(--color-text-muted);">Open Fee Desk for payment details</small></div></div>
       </div>
     `;
     const crmContent = `
       <div style="display:flex;flex-direction:column;gap:12px;">
-        <div class="notif-item-row"><span class="notif-dot new"></span><div><strong>New lead captured</strong><br/><small style="color:#64748b;">Just now via website form</small></div></div>
-        <div class="notif-item-row"><span class="notif-dot"></span><div><strong>Stage update</strong><br/><small style="color:#64748b;">Applicant moved to Admitted</small></div></div>
-        <div class="notif-item-row"><span class="notif-dot"></span><div><strong>Counseling scheduled</strong><br/><small style="color:#64748b;">3 sessions today</small></div></div>
+        <div class="notif-item-row"><span class="notif-dot new"></span><div><strong>New lead captured</strong><br/><small style="color:var(--color-text-muted);">Just now via website form</small></div></div>
+        <div class="notif-item-row"><span class="notif-dot"></span><div><strong>Stage update</strong><br/><small style="color:var(--color-text-muted);">Applicant moved to Admitted</small></div></div>
+        <div class="notif-item-row"><span class="notif-dot"></span><div><strong>Counseling scheduled</strong><br/><small style="color:var(--color-text-muted);">3 sessions today</small></div></div>
       </div>
     `;
     openModal('Notifications', role === 'student' ? studentContent : crmContent, { submitLabel: 'Mark All Read', width: '420px' });

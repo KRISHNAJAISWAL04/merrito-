@@ -94,6 +94,14 @@
   background: #fff;
 }
 
+:root.dark-mode .mk-analytics-mini div,
+:root.dark-mode .mk-chip-row,
+:root.dark-mode .mk-chat-shell,
+:root.dark-mode .mk-list-card,
+:root.dark-mode .mk-integration-card {
+  background: var(--color-surface);
+}
+
 .mk-analytics-mini div {
   padding: 14px;
   border-radius: 12px;
@@ -156,6 +164,11 @@
   color: #155e75;
   font-size: 12px;
   font-weight: 700;
+}
+
+:root.dark-mode .mk-chip {
+  background: rgba(15, 118, 110, 0.15);
+  color: #5eead4;
 }
 
 .mk-integrations {
@@ -241,6 +254,10 @@
   overflow-y: auto;
 }
 
+:root.dark-mode .mk-chat-threads {
+  background: var(--color-bg);
+}
+
 .mk-thread-item {
   padding: 16px;
   border-bottom: 1px solid var(--color-border);
@@ -256,6 +273,20 @@
   background: #fff;
   border-left: 4px solid var(--color-primary);
   box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+}
+
+:root.dark-mode .mk-thread-item {
+  border-color: var(--color-border);
+}
+
+:root.dark-mode .mk-thread-item:hover {
+  background: var(--color-surface-hover);
+}
+
+:root.dark-mode .mk-thread-item.active {
+  background: var(--color-surface);
+  border-left-color: var(--color-primary);
+  box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
 }
 
 .mk-thread-item strong {
@@ -281,6 +312,10 @@
   overflow: hidden;
 }
 
+:root.dark-mode .mk-chat-shell {
+  background: var(--color-surface);
+}
+
 .mk-chat-head {
   padding: 14px 20px;
   border-bottom: 1px solid var(--color-border);
@@ -295,6 +330,10 @@
   padding: 20px;
   overflow-y: auto;
   background: #f1f5f9;
+}
+
+:root.dark-mode .mk-chat-messages {
+  background: var(--color-bg);
 }
 
 .mk-chat-bubble {
@@ -317,6 +356,16 @@
   border-color: #bbf7d0;
 }
 
+:root.dark-mode .mk-chat-bubble.student {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: rgba(59, 130, 246, 0.2);
+}
+
+:root.dark-mode .mk-chat-bubble.counselor {
+  background: rgba(16, 185, 129, 0.12);
+  border-color: rgba(16, 185, 129, 0.2);
+}
+
 .mk-chat-compose {
   padding: 16px 20px;
   border-top: 1px solid var(--color-border);
@@ -324,6 +373,10 @@
   flex-direction: column;
   gap: 10px;
   background: #fff;
+}
+
+:root.dark-mode .mk-chat-compose {
+  background: var(--color-surface);
 }
 
 .mk-inline-toggle {

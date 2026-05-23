@@ -9,7 +9,8 @@
     "start": "concurrently --kill-others-on-fail \"npm run server\" \"npm run dev\"",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "node --test server/validate.test.js"
+    "test": "node --test server/validate.test.js",
+    "seed:users": "node scripts/seed-real-users.mjs"
   },
   "devDependencies": {
     "vite": "^6.4.2"

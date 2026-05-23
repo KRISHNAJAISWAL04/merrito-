@@ -83,6 +83,21 @@ create table if not exists activities (
 );
 
 -- ============================================================
+-- TASKS / FOLLOW-UPS
+-- ============================================================
+create table if not exists tasks (
+  id text primary key,
+  title text not null,
+  lead_id text not null,
+  due_date timestamptz not null,
+  type text default 'call',
+  status text default 'pending',
+  notes text default '',
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
+);
+
+-- ============================================================
 -- APPLICATIONS
 -- ============================================================
 create table if not exists applications (
@@ -93,6 +108,7 @@ create table if not exists applications (
   course_id text,
   status text default 'submitted',
   documents_status text default 'pending',
+  documents jsonb not null default '[]',
   counselor_name text default 'Admissions team',
   priority text default 'medium',
   created_at timestamptz default now(),
@@ -129,6 +145,7 @@ create table if not exists payments (
   method text default 'Online',
   due_date text default '',
   receipt_no text default '',
+  installments jsonb not null default '[]',
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
@@ -197,6 +214,7 @@ alter table leads enable row level security;
 alter table counselors enable row level security;
 alter table courses enable row level security;
 alter table activities enable row level security;
+alter table tasks enable row level security;
 alter table applications enable row level security;
 alter table queries enable row level security;
 alter table payments enable row level security;
@@ -249,6 +267,15 @@ create policy "Anyone can read activities"
 
 create policy "Service role can manage activities"
   on activities for all using (true) with check (true);
+
+-- ============================================================
+-- POLICIES — Tasks
+-- ============================================================
+create policy "Anyone can read tasks"
+  on tasks for select using (true);
+
+create policy "Service role can manage tasks"
+  on tasks for all using (true) with check (true);
 
 -- ============================================================
 -- POLICIES — Applications
@@ -327,6 +354,8 @@ $$ language plpgsql;
 create trigger update_profiles_updated_at before update on profiles
   for each row execute function update_updated_at_column();
 create trigger update_leads_updated_at before update on leads
+  for each row execute function update_updated_at_column();
+create trigger update_tasks_updated_at before update on tasks
   for each row execute function update_updated_at_column();
 create trigger update_applications_updated_at before update on applications
   for each row execute function update_updated_at_column();

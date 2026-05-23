@@ -1,5 +1,7 @@
-import { createLead, fetchCourses, fetchPortalProfile, updatePortalProfile, fetchChatThreads, sendChatMessage, createChatThread } from '../lib/api.js';
+import { createLead, fetchApplications, fetchCourses, fetchPortalProfile, updateApplication, updatePortalProfile, fetchChatThreads, sendChatMessage, createChatThread, uploadFile } from '../lib/api.js';
 import { getCurrentUser } from '../lib/auth.js';
+import { openAshaAI } from '../components/ashaAi.js';
+import { openModal } from '../components/modal.js';
 
 const stageLabels = {
   enquiry: 'Enquiry',
@@ -12,11 +14,23 @@ const stageLabels = {
 };
 
 const checklist = [
-  { name: 'Class 10 marksheet', status: 'verified' },
-  { name: 'Class 12 marksheet', status: 'pending' },
-  { name: 'ID proof', status: 'verified' },
-  { name: 'Entrance scorecard', status: 'missing' }
+  { name: 'Class 10 marksheet', status: 'verified', file_name: '', file_url: '', remarks: '' },
+  { name: 'Class 12 marksheet', status: 'pending', file_name: '', file_url: '', remarks: '' },
+  { name: 'ID proof', status: 'verified', file_name: '', file_url: '', remarks: '' },
+  { name: 'Entrance scorecard', status: 'missing', file_name: '', file_url: '', remarks: '' }
 ];
+
+function normalizePortalDocs(application) {
+  const docs = application?.documents;
+  if (!Array.isArray(docs) || docs.length === 0) return checklist;
+  return docs.map(doc => ({
+    name: doc.name,
+    status: doc.status || 'missing',
+    file_name: doc.file_name || '',
+    file_url: doc.file_url || '',
+    remarks: doc.remarks || ''
+  }));
+}
 
 function escapeHtml(value = '') {
   return String(value).replace(/[&<>"']/g, (char) => ({
@@ -71,13 +85,16 @@ export async function renderStudentPortal(el) {
   const user = getCurrentUser();
   let profile = fallbackProfile(user);
   let courses = [];
+  let applications = [];
 
   try {
-    [profile, courses] = await Promise.all([fetchPortalProfile(), fetchCourses()]);
+    [profile, courses, applications] = await Promise.all([fetchPortalProfile(), fetchCourses(), fetchApplications()]);
   } catch (error) {
     try { courses = await fetchCourses(); } catch (_) { courses = []; }
   }
 
+  const activeApplication = applications[0] || null;
+  const portalDocs = normalizePortalDocs(activeApplication);
   const safeName = escapeHtml(profile.name);
   const safeCourse = escapeHtml(profile.course_name || 'Choose a program');
   const readiness = Math.min(100, Math.max(0, Number(profile.readiness || 72)));
@@ -131,11 +148,14 @@ export async function renderStudentPortal(el) {
             <button class="btn btn-secondary" id="portal-upload-btn">Upload document</button>
           </div>
           <div class="doc-list">
-            ${checklist.map((item) => `
+            ${portalDocs.map((item) => `
               <div class="doc-row">
                 <div>
                   <strong>${item.name}</strong>
-                  <small>${item.status === 'missing' ? 'Needs upload' : item.status.charAt(0).toUpperCase() + item.status.slice(1)}</small>
+                  <small>
+                    ${item.file_url ? `<a href="${item.file_url}" target="_blank" style="color:var(--color-primary);text-decoration:underline;">${escapeHtml(item.file_name)}</a>` : (item.file_name ? escapeHtml(item.file_name) : item.status === 'missing' ? 'Needs upload' : item.status.charAt(0).toUpperCase() + item.status.slice(1))}
+                    ${item.remarks ? ' - ' + escapeHtml(item.remarks) : ''}
+                  </small>
                 </div>
                 <span class="doc-status ${item.status}">${item.status.charAt(0).toUpperCase() + item.status.slice(1)}</span>
               </div>
@@ -160,6 +180,9 @@ export async function renderStudentPortal(el) {
               <h2>Chat with counselor</h2>
               <p class="portal-muted">${escapeHtml(profile.counselor_name || 'Admissions team')}</p>
             </div>
+            <button class="btn btn-secondary btn-sm" id="portal-asha-btn" style="border-color:var(--color-primary);color:var(--color-primary);background:#f5f3ff;">
+              <i data-lucide="sparkles" style="width:14px;height:14px;margin-right:4px;"></i> Ask Asha AI
+            </button>
           </div>
           <div class="portal-chat-area">
             <div class="portal-chat-messages" id="portal-chat-messages">
@@ -209,7 +232,7 @@ export async function renderStudentPortal(el) {
       <div class="form-group">
         <label class="form-label">Select Document Type</label>
         <select class="form-select" id="upload-type">
-          ${checklist.filter(i => i.status === 'missing' || i.status === 'pending').map(i => `<option value="${i.name}">${i.name}</option>`).join('')}
+          ${portalDocs.filter(i => i.status !== 'verified').map(i => `<option value="${i.name}">${i.name}</option>`).join('')}
         </select>
       </div>
       <div class="form-group" style="margin-top:12px;">
@@ -222,21 +245,41 @@ export async function renderStudentPortal(el) {
       onSubmit: async (body) => {
         const fileInput = body.querySelector('#upload-file');
         const type = body.querySelector('#upload-type').value;
-        if (!fileInput.files[0]) {
+        const file = fileInput?.files?.[0];
+        if (!file) {
           alert('Please select a file');
           return false;
         }
         
-        // Simulate upload delay
         const btn = body.parentElement.querySelector('#modal-submit-btn');
         btn.disabled = true;
         btn.innerText = 'Uploading...';
         
-        await new Promise(r => setTimeout(r, 1500));
-        
-        await updatePortalProfile({ next_step: `Reviewing ${type} upload` });
-        alert(`${type} has been uploaded successfully and sent for verification.`);
-        window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+        try {
+          // Upload the file to the server
+          const uploadResult = await uploadFile(file, { document_name: type, application_id: activeApplication?.id });
+          
+          if (activeApplication) {
+            const nextDocs = normalizePortalDocs(activeApplication).map(doc => doc.name === type ? {
+              ...doc,
+              status: 'submitted',
+              file_name: file.name,
+              file_url: uploadResult.url,
+              remarks: '',
+              uploaded_at: new Date().toISOString(),
+              reviewed_at: null
+            } : doc);
+            await updateApplication(activeApplication.id, { documents: nextDocs });
+          }
+          await updatePortalProfile({ next_step: `Reviewing ${type} upload` });
+          alert(`${type} has been uploaded successfully and sent for verification.`);
+          window.dispatchEvent(new CustomEvent('rbmi:refresh'));
+        } catch (err) {
+          alert('Upload failed: ' + err.message);
+          btn.disabled = false;
+          btn.innerText = 'Upload & Submit';
+          return false;
+        }
       }
     });
   });
@@ -403,6 +446,10 @@ export async function renderStudentPortal(el) {
       btn.disabled = false;
     }
   };
+
+  el.querySelector('#portal-asha-btn')?.addEventListener('click', () => {
+    openAshaAI();
+  });
 
   el.querySelector('#portal-send-chat')?.addEventListener('click', sendStudentMsg);
   el.querySelector('#portal-chat-text')?.addEventListener('keydown', (e) => {

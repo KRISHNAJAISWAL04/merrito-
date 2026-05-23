@@ -174,3 +174,39 @@
 .counselor-table-wrap {
   overflow-x: auto;
 }
+
+.task-control-list {
+  padding: 0 var(--spacing-xl) var(--spacing-xl);
+  display: grid;
+  gap: 10px;
+}
+
+.task-control-item {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--spacing-md);
+  align-items: center;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border-light);
+}
+
+.task-control-item:last-child {
+  border-bottom: none;
+}
+
+.task-control-item strong,
+.task-control-item small {
+  display: block;
+}
+
+.task-control-item small {
+  margin-top: 4px;
+  color: var(--color-text-muted);
+}
+
+.task-control-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
