@@ -33,6 +33,8 @@ import { renderAccessControl, renderAiAssistant, renderCalendar, renderCampaigns
 import { renderAuditLog } from './pages/auditLog.js';
 import { renderStudentQualityIndex } from './pages/studentQualityIndex.js';
 import { renderUserDashboard } from './pages/userDashboard.js';
+import { formBuilderPage } from './pages/formBuilder.js';
+import { publicFormPage } from './pages/publicForm.js';
 import { getCurrentUser } from './lib/auth.js';
 import { API_BASE } from './lib/api.js';
 import { showLogin, showSignup } from './pages/login.js';
@@ -76,7 +78,9 @@ const routes = [
   ['/integrations', renderIntegrations],
   ['/audit-log', renderAuditLog],
   ['/sqi', renderStudentQualityIndex],
-  ['/user-dashboard', renderUserDashboard]
+  ['/user-dashboard', renderUserDashboard],
+  ['/form-builder', formBuilderPage],
+  ['/form/:id', publicFormPage]
 ];
 routes.forEach(([path, fn]) => registerRoute(path, fn));
 
@@ -86,11 +90,13 @@ function hideBoot(cb) {
     cb();
     return;
   }
-  el.style.opacity = '0';
   setTimeout(() => {
-    el.remove();
-    cb();
-  }, 400);
+    el.style.opacity = '0';
+    setTimeout(() => {
+      el.remove();
+      cb();
+    }, 500);
+  }, 600);
 }
 
 function startApp(user) {

@@ -1324,5 +1324,23 @@
       "leads_captured": 0,
       "last_sync": null
     }
+  ],
+  "inboundLogs": [
+    {
+      "id": "de521a63-fa98-4cb7-92c3-8890692b3d4b",
+      "publisher": "Website",
+      "source": "Website",
+      "student_name": "Final Test",
+      "status": "captured",
+      "received_at": "2026-05-23T08:53:11.341Z"
+    },
+    {
+      "id": "7a84b90f-4357-4424-afdf-1a8780b0dc43",
+      "publisher": "Website",
+      "source": "Website",
+      "student_name": "Test Webhook",
+      "status": "captured",
+      "received_at": "2026-05-23T08:48:23.372Z"
+    }
   ]
 }

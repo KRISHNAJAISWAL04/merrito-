@@ -26,6 +26,12 @@ import {
   sendTestEmail,
   isEmailConfigured
 } from './utils/emailService.js';
+import {
+  normalizeLeadFromPublisher,
+  detectPublisher,
+  getValidPublishers
+} from './publishers.js';
+import formBuilderRoutes from './routes/formBuilderRoutes.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -90,7 +96,7 @@ function calculateLeadScore(lead) {
   let score = 20; // Base score
   
   // Source weight
-  const sourceScores = { 'Website': 20, 'Google Ads': 25, 'Walk-in': 30, 'Referral': 25, 'Social Media': 15 };
+  const sourceScores = { 'Website': 20, 'Google Ads': 25, 'Walk-in': 30, 'Referral': 25, 'Social Media': 15, 'Shiksha': 22, 'CollegeDekho': 22, 'Facebook Ads': 18, 'JustDial': 16, 'Education Fair': 24 };
   score += sourceScores[lead.source] || 10;
   
   // Priority weight
@@ -106,6 +112,82 @@ function calculateLeadScore(lead) {
   
   // Cap at 100
   return Math.min(100, score);
+}
+
+function getSourceAttribution({ source = 'Website', publisher = '', campaign = '', medium = '', keyword = '', source_url = '' } = {}) {
+  const primary = publisher || source || 'Website';
+  const secondary = campaign || medium || (primary === 'Website' ? 'Organic / direct' : 'Publisher API');
+  const tertiary = keyword || source_url || 'First touch';
+  return { primary, secondary, tertiary };
+}
+
+function getVerificationStatus(lead = {}) {
+  const emailOk = !!String(lead.email || '').match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/);
+  const phoneDigits = normalizePhone(lead.phone);
+  const phoneOk = phoneDigits.length === 10;
+  if (emailOk && phoneOk) return 'verified';
+  if (emailOk || phoneOk) return 'partial';
+  return 'needs_review';
+}
+
+function getLeadStrength(score = 0) {
+  if (score >= 75) return 'hot';
+  if (score >= 55) return 'warm';
+  if (score >= 35) return 'nurture';
+  return 'cold';
+}
+
+function buildLeadPayload(input = {}) {
+  const payload = {
+    first_name: input.first_name || '',
+    last_name: input.last_name || '',
+    email: input.email || '',
+    phone: input.phone || '',
+    course_id: input.course_id || null,
+    source: input.source || input.publisher || 'Website',
+    stage: input.stage || 'enquiry',
+    counselor_id: input.counselor_id || null,
+    priority: input.priority || 'medium',
+    city: input.city || '',
+    notes: input.notes || ''
+  };
+  const score = calculateLeadScore(payload);
+  return {
+    ...payload,
+    lead_score: input.lead_score || score,
+    lead_strength: input.lead_strength || getLeadStrength(score),
+    verification_status: input.verification_status || getVerificationStatus(payload),
+    source_attribution: input.source_attribution || getSourceAttribution(input),
+    raw_source_payload: input.raw_source_payload || null
+  };
+}
+
+function logInboundCapture({ publisher = 'Website', source = 'Website', student_name = 'Unknown', status = 'captured', payload = {}, lead_id = null, reason = '' }) {
+  try {
+    const dbData = getDB();
+    if (!dbData.inboundLogs) dbData.inboundLogs = [];
+    dbData.inboundLogs.unshift({
+      id: generateId(),
+      publisher,
+      source,
+      student_name,
+      status,
+      lead_id,
+      reason,
+      payload,
+      received_at: new Date().toISOString()
+    });
+    if (dbData.inboundLogs.length > 100) dbData.inboundLogs = dbData.inboundLogs.slice(0, 100);
+
+    if (!dbData.publishers) dbData.publishers = [];
+    const idx = dbData.publishers.findIndex(p => String(p.name).toLowerCase() === String(publisher).toLowerCase());
+    if (idx >= 0) {
+      if (status === 'captured') dbData.publishers[idx].leads_captured = Number(dbData.publishers[idx].leads_captured || 0) + 1;
+      dbData.publishers[idx].last_sync = new Date().toISOString();
+      dbData.publishers[idx].status = 'active';
+    }
+    saveDB(dbData);
+  } catch {}
 }
 
 function normalizePhone(value = '') {
@@ -365,7 +447,7 @@ app.post('/api/leads', requireAuth, async (req, res) => {
       }
     }
 
-    const lead = await db.createLead({
+    const lead = await db.createLead(buildLeadPayload({
       first_name: req.body.first_name || '',
       last_name: req.body.last_name || '',
       email: req.body.email || '',
@@ -376,8 +458,9 @@ app.post('/api/leads', requireAuth, async (req, res) => {
       counselor_id: assignedCounselorId || null,
       priority: req.body.priority || 'medium',
       city: req.body.city || '',
-      notes: req.body.notes || ''
-    });
+      notes: req.body.notes || '',
+      source_attribution: getSourceAttribution(req.body)
+    }));
 
     await db.createActivity({
       lead_id: lead.id,
@@ -426,6 +509,10 @@ app.put('/api/leads/:id', requireAuth, async (req, res) => {
     const updatedData = { ...req.body };
     if (updatedData.stage || updatedData.priority || updatedData.source) {
       updatedData.lead_score = calculateLeadScore({ ...current, ...updatedData });
+      updatedData.lead_strength = getLeadStrength(updatedData.lead_score);
+    }
+    if (updatedData.email || updatedData.phone) {
+      updatedData.verification_status = getVerificationStatus({ ...current, ...updatedData });
     }
 
     const updated = await db.updateLead(req.params.id, updatedData);
@@ -492,16 +579,51 @@ app.post('/api/leads/bulk-delete', requireAdmin, async (req, res) => {
 //  WEBHOOK — Lead Capture (for n8n, website forms, etc.)
 // ============================================================
 
+async function assignLeastLoadedCounselor() {
+  const allCounselors = await db.getCounselors();
+  if (!allCounselors.length) return null;
+  const allLeads = await db.getLeads({});
+  const workloads = allCounselors.map(c => ({
+    id: c.id,
+    active: allLeads.filter(l => l.counselor_id === c.id && !['admitted', 'enrolled'].includes(l.stage)).length
+  }));
+  workloads.sort((a, b) => a.active - b.active);
+  return workloads[0].id;
+}
+
 app.post('/api/webhook/lead', rateLimit({ windowMs: 60_000, max: 30 }), requireWebhookSecret, async (req, res) => {
   try {
-    const {
+    let {
       first_name, last_name, name, email, phone,
-      course, course_id, source, city, notes, priority
+      course, course_id, source, city, notes, priority, publisher,
+      campaign, medium, keyword, source_url
     } = req.body;
 
-    // Support both "name" and "first_name/last_name"
     let fname = first_name || '';
     let lname = last_name || '';
+    let resolvedSource = source || 'Website';
+
+    // If publisher specified, use publisher adapter to normalize
+    if (publisher) {
+      const normalized = normalizeLeadFromPublisher(publisher, req.body);
+      if (normalized) {
+        fname = normalized.first_name || fname;
+        lname = normalized.last_name || lname;
+        email = normalized.email || email;
+        phone = normalized.phone || phone;
+        course = normalized.course || course;
+        resolvedSource = normalized.source || resolvedSource;
+        if (!course_id && normalized.course) {
+          const courses = await db.getCourses();
+          const found = courses.find(c => c.name.toLowerCase().includes(normalized.course.toLowerCase()) || c.code.toLowerCase() === normalized.course.toLowerCase());
+          if (found) course_id = found.id;
+        }
+        if (!city && normalized.city) city = normalized.city;
+        if (!notes && normalized.notes) notes = normalized.notes;
+      }
+    }
+
+    // Support both "name" and "first_name/last_name"
     if (!fname && name) {
       const parts = name.trim().split(' ');
       fname = parts[0];
@@ -517,7 +639,16 @@ app.post('/api/webhook/lead', rateLimit({ windowMs: 60_000, max: 30 }), requireW
       await db.createActivity({
         lead_id: duplicate.id,
         type: 'duplicate_blocked',
-        message: `Duplicate lead blocked from ${source || 'Website'} for ${fname} ${lname}`.trim()
+        message: `Duplicate lead blocked from ${resolvedSource} for ${fname} ${lname}`.trim()
+      });
+      logInboundCapture({
+        publisher: publisher || resolvedSource,
+        source: resolvedSource,
+        student_name: `${fname} ${lname}`.trim(),
+        status: 'duplicate',
+        lead_id: duplicate.id,
+        reason: 'Matched existing phone/email',
+        payload: req.body
       });
       return res.status(200).json({
         success: true,
@@ -535,24 +666,33 @@ app.post('/api/webhook/lead', rateLimit({ windowMs: 60_000, max: 30 }), requireW
       if (found) resolvedCourseId = found.id;
     }
 
-    const lead = await db.createLead({
+    // Auto-assign least-loaded counselor
+    const assignedCounselorId = await assignLeastLoadedCounselor();
+
+    const lead = await db.createLead(buildLeadPayload({
       first_name: fname,
       last_name: lname,
       email: email || '',
       phone: phone || '',
       course_id: resolvedCourseId,
-      source: source || 'Website',
+      source: resolvedSource,
       stage: 'enquiry',
-      counselor_id: null,
+      counselor_id: assignedCounselorId,
       priority: priority || 'medium',
       city: city || '',
-      notes: notes || ''
-    });
+      notes: notes || '',
+      publisher: publisher || resolvedSource,
+      campaign,
+      medium,
+      keyword,
+      source_url,
+      raw_source_payload: req.body
+    }));
 
     await db.createActivity({
       lead_id: lead.id,
       type: 'lead_added',
-      message: `New lead ${fname} ${lname} captured via webhook (${source || 'Website'})`
+      message: `New lead ${fname} ${lname} captured via ${resolvedSource}${assignedCounselorId ? ' and auto-assigned' : ''}`
     });
 
     const task = await createAutomatedTaskForLead(lead, 'enquiry');
@@ -564,10 +704,114 @@ app.post('/api/webhook/lead', rateLimit({ windowMs: 60_000, max: 30 }), requireW
       });
     }
 
-    // Send welcome email (non-blocking)
     if (lead.email) sendWelcomeEmail(lead).catch(() => {});
 
+    logInboundCapture({
+      publisher: publisher || resolvedSource,
+      source: resolvedSource,
+      student_name: `${fname} ${lname}`.trim(),
+      status: 'captured',
+      lead_id: lead.id,
+      payload: req.body
+    });
+
     res.status(201).json({ success: true, lead_id: lead.id, message: 'Lead captured successfully' });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Publisher-specific webhook endpoints (for direct integration with Shiksha, CollegeDekho, etc.)
+app.post('/api/webhook/publisher/:name', rateLimit({ windowMs: 60_000, max: 60 }), async (req, res) => {
+  try {
+    const publisher = req.params.name;
+    const adapter = await import('./publishers.js').then(m => m.getPublisher(publisher));
+    if (!adapter) return res.status(400).json({ error: `Unknown publisher: ${publisher}. Valid: ${getValidPublishers().join(', ')}` });
+
+    const normalized = normalizeLeadFromPublisher(publisher, req.body);
+    if (!normalized) return res.status(400).json({ error: 'Failed to normalize lead data' });
+
+    // Forward to main webhook handler
+    const forwardReq = { body: { ...normalized, publisher } };
+    const forwardRes = {
+      status: (code) => ({ json: (data) => res.status(code).json(data) }),
+      _raw: true
+    };
+
+    const duplicate = await findDuplicateLead({ phone: normalized.phone, email: normalized.email });
+    if (duplicate) {
+      await db.createActivity({
+        lead_id: duplicate.id,
+        type: 'duplicate_blocked',
+        message: `Duplicate lead blocked from ${publisher} for ${normalized.first_name} ${normalized.last_name}`
+      });
+      logInboundCapture({
+        publisher,
+        source: publisher,
+        student_name: `${normalized.first_name} ${normalized.last_name}`.trim(),
+        status: 'duplicate',
+        lead_id: duplicate.id,
+        reason: 'Matched existing phone/email',
+        payload: req.body
+      });
+      return res.status(200).json({ success: true, duplicate: true, lead_id: duplicate.id, message: 'Existing lead updated.' });
+    }
+
+    let resolvedCourseId = null;
+    if (normalized.course) {
+      const courses = await db.getCourses();
+      const found = courses.find(c => c.name.toLowerCase().includes(normalized.course.toLowerCase()) || c.code.toLowerCase() === normalized.course.toLowerCase());
+      if (found) resolvedCourseId = found.id;
+    }
+
+    const assignedCounselorId = await assignLeastLoadedCounselor();
+
+    const lead = await db.createLead(buildLeadPayload({
+      first_name: normalized.first_name,
+      last_name: normalized.last_name,
+      email: normalized.email || '',
+      phone: normalized.phone || '',
+      course_id: resolvedCourseId,
+      source: publisher,
+      stage: 'enquiry',
+      counselor_id: assignedCounselorId,
+      priority: 'medium',
+      city: normalized.city || '',
+      notes: normalized.notes || '',
+      publisher,
+      campaign: req.body.campaign || req.body.form_name || req.body.fb_form_name,
+      keyword: req.body.keyword || req.body.gclid || '',
+      source_url: req.body.source_url || '',
+      raw_source_payload: req.body
+    }));
+
+    await db.createActivity({
+      lead_id: lead.id,
+      type: 'lead_added',
+      message: `New lead ${lead.first_name} ${lead.last_name} captured via ${publisher}${assignedCounselorId ? ' and auto-assigned' : ''}`
+    });
+
+    const task = await createAutomatedTaskForLead(lead, 'enquiry');
+    if (task) {
+      await db.createActivity({
+        lead_id: lead.id,
+        type: 'task_added',
+        message: `Automation created follow-up: ${task.title}`
+      });
+    }
+
+    if (lead.email) sendWelcomeEmail(lead).catch(() => {});
+
+    logInboundCapture({
+      publisher,
+      source: publisher,
+      student_name: `${lead.first_name} ${lead.last_name}`.trim(),
+      status: 'captured',
+      lead_id: lead.id,
+      payload: req.body
+    });
+
+    res.status(201).json({ success: true, lead_id: lead.id, publisher, message: `Lead captured via ${publisher}` });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
@@ -1483,6 +1727,7 @@ app.get('/api/marketing/overview', requireAuth, async (req, res) => {
     res.json({
       integrations: dbData.communicationIntegrations,
       analytics: buildCampaignAnalytics(dbData),
+      publishers: dbData.publishers || [],
       counts: {
         templates: (dbData.communicationTemplates || []).length,
         campaigns: (dbData.communicationCampaigns || []).length,
@@ -1864,6 +2109,92 @@ app.get('/api/marketing/publishers', requireAuth, async (req, res) => {
   }
 });
 
+app.post('/api/marketing/auto-leads/simulate', requireAuth, async (req, res) => {
+  try {
+    const count = Math.min(12, Math.max(1, Number(req.body?.count || 5)));
+    const publisherPool = ['Shiksha', 'CollegeDekho', 'Facebook Ads', 'Google Ads', 'JustDial', 'Website'];
+    const courses = await db.getCourses();
+    const sampleNames = [
+      ['Riya', 'Sharma'], ['Aditya', 'Verma'], ['Sakshi', 'Gupta'], ['Mohit', 'Yadav'],
+      ['Ishita', 'Khan'], ['Kunal', 'Singh'], ['Tanvi', 'Agarwal'], ['Nikhil', 'Mishra'],
+      ['Priyanshi', 'Saxena'], ['Harsh', 'Tyagi'], ['Aman', 'Srivastava'], ['Megha', 'Joshi']
+    ];
+    const created = [];
+    const duplicates = [];
+
+    for (let i = 0; i < count; i += 1) {
+      const publisher = publisherPool[i % publisherPool.length];
+      const [first_name, last_name] = sampleNames[(Date.now() + i) % sampleNames.length];
+      const course = courses[i % Math.max(1, courses.length)] || null;
+      const phone = `+91 9${Math.floor(100000000 + Math.random() * 899999999)}`;
+      const payload = {
+        first_name,
+        last_name,
+        email: `${first_name}.${last_name}.${Date.now().toString().slice(-5)}@example.com`.toLowerCase(),
+        phone,
+        course: course?.code || course?.name || 'MBA',
+        source: publisher,
+        city: i % 2 ? 'Greater Noida' : 'Bareilly',
+        campaign: i % 2 ? 'June admission search' : 'Scholarship lead form',
+        medium: publisher.includes('Ads') ? 'Paid campaign' : 'Publisher API',
+        keyword: i % 2 ? 'best college admission' : 'mba admission',
+        notes: `Auto-synced from ${publisher} integration.`
+      };
+
+      const duplicate = await findDuplicateLead({ phone: payload.phone, email: payload.email });
+      if (duplicate) {
+        duplicates.push(duplicate.id);
+        logInboundCapture({
+          publisher,
+          source: publisher,
+          student_name: `${first_name} ${last_name}`,
+          status: 'duplicate',
+          lead_id: duplicate.id,
+          reason: 'Auto-sync duplicate',
+          payload
+        });
+        continue;
+      }
+
+      const assignedCounselorId = await assignLeastLoadedCounselor();
+      const lead = await db.createLead(buildLeadPayload({
+        ...payload,
+        course_id: course?.id || null,
+        counselor_id: assignedCounselorId,
+        priority: i % 3 === 0 ? 'high' : 'medium',
+        publisher,
+        source_attribution: getSourceAttribution({ ...payload, publisher }),
+        raw_source_payload: payload
+      }));
+
+      await db.createActivity({
+        lead_id: lead.id,
+        type: 'lead_added',
+        message: `Auto-synced lead ${lead.first_name} ${lead.last_name} from ${publisher}.`
+      });
+      await createAutomatedTaskForLead(lead, 'enquiry');
+      logInboundCapture({
+        publisher,
+        source: publisher,
+        student_name: `${lead.first_name} ${lead.last_name}`.trim(),
+        status: 'captured',
+        lead_id: lead.id,
+        payload
+      });
+      created.push(lead);
+    }
+
+    res.status(201).json({
+      success: true,
+      created: created.length,
+      duplicates: duplicates.length,
+      leads: created.map(item => ({ id: item.id, name: `${item.first_name} ${item.last_name}`, source: item.source }))
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
 app.post('/api/marketing/inbox', requireAuth, (req, res) => {
   try {
     const dbData = ensureMarketingModules();
@@ -2054,6 +2385,12 @@ app.post('/api/email/test', requireAdmin, async (req, res) => {
 });
 
 // ============================================================
+//  FORM BUILDER ROUTES
+// ============================================================
+
+app.use('/api/forms', formBuilderRoutes);
+
+// ============================================================
 //  START
 // ============================================================
 
@@ -2069,3 +2406,4 @@ app.listen(PORT, () => {
   }
   console.log('');
 });
+

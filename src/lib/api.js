@@ -681,6 +681,13 @@ export async function fetchPublishers() {
   return request('/marketing/publishers');
 }
 
+export async function simulateAutoLeads(count = 5) {
+  return request('/marketing/auto-leads/simulate', {
+    method: 'POST',
+    body: JSON.stringify({ count })
+  });
+}
+
 export function exportPaymentsCSV() {
   const token = getToken();
   const url = `${API_BASE}/payments/export/csv`;
