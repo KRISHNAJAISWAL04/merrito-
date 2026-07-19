@@ -133,6 +133,10 @@ function getDateStr(date) {
   return `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
 }
 
+// Persistent module variables for monthly grid state
+let calendarYear = new Date().getFullYear();
+let calendarMonth = new Date().getMonth();
+
 export async function renderCalendar(el) {
   let tasks = [];
   let leads = [];
@@ -160,32 +164,70 @@ export async function renderCalendar(el) {
     return diff >= 0 && diff <= 7;
   });
 
-  // Generate next 7 days
-  const weekDays = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(now);
-    d.setDate(d.getDate() + i);
-    const dStr = getDateStr(d);
-    const dayTasks = tasks.filter(t => {
-      const td = new Date(t.due_date);
-      return getDateStr(td) === dStr && t.status !== 'completed';
-    });
-    return { date: d, dateStr: dStr, tasks: dayTasks, isToday: i === 0 };
-  });
+  // Monthly Grid Calculation
+  const calendarDate = new Date(calendarYear, calendarMonth, 1);
+  const startDayOfWeek = calendarDate.getDay();
+  const daysInMonth = new Date(calendarYear, calendarMonth + 1, 0).getDate();
+  const daysInPrevMonth = new Date(calendarYear, calendarMonth, 0).getDate();
 
-  const timelineHtml = weekDays.map(day => {
-    const cls = day.isToday ? ' style="background:#f5f3ff;border-left:3px solid #6366f1;padding-left:9px;"' : '';
-    const dayLabel = day.isToday ? 'Today' : getDayName(day.date);
-    const dateLabel = `${getMonthName(day.date)} ${day.date.getDate()}`;
-    const taskItems = day.tasks.length > 0
-      ? day.tasks.slice(0, 4).map(t => {
-          const lead = leads.find(l => l.id === t.lead_id);
-          const name = lead ? `${lead.first_name || ''} ${lead.last_name || ''}`.trim() : t.lead_name || 'Unknown';
-          const typeBadge = t.type === 'call' ? '📞' : t.type === 'whatsapp' ? '💬' : t.type === 'meeting' ? '📅' : '📋';
-          const time = new Date(t.due_date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' });
-          return `<div class="cal-task"><time>${time}</time>${typeBadge} <strong>${escapeHtml(name)}</strong><span>${escapeHtml(t.title)}</span></div>`;
-        }).join('')
-      : '<div class="cal-empty">No tasks</div>';
-    return `<div class="cal-day"${cls}><div class="cal-day-head"><strong>${dayLabel}</strong><span>${dateLabel}</span></div><div class="cal-tasks">${taskItems}</div></div>`;
+  const cells = [];
+  // Trailing days from prev month
+  for (let i = startDayOfWeek - 1; i >= 0; i--) {
+    cells.push({
+      day: daysInPrevMonth - i,
+      month: calendarMonth === 0 ? 11 : calendarMonth - 1,
+      year: calendarMonth === 0 ? calendarYear - 1 : calendarYear,
+      isCurrentMonth: false
+    });
+  }
+  // Current month days
+  for (let i = 1; i <= daysInMonth; i++) {
+    cells.push({
+      day: i,
+      month: calendarMonth,
+      year: calendarYear,
+      isCurrentMonth: true
+    });
+  }
+  // Leading days from next month
+  const totalCells = 42;
+  const remaining = totalCells - cells.length;
+  for (let i = 1; i <= remaining; i++) {
+    cells.push({
+      day: i,
+      month: calendarMonth === 11 ? 0 : calendarMonth + 1,
+      year: calendarMonth === 11 ? calendarYear + 1 : calendarYear,
+      isCurrentMonth: false
+    });
+  }
+
+  // Render cells HTML
+  const gridHtml = cells.map(c => {
+    const dateObj = new Date(c.year, c.month, c.day);
+    const dateStr = getDateStr(dateObj);
+    const isToday = dateStr === todayStr;
+    const cellClass = `${c.isCurrentMonth ? '' : 'other-month'} ${isToday ? 'today' : ''}`;
+    
+    // Filter tasks for this day
+    const dayTasks = tasks.filter(t => getDateStr(new Date(t.due_date)) === dateStr);
+
+    const taskPillsHtml = dayTasks.slice(0, 3).map(t => {
+      const typeClass = t.type === 'call' ? 'call' : t.type === 'whatsapp' ? 'whatsapp' : t.type === 'meeting' ? 'meeting' : 'other';
+      const typeEmoji = t.type === 'call' ? '📞' : t.type === 'whatsapp' ? '💬' : t.type === 'meeting' ? '📅' : '📋';
+      return `<span class="cal-cell-task-pill ${typeClass}">${typeEmoji} ${escapeHtml(t.title)}</span>`;
+    }).join('');
+
+    const moreLabel = dayTasks.length > 3 ? `<div class="cal-cell-more">+${dayTasks.length - 3} more</div>` : '';
+
+    return `
+      <div class="cal-cell ${cellClass}" data-date="${dateStr}">
+        <div class="cal-cell-num">${c.day}</div>
+        <div class="cal-cell-tasks">
+          ${taskPillsHtml}
+          ${moreLabel}
+        </div>
+      </div>
+    `;
   }).join('');
 
   el.innerHTML = `
@@ -193,44 +235,211 @@ export async function renderCalendar(el) {
       <section class="suite-hero">
         <div>
           <span class="eyebrow">Calendar Pro</span>
-          <h1>Counseling and follow-up calendar</h1>
+          <h1>Counseling & Follow-up Calendar</h1>
           <p>Plan callbacks, document deadlines, payment reminders, and counselor meetings.</p>
         </div>
         <button class="btn btn-primary" id="cal-refresh">↻ Refresh</button>
       </section>
-      <div class="suite-stats">
+
+      <div class="suite-stats" style="margin-bottom: 24px;">
         <div><span>Today</span><strong>${todayTasks.length}</strong><small>Follow-ups due</small></div>
         <div><span>This week</span><strong>${weekTasks.length}</strong><small>Upcoming tasks</small></div>
         <div><span>Overdue</span><strong>${overdueTasks.length}</strong><small>Needs attention</small></div>
         <div><span>Total tasks</span><strong>${tasks.length}</strong><small>In system</small></div>
       </div>
-      <div class="suite-grid">
-        <article class="suite-card"><div class="suite-card-icon">📞</div><div><span class="eyebrow">Counseling</span><h3>Callbacks</h3><p>Schedule and track counseling calls with status, lead info, and auto-reminders.</p></div></article>
-        <article class="suite-card"><div class="suite-card-icon">💬</div><div><span class="eyebrow">Tasks</span><h3>Follow-up queue</h3><p>Daily view of calls, WhatsApp nudges, document reminders, and fee follow-ups.</p></div></article>
-        <article class="suite-card"><div class="suite-card-icon">📅</div><div><span class="eyebrow">Visits</span><h3>Campus appointments</h3><p>Schedule and manage campus visits, counseling sessions, and walk-ins.</p></div></article>
-        <article class="suite-card"><div class="suite-card-icon">🔄</div><div><span class="eyebrow">Sync</span><h3>Calendar export</h3><p>Export tasks to Google Calendar or download as ICS file for offline use.</p></div></article>
-      </div>
+
       <style>
-        .cal-week { display:grid; grid-template-columns:repeat(7,1fr); gap:8px; margin-top:8px; }
-        .cal-day { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:12px; min-height:140px; }
-        .cal-day-head { display:flex; flex-direction:column; gap:2px; margin-bottom:8px; padding-bottom:6px; border-bottom:1px solid #f1f5f9; }
-        .cal-day-head strong { font-size:13px; font-weight:700; color:#0f172a; }
-        .cal-day-head span { font-size:11px; color:#64748b; }
-        .cal-tasks { display:flex; flex-direction:column; gap:6px; }
-        .cal-task { display:flex; align-items:center; gap:4px; font-size:11px; line-height:1.4; flex-wrap:wrap; }
-        .cal-task time { font-size:10px; color:#94a3b8; font-weight:600; min-width:36px; }
-        .cal-task strong { font-size:11px; color:#1e293b; }
-        .cal-task span { color:#64748b; font-size:10px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:80px; }
-        .cal-empty { font-size:11px; color:#cbd5e1; text-align:center; padding:8px 0; }
+        .cal-grid-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; background: var(--color-bg-card); padding: 12px 20px; border-radius: 8px; border: 1px solid var(--color-border); }
+        .cal-nav-btn { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 6px; padding: 6px 12px; cursor: pointer; color: var(--color-text); font-weight: 700; font-size: 13px; transition: all 0.2s; display: flex; align-items: center; gap: 4px; }
+        .cal-nav-btn:hover { border-color: var(--color-primary-light); background: var(--color-bg-page); }
+        .cal-month-title { font-size: 16px; font-weight: 800; color: var(--color-text); }
+        
+        .cal-grid-days-header { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; text-align: center; font-weight: 800; font-size: 12px; color: var(--color-text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em; }
+        .cal-grid-body { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+        
+        .cal-cell { background: var(--color-bg-card); border: 1px solid var(--color-border); border-radius: 10px; padding: 10px; min-height: 110px; display: flex; flex-direction: column; cursor: pointer; transition: all 0.2s; position: relative; }
+        .cal-cell:hover { border-color: var(--color-primary-light); box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+        .cal-cell.today { background: var(--color-primary-light); border-color: var(--color-primary); }
+        .cal-cell.today .cal-cell-num { color: var(--color-primary); font-weight: 800; }
+        .cal-cell.other-month { opacity: 0.45; }
+        
+        .cal-cell-num { font-size: 14px; font-weight: 700; color: var(--color-text-secondary); margin-bottom: 6px; }
+        
+        .cal-cell-tasks { display: flex; flex-direction: column; gap: 4px; overflow: hidden; flex-grow: 1; }
+        .cal-cell-task-pill { font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 100%; display: block; }
+        .cal-cell-task-pill.call { background: #dbeafe; color: #1e40af; }
+        .cal-cell-task-pill.whatsapp { background: #dcfce7; color: #166534; }
+        .cal-cell-task-pill.meeting { background: #f3e8ff; color: #6b21a8; }
+        .cal-cell-task-pill.other { background: #ffedd5; color: #9a3412; }
+        
+        .cal-cell-more { font-size: 9px; font-weight: 700; color: var(--color-text-muted); margin-top: 2px; text-align: center; }
       </style>
+
       <section class="suite-panel">
-        <div class="panel-head"><div><span class="eyebrow">This Week</span><h2>Schedule board</h2></div>${overdueTasks.length > 0 ? statusPill(`${overdueTasks.length} overdue`) : statusPill('On track')}</div>
-        <div class="cal-week">${timelineHtml}</div>
+        <div class="cal-grid-header">
+          <button class="cal-nav-btn" id="cal-prev-btn"><i data-lucide="chevron-left" style="width:14px;height:14px;"></i> Prev</button>
+          <span class="cal-month-title" id="cal-month-title-lbl">${getMonthName(new Date(calendarYear, calendarMonth))} ${calendarYear}</span>
+          <button class="cal-nav-btn" id="cal-next-btn">Next <i data-lucide="chevron-right" style="width:14px;height:14px;"></i></button>
+        </div>
+        
+        <div class="cal-grid-days-header">
+          <div>Sun</div><div>Mon</div><div>Tue</div><div>Wed</div><div>Thu</div><div>Fri</div><div>Sat</div>
+        </div>
+
+        <div class="cal-grid-body" id="cal-grid-body">
+          ${gridHtml}
+        </div>
       </section>
     </div>
   `;
 
+  // Bind Month Navigation
+  el.querySelector('#cal-prev-btn')?.addEventListener('click', () => {
+    calendarMonth--;
+    if (calendarMonth < 0) {
+      calendarMonth = 11;
+      calendarYear--;
+    }
+    renderCalendar(el);
+  });
+
+  el.querySelector('#cal-next-btn')?.addEventListener('click', () => {
+    calendarMonth++;
+    if (calendarMonth > 11) {
+      calendarMonth = 0;
+      calendarYear++;
+    }
+    renderCalendar(el);
+  });
+
   el.querySelector('#cal-refresh')?.addEventListener('click', () => renderCalendar(el));
+
+  // Bind Cell Click for Details and Create Task
+  el.querySelectorAll('.cal-cell').forEach(cell => {
+    cell.addEventListener('click', () => {
+      const cellDateStr = cell.dataset.date;
+      showDayTasksModal(cellDateStr, tasks, leads, el);
+    });
+  });
+
+  window.renderIcons?.();
+}
+
+function showDayTasksModal(dateStr, allTasks, allLeads, rootEl) {
+  const dayTasks = allTasks.filter(t => getDateStr(new Date(t.due_date)) === dateStr);
+
+  const content = `
+    <div style="display:flex;flex-direction:column;gap:16px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;">
+        <h4 style="margin:0;font-size:14px;">Follow-ups for ${dateStr}</h4>
+        <button class="btn btn-primary btn-sm" id="btn-create-task-modal" style="padding:4px 8px;font-size:11px;">
+          + New Task
+        </button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:10px;max-height:300px;overflow-y:auto;padding-right:4px;">
+        ${dayTasks.length === 0 ? `
+          <p style="text-align:center;color:var(--color-text-muted);padding:20px;">No follow-ups scheduled for this day.</p>
+        ` : dayTasks.map(t => {
+          const lead = allLeads.find(l => l.id === t.lead_id);
+          const studentName = lead ? `${lead.first_name || ''} ${lead.last_name || ''}`.trim() : t.lead_name || 'N/A';
+          const typeBadge = t.type === 'call' ? '📞' : t.type === 'whatsapp' ? '💬' : t.type === 'meeting' ? '📅' : '📋';
+          
+          return `
+            <div style="border:1px solid var(--color-border);border-radius:var(--radius-md);padding:10px;background:var(--color-bg-card);display:flex;justify-content:space-between;align-items:center;">
+              <div>
+                <strong style="font-size:13px;">${escapeHtml(t.title)}</strong>
+                <div style="font-size:11px;color:var(--color-text-secondary);margin-top:2px;">
+                  ${typeBadge} Student: <strong>${escapeHtml(studentName)}</strong>
+                </div>
+              </div>
+              <span class="suite-pill ${t.status === 'completed' ? 'ok' : 'warn'}" style="text-transform:uppercase;font-size:9px;">
+                ${t.status}
+              </span>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    </div>
+  `;
+
+  openModal('Day Follow-ups', content, {
+    submitLabel: 'Done',
+    width: '460px',
+    onSubmit: () => true
+  });
+
+  // Bind modal Create Task button
+  document.getElementById('btn-create-task-modal')?.addEventListener('click', () => {
+    // Close day task modal
+    const closeBtn = document.querySelector('[data-modal-close]');
+    closeBtn?.click();
+
+    // Open create task modal
+    showCreateTaskModal(dateStr, allLeads, rootEl);
+  });
+}
+
+function showCreateTaskModal(dateStr, allLeads, rootEl) {
+  const content = `
+    <div class="form-grid" style="display:grid;grid-template-columns:1fr;gap:14px;">
+      <div class="form-group">
+        <label class="form-label">Task Title *</label>
+        <input type="text" id="task-title" class="form-input" placeholder="e.g. Call student for marksheet verification" required />
+      </div>
+      <div class="form-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+        <div class="form-group">
+          <label class="form-label">Task Type</label>
+          <select id="task-type" class="form-input">
+            <option value="call">Callback Call</option>
+            <option value="whatsapp">WhatsApp Follow-up</option>
+            <option value="meeting">Meeting / Campus Visit</option>
+            <option value="other">Other / General Task</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Target Lead *</label>
+          <select id="task-lead" class="form-input" required>
+            <option value="">-- Select Lead --</option>
+            ${allLeads.map(l => `<option value="${l.id}">${l.first_name || ''} ${l.last_name || ''} (${l.course_name})</option>`).join('')}
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Due Date & Time *</label>
+        <input type="datetime-local" id="task-due" class="form-input" value="${dateStr}T10:00" required />
+      </div>
+    </div>
+    <div id="tk-error" style="color:#dc2626;font-size:13px;margin-top:8px;display:none;"></div>
+  `;
+
+  openModal('Schedule Counselor Task', content, {
+    submitLabel: 'Create Task',
+    width: '500px',
+    onSubmit: async (body) => {
+      const title = body.querySelector('#task-title').value.trim();
+      const type = body.querySelector('#task-type').value;
+      const lead_id = body.querySelector('#task-lead').value;
+      const due_date = body.querySelector('#task-due').value;
+
+      const errEl = body.querySelector('#tk-error');
+      if (!title || !lead_id || !due_date) {
+        errEl.textContent = 'All asterisked fields are required.';
+        errEl.style.display = 'block';
+        return false;
+      }
+
+      try {
+        await createTask({ title, type, lead_id, due_date, status: 'pending' });
+        alert('Task created successfully!');
+        renderCalendar(rootEl);
+        return true;
+      } catch (err) {
+        errEl.textContent = err.message;
+        errEl.style.display = 'block';
+        return false;
+      }
+    }
+  });
 }
 
 export function renderMarketing(el) {

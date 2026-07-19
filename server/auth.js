@@ -210,14 +210,87 @@ async function loginUserFallback(email, password, branch) {
 
 // ===== SUPABASE OAUTH TOKEN EXCHANGE =====
 export async function loginWithSupabaseAccessToken(accessToken) {
-  if (!USE_SUPABASE || !accessToken || !getServerSupabase()) return null;
+  if (!USE_SUPABASE || !accessToken || !getServerSupabase()) {
+    console.warn('loginWithSupabaseAccessToken: Supabase is disabled or access token is empty');
+    return null;
+  }
 
   try {
     const supabase = getServerSupabase();
     const { data, error } = await supabase.auth.getUser(accessToken);
-    if (error || !data?.user) return null;
-    return buildTokenResult(data.user, data.user.user_metadata?.branch);
-  } catch {
+    if (error) {
+      console.error('Supabase auth.getUser error:', error.message);
+      return null;
+    }
+    if (!data?.user) {
+      console.warn('Supabase auth.getUser returned no user data');
+      return null;
+    }
+
+    const user = data.user;
+    const email = user.email;
+    let name = user.user_metadata?.name || user.user_metadata?.full_name || email?.split('@')[0] || 'User';
+    let role = user.user_metadata?.role || 'student';
+    let branch = user.user_metadata?.branch || 'bareilly';
+    let counselor_id = user.user_metadata?.counselor_id || null;
+
+    // 1. Check profiles table for pre-existing configuration
+    try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('email', email)
+        .maybeSingle();
+
+      if (profile) {
+        role = profile.role || role;
+        branch = profile.branch || branch;
+        name = profile.full_name || profile.name || name;
+        counselor_id = profile.counselor_id || counselor_id;
+      } else {
+        // 2. Check counselors table if they are a counselor
+        const { data: counselor } = await supabase
+          .from('counselors')
+          .select('*')
+          .eq('email', email)
+          .maybeSingle();
+        if (counselor) {
+          role = 'counselor';
+          branch = counselor.branch || branch;
+          name = counselor.name || name;
+        }
+      }
+    } catch (dbErr) {
+      console.warn('Supabase profile/counselor DB lookup failed during login:', dbErr.message);
+    }
+
+    // 3. Fallback to check local JSON database
+    try {
+      const db = getDB();
+      const localUser = (db.users || []).find(u => u.email === email);
+      if (localUser) {
+        role = localUser.role || role;
+        branch = localUser.branch || branch;
+        name = localUser.name || name;
+      }
+    } catch (localErr) {
+      console.warn('Local JSON fallback lookup failed during login:', localErr.message);
+    }
+
+    // Construct merged user payload
+    const payload = {
+      id: user.id,
+      email: email,
+      name: name,
+      role: ['admin', 'counselor', 'student'].includes(role) ? role : 'student',
+      counselor_id: counselor_id,
+      branch: branch
+    };
+
+    const token = signToken(payload);
+    return { user: payload, token };
+  } catch (err) {
+    console.error('Exception in loginWithSupabaseAccessToken:', err);
     return null;
   }
 }

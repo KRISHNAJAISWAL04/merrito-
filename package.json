@@ -27,6 +27,7 @@
     "nodemailer": "^8.0.10",
     "openai": "^6.37.0",
     "tesseract.js": "^5.1.0",
-    "twilio": "^5.3.4"
+    "twilio": "^5.3.4",
+    "zod": "^4.4.3"
   }
 }

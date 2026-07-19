@@ -12,7 +12,13 @@ const SUPABASE_URL = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const SUPABASE_KEY = SUPABASE_SERVICE_ROLE_KEY || SUPABASE_ANON_KEY;
-export const USE_SUPABASE = Boolean(SUPABASE_URL && SUPABASE_KEY);
+export const USE_SUPABASE = Boolean(
+  SUPABASE_URL &&
+  SUPABASE_KEY &&
+  !SUPABASE_URL.includes('your-project') &&
+  SUPABASE_KEY !== 'your-anon-key' &&
+  SUPABASE_KEY !== 'your-service-role-key'
+);
 export const REAL_DATA_MODE = process.env.REAL_DATA_MODE === 'true' || process.env.USE_DEMO_DATA === 'false';
 
 if (!USE_SUPABASE) {

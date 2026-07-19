@@ -56,12 +56,12 @@ export function seedIfEmpty() {
 
   // Counselors (reference data — needed for lead assignment dropdowns)
   const counselors = [
-    { id: generateId(), name: 'Neha Khan', email: 'priya.sharma@Meriito.com', phone: '+91 98765 43210', role: 'Senior Counselor', department: 'Engineering', rating: 4.8, created_at: new Date().toISOString() },
-    { id: generateId(), name: 'Rajesh Kumar', email: 'rajesh.kumar@Meriito.com', phone: '+91 87654 32109', role: 'Counselor', department: 'Management', rating: 4.5, created_at: new Date().toISOString() },
-    { id: generateId(), name: 'Anita Desai', email: 'anita.desai@Meriito.com', phone: '+91 76543 21098', role: 'Senior Counselor', department: 'Sciences', rating: 4.9, created_at: new Date().toISOString() },
-    { id: generateId(), name: 'Vikram Singh', email: 'vikram.singh@Meriito.com', phone: '+91 65432 10987', role: 'Counselor', department: 'Arts & Humanities', rating: 4.3, created_at: new Date().toISOString() },
-    { id: generateId(), name: 'Neha Patel', email: 'neha.patel@Meriito.com', phone: '+91 54321 09876', role: 'Junior Counselor', department: 'Commerce', rating: 4.6, created_at: new Date().toISOString() },
-    { id: generateId(), name: 'Arjun Mehta', email: 'arjun.mehta@Meriito.com', phone: '+91 43210 98765', role: 'Counselor', department: 'Engineering', rating: 4.4, created_at: new Date().toISOString() }
+    { id: generateId(), name: 'Neha Khan', email: 'priya.sharma@rbmi.edu.in', phone: '+91 98765 43210', role: 'Senior Counselor', department: 'Engineering', rating: 4.8, created_at: new Date().toISOString() },
+    { id: generateId(), name: 'Rajesh Kumar', email: 'rajesh.kumar@rbmi.edu.in', phone: '+91 87654 32109', role: 'Counselor', department: 'Management', rating: 4.5, created_at: new Date().toISOString() },
+    { id: generateId(), name: 'Anita Desai', email: 'anita.desai@rbmi.edu.in', phone: '+91 76543 21098', role: 'Senior Counselor', department: 'Sciences', rating: 4.9, created_at: new Date().toISOString() },
+    { id: generateId(), name: 'Vikram Singh', email: 'vikram.singh@rbmi.edu.in', phone: '+91 65432 10987', role: 'Counselor', department: 'Arts & Humanities', rating: 4.3, created_at: new Date().toISOString() },
+    { id: generateId(), name: 'Neha Patel', email: 'neha.patel@rbmi.edu.in', phone: '+91 54321 09876', role: 'Junior Counselor', department: 'Commerce', rating: 4.6, created_at: new Date().toISOString() },
+    { id: generateId(), name: 'Arjun Mehta', email: 'arjun.mehta@rbmi.edu.in', phone: '+91 43210 98765', role: 'Counselor', department: 'Engineering', rating: 4.4, created_at: new Date().toISOString() }
   ];
 
   // Courses (reference data — needed for lead assignment dropdowns)

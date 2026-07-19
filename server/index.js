@@ -5,6 +5,7 @@ import cors from 'cors';
 import multer from 'multer';
 import * as db from './supabase.js';
 import { generateId, getDB, saveDB } from './db.js';
+import { startCronJobs } from './cron.js';
 import {
   loginUser,
   loginWithSupabaseAccessToken,
@@ -32,6 +33,8 @@ import {
   getValidPublishers
 } from './publishers.js';
 import formBuilderRoutes from './routes/formBuilderRoutes.js';
+import apiRouter from './routes/index.js';
+import { autoAssignLead } from './controllers/leadDistributionController.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
@@ -431,20 +434,10 @@ app.post('/api/leads', requireAuth, async (req, res) => {
         }
       });
     }
-    
-    // Auto-assignment logic: if no counselor_id, assign to the one with least active leads
+    // Auto-assignment logic using rule-based distribution
     let assignedCounselorId = req.body.counselor_id;
-    if (!assignedCounselorId && req.user.role === 'admin') {
-      const allCounselors = await db.getCounselors();
-      if (allCounselors.length > 0) {
-        const allLeads = await db.getLeads({});
-        const workloads = allCounselors.map(c => ({
-          id: c.id,
-          active: allLeads.filter(l => l.counselor_id === c.id && !['admitted', 'enrolled'].includes(l.stage)).length
-        }));
-        workloads.sort((a, b) => a.active - b.active);
-        assignedCounselorId = workloads[0].id;
-      }
+    if (!assignedCounselorId) {
+      assignedCounselorId = await autoAssignLead(req.body);
     }
 
     const lead = await db.createLead(buildLeadPayload({
@@ -666,8 +659,16 @@ app.post('/api/webhook/lead', rateLimit({ windowMs: 60_000, max: 30 }), requireW
       if (found) resolvedCourseId = found.id;
     }
 
-    // Auto-assign least-loaded counselor
-    const assignedCounselorId = await assignLeastLoadedCounselor();
+    // Auto-assign counselor based on rules
+    const assignedCounselorId = await autoAssignLead({
+      first_name: fname,
+      last_name: lname,
+      email: email || '',
+      phone: phone || '',
+      course_id: resolvedCourseId,
+      source: resolvedSource,
+      city: city || ''
+    });
 
     const lead = await db.createLead(buildLeadPayload({
       first_name: fname,
@@ -823,9 +824,14 @@ app.post('/api/webhook/publisher/:name', rateLimit({ windowMs: 60_000, max: 60 }
 
 app.get('/api/dashboard/stats', requireAuth, async (req, res) => {
   try {
-    // Dashboard is a command-center overview for every staff role.
-    // Role-specific scoping remains on My Leads/Pipeline pages.
-    const leads = await db.getLeads({});
+    // Role-specific scoping for dashboard metrics (Counselors see only their own leads, Admins see all)
+    const filterCounselorId = req.user.role === 'counselor' ? req.user.counselor_id : req.query.counselor_id;
+    let leads;
+    if (filterCounselorId) {
+      leads = await db.getLeads({ counselor_id: filterCounselorId });
+    } else {
+      leads = await db.getLeads({});
+    }
     const counselors = await db.getCounselors();
 
     const totalLeads = leads.length;
@@ -853,10 +859,11 @@ app.get('/api/dashboard/stats', requireAuth, async (req, res) => {
     const monthlyAdmissions = months.map(m => leads.filter(l => { const d = new Date(l.updated_at); return d.getFullYear() === m.year && d.getMonth() === m.month && (l.stage === 'admitted' || l.stage === 'enrolled'); }).length);
     const monthlyEnrollments = months.map(m => leads.filter(l => { const d = new Date(l.updated_at); return d.getFullYear() === m.year && d.getMonth() === m.month && l.stage === 'enrolled'; }).length);
 
+    const globalLeads = req.user.role === 'counselor' ? await db.getLeads({}) : leads;
     const counselorStats = counselors.map(c => {
-      const assigned = leads.filter(l => l.counselor_id === c.id).length;
-      const converted = leads.filter(l => l.counselor_id === c.id && (l.stage === 'admitted' || l.stage === 'enrolled')).length;
-      return { ...c, leads_assigned: assigned, conversions: converted, active_leads: leads.filter(l => l.counselor_id === c.id && !['admitted', 'enrolled'].includes(l.stage)).length };
+      const assigned = globalLeads.filter(l => l.counselor_id === c.id).length;
+      const converted = globalLeads.filter(l => l.counselor_id === c.id && (l.stage === 'admitted' || l.stage === 'enrolled')).length;
+      return { ...c, leads_assigned: assigned, conversions: converted, active_leads: globalLeads.filter(l => l.counselor_id === c.id && !['admitted', 'enrolled'].includes(l.stage)).length };
     });
 
     res.json({
@@ -2391,6 +2398,11 @@ app.post('/api/email/test', requireAdmin, async (req, res) => {
 app.use('/api/forms', formBuilderRoutes);
 
 // ============================================================
+//  MOUNT FALLBACK ROUTER FOR ADDITIONAL CONTROLLERS
+// ============================================================
+app.use('/api', apiRouter);
+
+// ============================================================
 //  START
 // ============================================================
 
@@ -2404,6 +2416,7 @@ app.listen(PORT, () => {
   } else {
     console.log(`  Email: ⚠️  Not configured — add GMAIL_USER + GMAIL_APP_PASSWORD to .env`);
   }
+  startCronJobs();
   console.log('');
 });
 

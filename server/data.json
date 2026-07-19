@@ -926,6 +926,18 @@
   ],
   "callLogs": [
     {
+      "id": "52b49406-0a7d-4e73-b7fc-82e964840903",
+      "student_name": "Final Test",
+      "phone": "+919777777777",
+      "direction": "outbound",
+      "provider": "Manual call",
+      "duration_seconds": 0,
+      "recording_url": "",
+      "summary": "Call initiated for MBA (Greater Noida).",
+      "status": "initiated",
+      "created_at": "2026-06-10T09:48:51.105Z"
+    },
+    {
       "id": "2f731e33-4a3c-4f55-a418-21af88035d16",
       "student_name": "jai",
       "phone": "79839 77881",
@@ -994,6 +1006,17 @@
     }
   ],
   "studentInbox": [
+    {
+      "id": "a54deb5a-5488-4916-988f-9d26e6a31f07",
+      "student_name": "Final Test",
+      "channel": "whatsapp",
+      "subject": "Counselor follow-up",
+      "message": "Hi Final Test, this is RBMI Admissions. I wanted to help you with your MBA (Greater Noida) admission process.",
+      "status": "open",
+      "priority": "medium",
+      "created_at": "2026-06-10T09:48:58.279Z",
+      "updated_at": "2026-06-10T09:48:58.279Z"
+    },
     {
       "id": "328938f5-fdd7-4891-8df0-fe985a8f2678",
       "student_name": "Campaign audience",
@@ -1121,6 +1144,15 @@
     }
   ],
   "notificationCenter": [
+    {
+      "id": "0999424f-d379-4c33-b51e-7ea104743e55",
+      "title": "Inbox updated",
+      "message": "Final Test sent a new whatsapp message.",
+      "channel": "whatsapp",
+      "target_type": "student_inbox",
+      "status": "unread",
+      "created_at": "2026-06-10T09:48:58.279Z"
+    },
     {
       "id": "a5346ca6-dc7e-414a-a605-7e6d701bef01",
       "title": "Callback Requested",

@@ -1,8 +1,12 @@
 import OpenAI from 'openai';
 import * as db from '../supabase.js';
 
+const llmBaseUrl = process.env.LLM_BASE_URL || 'https://api.openai.com/v1';
+const apiKey = process.env.LLM_API_KEY || process.env.OPENAI_API_KEY || '';
+
 const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || '',
+  apiKey: apiKey,
+  baseURL: llmBaseUrl
 });
 
 function getLastUserMessage(history = []) {
@@ -41,14 +45,14 @@ export const chatWithAsha = async (req, res) => {
       return res.status(200).json({ message: 'Hello! I noticed an invalid message format, but I am still here to help. What can I do for you?' });
     }
 
-    // If no API key or key is "sk-..." placeholder, use fallback immediately to avoid latency/errors
-    if (!process.env.OPENAI_API_KEY || process.env.OPENAI_API_KEY.length < 20) {
+    // If no API key is configured, use local fallback logic
+    if (!apiKey || apiKey.length < 15) {
       return res.status(200).json({
         message: fallbackReply(history)
       });
     }
 
-    const model = process.env.OPENAI_MODEL || 'gpt-4o-mini';
+    const model = process.env.LLM_MODEL || process.env.OPENAI_MODEL || 'gpt-4o-mini';
 
     try {
       const response = await openai.chat.completions.create({

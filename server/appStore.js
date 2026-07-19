@@ -89,10 +89,37 @@ function jsonEnsureAdmissions() {
   if (!dbData.settings) dbData.settings = null;
   if (!dbData.form_templates) dbData.form_templates = [];
   if (!dbData.campaigns) dbData.campaigns = [];
+  if (!dbData.letter_templates) dbData.letter_templates = [];
+  if (!dbData.offer_letters) dbData.offer_letters = [];
+  if (!dbData.workflow_rules) dbData.workflow_rules = [];
 
   if (REAL_DATA_MODE) {
     saveDB(dbData);
     return dbData;
+  }
+
+  if (dbData.workflow_rules.length === 0) {
+    dbData.workflow_rules.push({
+      id: 'wf-demo-001',
+      name: 'Send Offer Letter on Approval',
+      trigger: 'application_status_changed',
+      condition: 'status === "approved"',
+      action: 'send_offer_letter',
+      template_id: 'lt-demo-001',
+      active: true,
+      created_at: nowIso()
+    });
+  }
+
+  if (dbData.letter_templates.length === 0) {
+    dbData.letter_templates.push({
+      id: 'lt-demo-001',
+      name: 'Standard MBA Offer Letter',
+      content: '<h1>Offer of Admission</h1><p>Dear {{name}},</p><p>We are pleased to offer you admission to the <strong>{{course}}</strong> program at RBMI Bareilly for the academic year 2025-26.</p><p>Please complete your fee payment by {{due_date}} to confirm your seat.</p>',
+      variables: ['name', 'course', 'due_date'],
+      created_at: nowIso(),
+      updated_at: nowIso()
+    });
   }
 
   if (!dbData.applications.some(a => a.user_id === 'u004-student-demo')) {
@@ -151,7 +178,7 @@ function jsonEnsureAdmissions() {
 
 export function getDefaultSettings() {
   return {
-    institute_name: 'Ram Babu Mahavidyalaya Institute (RBMI)',
+    institute_name: 'Rakshpal Bahadur Management Institute',
     short_name: 'RBMI',
     email: 'admissions@rbmi.edu.in',
     phone: '+91 581 250 0000',
@@ -165,10 +192,14 @@ export function getDefaultSettings() {
 
 export async function loadSettings() {
   if (USE_SUPABASE) {
-    const { data, error } = await sb().from('institute_settings').select('data').eq('id', 'main').maybeSingle();
-    if (error) throw error;
-    const base = getDefaultSettings();
-    return { ...base, ...(data?.data || {}) };
+    try {
+      const { data, error } = await sb().from('institute_settings').select('data').eq('id', 'main').maybeSingle();
+      if (error) throw error;
+      const base = getDefaultSettings();
+      return { ...base, ...(data?.data || {}) };
+    } catch (error) {
+      console.warn('Supabase settings read failed, using local fallback:', error.message);
+    }
   }
   const dbData = getDB();
   return { ...getDefaultSettings(), ...(dbData.settings || {}) };
@@ -177,19 +208,134 @@ export async function loadSettings() {
 export async function storeSettings(partial) {
   const merged = { ...(await loadSettings()), ...partial };
   if (USE_SUPABASE) {
-    const { error } = await sb().from('institute_settings').upsert({
-      id: 'main',
-      data: merged,
-      updated_at: nowIso()
-    });
-    if (error) throw error;
-    return merged;
+    try {
+      const { error } = await sb().from('institute_settings').upsert({
+        id: 'main',
+        data: merged,
+        updated_at: nowIso()
+      }, { onConflict: 'id' });
+      if (error) throw error;
+      return merged;
+    } catch (error) {
+      console.warn('Supabase settings write failed, saving locally instead:', error.message);
+    }
   }
   const dbData = getDB();
   dbData.settings = merged;
   saveDB(dbData);
   return merged;
 }
+
+export async function listLetterTemplates() {
+  if (USE_SUPABASE) {
+    const { data, error } = await sb().from('letter_templates').select('*').order('updated_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+  const dbData = jsonEnsureAdmissions();
+  return [...(dbData.letter_templates || [])].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+}
+
+export async function insertLetterTemplate(body) {
+  const row = {
+    id: generateId(),
+    name: body.name || 'Untitled template',
+    content: body.content || '',
+    variables: body.variables || [],
+    created_at: nowIso(),
+    updated_at: nowIso()
+  };
+  if (USE_SUPABASE) {
+    const { data, error } = await sb().from('letter_templates').insert([row]).select().single();
+    if (error) throw error;
+    return data;
+  }
+  const dbData = jsonEnsureAdmissions();
+  dbData.letter_templates.unshift(row);
+  saveDB(dbData);
+  return row;
+}
+
+export async function patchLetterTemplate(id, body) {
+  if (USE_SUPABASE) {
+    const { data, error } = await sb().from('letter_templates').update({ ...body, updated_at: nowIso() }).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+  const dbData = jsonEnsureAdmissions();
+  const idx = dbData.letter_templates.findIndex(t => t.id === id);
+  if (idx === -1) throw new Error('Template not found');
+  dbData.letter_templates[idx] = { ...dbData.letter_templates[idx], ...body, updated_at: nowIso() };
+  saveDB(dbData);
+  return dbData.letter_templates[idx];
+}
+
+export async function listOfferLetters(applicationId = null) {
+  if (USE_SUPABASE) {
+    let q = sb().from('offer_letters').select('*').order('created_at', { ascending: false });
+    if (applicationId) q = q.eq('application_id', applicationId);
+    const { data, error } = await q;
+    if (error) throw error;
+    return data || [];
+  }
+  const dbData = jsonEnsureAdmissions();
+  let items = dbData.offer_letters || [];
+  if (applicationId) items = items.filter(l => l.application_id === applicationId);
+  return [...items].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+export async function generateOfferLetter(applicationId, templateId) {
+  const courses = await getCourses();
+  const dbData = jsonEnsureAdmissions();
+  
+  let application;
+  if (USE_SUPABASE) {
+    const { data, error } = await sb().from('applications').select('*').eq('id', applicationId).single();
+    if (error) throw error;
+    application = data;
+  } else {
+    application = dbData.applications.find(a => a.id === applicationId);
+  }
+  if (!application) throw new Error('Application not found');
+
+  let template;
+  if (USE_SUPABASE) {
+    const { data, error } = await sb().from('letter_templates').select('*').eq('id', templateId).single();
+    if (error) throw error;
+    template = data;
+  } else {
+    template = dbData.letter_templates.find(t => t.id === templateId);
+  }
+  if (!template) throw new Error('Template not found');
+
+  const course = courses.find(c => c.id === application.course_id);
+  const now = new Date();
+  const dueDate = new Date(now.getTime() + 15 * 24 * 60 * 60 * 1000).toLocaleDateString('en-IN'); // 15 days later
+
+  let content = template.content;
+  content = content.replace(/\{\{name\}\}/g, application.student_name);
+  content = content.replace(/\{\{course\}\}/g, course?.name || 'Selected Program');
+  content = content.replace(/\{\{due_date\}\}/g, dueDate);
+
+  const row = {
+    id: generateId(),
+    application_id: applicationId,
+    template_id: templateId,
+    content,
+    status: 'generated',
+    created_at: nowIso()
+  };
+
+  if (USE_SUPABASE) {
+    const { data, error } = await sb().from('offer_letters').insert([row]).select().single();
+    if (error) throw error;
+    return data;
+  }
+  dbData.offer_letters.unshift(row);
+  saveDB(dbData);
+  return row;
+}
+
 
 export async function getPortalProfileForUser(user) {
   if (USE_SUPABASE) {
@@ -333,9 +479,11 @@ export async function insertApplication(reqUser, body) {
 }
 
 export async function patchApplication(reqUser, id, body) {
+  let oldStatus;
   if (USE_SUPABASE) {
     const { data: row, error: fe } = await sb().from('applications').select('*').eq('id', id).single();
     if (fe || !row) throw new Error('Application not found');
+    oldStatus = row.status;
     if (reqUser.role === 'student' && row.user_id !== reqUser.id) throw new Error('Access denied');
     const allowed = reqUser.role === 'student' ? ['documents'] : ['status', 'documents', 'documents_status', 'counselor_name', 'priority'];
     const updates = {};
@@ -351,6 +499,11 @@ export async function patchApplication(reqUser, id, body) {
       .select()
       .single();
     if (error) throw error;
+    
+    if (updates.status && updates.status !== oldStatus) {
+      await triggerWorkflows('application_status_changed', { application: data, status: updates.status });
+    }
+
     const courses = await getCourses();
     return enrichApplication(data, courses);
   }
@@ -359,6 +512,7 @@ export async function patchApplication(reqUser, id, body) {
   const idx = dbData.applications.findIndex(item => item.id === id);
   if (idx === -1) throw new Error('Application not found');
   const item = dbData.applications[idx];
+  oldStatus = item.status;
   if (reqUser.role === 'student' && item.user_id !== reqUser.id) throw new Error('Access denied');
   const allowed = reqUser.role === 'student' ? ['documents'] : ['status', 'documents', 'documents_status', 'counselor_name', 'priority'];
   const updates = {};
@@ -369,9 +523,50 @@ export async function patchApplication(reqUser, id, body) {
   }
   dbData.applications[idx] = { ...item, ...updates, updated_at: nowIso() };
   saveDB(dbData);
+
+  if (updates.status && updates.status !== oldStatus) {
+    await triggerWorkflows('application_status_changed', { application: dbData.applications[idx], status: updates.status });
+  }
+
   const courses = await getCourses();
   return enrichApplication(dbData.applications[idx], courses);
 }
+
+async function triggerWorkflows(trigger, context) {
+  const rules = await listWorkflowRules();
+  const activeRules = rules.filter(r => r.active && r.trigger === trigger);
+
+  for (const rule of activeRules) {
+    let match = false;
+    try {
+      if (rule.condition) {
+        // Basic evaluation of condition
+        const status = context.status;
+        match = eval(rule.condition);
+      } else {
+        match = true;
+      }
+    } catch (e) {
+      console.error('Workflow condition error:', e);
+    }
+
+    if (match) {
+      if (rule.action === 'send_offer_letter' && rule.template_id && context.application) {
+        try {
+          await generateOfferLetter(context.application.id, rule.template_id);
+          await createActivity({
+            user_id: context.application.user_id,
+            type: 'workflow',
+            message: `Workflow "${rule.name}" triggered: Offer letter generated.`
+          });
+        } catch (e) {
+          console.error('Workflow action error:', e);
+        }
+      }
+    }
+  }
+}
+
 
 export async function listQueries(reqUser) {
   if (USE_SUPABASE) {
@@ -585,3 +780,52 @@ export async function insertCampaign(body) {
   saveDB(dbData);
   return row;
 }
+
+export async function listWorkflowRules() {
+  if (USE_SUPABASE) {
+    const { data, error } = await sb().from('workflow_rules').select('*').order('created_at', { ascending: false });
+    if (error) throw error;
+    return data || [];
+  }
+  const dbData = jsonEnsureAdmissions();
+  return [...(dbData.workflow_rules || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+}
+
+export async function insertWorkflowRule(body) {
+  const row = {
+    id: generateId(),
+    name: body.name || 'Untitled rule',
+    trigger: body.trigger || '',
+    condition: body.condition || '',
+    action: body.action || '',
+    template_id: body.template_id || null,
+    active: body.active !== false,
+    flow_data: body.flow_data || null,
+    created_at: nowIso(),
+    updated_at: nowIso()
+  };
+  if (USE_SUPABASE) {
+    const { data, error } = await sb().from('workflow_rules').insert([row]).select().single();
+    if (error) throw error;
+    return data;
+  }
+  const dbData = jsonEnsureAdmissions();
+  dbData.workflow_rules.unshift(row);
+  saveDB(dbData);
+  return row;
+}
+
+export async function patchWorkflowRule(id, body) {
+  if (USE_SUPABASE) {
+    const { data, error } = await sb().from('workflow_rules').update({ ...body, updated_at: nowIso() }).eq('id', id).select().single();
+    if (error) throw error;
+    return data;
+  }
+  const dbData = jsonEnsureAdmissions();
+  const idx = dbData.workflow_rules.findIndex(r => r.id === id);
+  if (idx === -1) throw new Error('Rule not found');
+  dbData.workflow_rules[idx] = { ...dbData.workflow_rules[idx], ...body, updated_at: nowIso() };
+  saveDB(dbData);
+  return dbData.workflow_rules[idx];
+}
+
