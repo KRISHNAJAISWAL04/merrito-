@@ -129,14 +129,14 @@ export async function sendBulkWhatsApp(recipients, message) {
 
 // Send welcome WhatsApp
 export async function sendWelcomeWhatsApp(lead) {
-  const message = `🎓 Welcome to RBMI, ${lead.first_name}!\n\nThank you for your interest. Our counselor will reach out to you soon.\n\n📞 Need help? Call: 1800-XXX-XXXX\n🌐 Visit: www.rbmi.edu.in`;
+  const message = `🎓 Welcome to RBMI, ${lead.first_name}!\n\nThank you for your interest. Our counselor will reach out to you soon.\n\n📞 Need help? Call: ${process.env.ADMISSION_HELPLINE || '1800-XXX-XXXX'}\n🌐 Visit: ${process.env.INSTITUTE_WEBSITE || 'www.rbmi.edu.in'}`;
   return sendWhatsApp(lead.phone, message);
 }
 
 // Send document reminder
 export async function sendDocumentReminder(lead, missingDocs) {
   const docList = missingDocs.join('\n• ');
-  const message = `Hi ${lead.first_name},\n\nPlease upload the following documents to complete your application:\n\n• ${docList}\n\nUpload at: www.rbmi.edu.in/portal`;
+  const message = `Hi ${lead.first_name},\n\nPlease upload the following documents to complete your application:\n\n• ${docList}\n\nUpload at: ${process.env.INSTITUTE_WEBSITE || 'www.rbmi.edu.in'}/portal`;
   return sendWhatsApp(lead.phone, message);
 }
 

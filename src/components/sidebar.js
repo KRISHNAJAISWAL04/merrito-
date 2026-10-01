@@ -13,6 +13,7 @@ const adminNavItems = [
   { route: '/pipeline', icon: 'git-branch', label: 'Admission Pipeline' },
   { route: '/counselors', icon: 'headphones', label: 'Counselors' },
   { route: '/call-logs', icon: 'phone', label: 'Call Logs' },
+  { route: '/chat-sessions', icon: 'message-circle', label: 'Live Chat' },
   { route: '/courses', icon: 'book-open', label: 'Programs' },
   { route: '/reports', icon: 'bar-chart-3', label: 'Reports' },
   { route: '/formdesk', icon: 'file-text', label: 'FormDesk' },
@@ -27,6 +28,7 @@ const adminNavItems = [
   { route: '/student-inbox', icon: 'inbox', label: 'Student Inbox' },
   { route: '/queries', icon: 'help-circle', label: 'Queries' },
   { route: '/marketing', icon: 'megaphone', label: 'Marketing' },
+  { route: '/drip-campaigns', icon: 'layers', label: 'Drip Campaigns' },
   { route: '/campaigns', icon: 'target', label: 'Campaigns' },
   { route: '/templates', icon: 'layout-template', label: 'Templates' },
   { route: '/ai-assistant', icon: 'sparkles', label: 'Asha AI' },
@@ -49,6 +51,7 @@ const counselorNavItems = [
   { route: '/courses', icon: 'book-open', label: 'Programs' },
   { route: '/calendar', icon: 'calendar', label: 'Calendar' },
   { route: '/call-logs', icon: 'phone', label: 'Call Logs' },
+  { route: '/chat-sessions', icon: 'message-circle', label: 'Live Chat' },
   { route: '/admission-tests', icon: 'award', label: 'Admission Tests' },
   { route: '/scholarships', icon: 'graduation-cap', label: 'Scholarships' },
   { route: '/batches', icon: 'users', label: 'Batches' },
@@ -57,6 +60,7 @@ const counselorNavItems = [
   { route: '/student-inbox', icon: 'inbox', label: 'Student Inbox' },
   { route: '/queries', icon: 'help-circle', label: 'Queries' },
   { route: '/marketing', icon: 'megaphone', label: 'Engagement' },
+  { route: '/drip-campaigns', icon: 'layers', label: 'Drip Campaigns' },
   { route: '/ai-assistant', icon: 'sparkles', label: 'Asha AI' },
   { route: '/download', icon: 'smartphone', label: 'Mobile App' }
 ];

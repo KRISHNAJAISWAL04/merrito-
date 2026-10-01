@@ -4,8 +4,13 @@ import { USE_SUPABASE, getServerSupabase } from './supabase.js';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'rbmi-crm-secret-2026';
 
-if (!process.env.JWT_SECRET && process.env.NODE_ENV === 'production') {
-  console.warn('JWT_SECRET is not set; set a strong secret in production.');
+if (!process.env.JWT_SECRET) {
+  if (process.env.NODE_ENV === 'production') {
+    console.error('FATAL: JWT_SECRET must be set in production. Exiting.');
+    process.exit(1);
+  } else {
+    console.warn('⚠️  JWT_SECRET not set — using insecure default. Set a strong secret before deploying.');
+  }
 }
 
 function signToken(payload) {
@@ -75,7 +80,9 @@ const DEMO_USERS = [
 ];
 
 export async function seedDemoUsers() {
-  if (!USE_SUPABASE || !getServerSupabase()) {
+  // Keep the local login accounts available for development, but never push
+  // fictional users into a real Supabase project unless explicitly enabled.
+  if (!USE_SUPABASE || !getServerSupabase() || process.env.SEED_SUPABASE_USERS !== 'true') {
     seedLegacyUsers();
     return;
   }
@@ -140,33 +147,9 @@ function seedLegacyUsers() {
     branch: u.branch,
     created_at: now
   }));
-  ensureDemoStudentPortal(db);
   saveDB(db);
 }
 
-function ensureDemoStudentPortal(db) {
-  if (!db.portalProfiles) db.portalProfiles = {};
-  const student = db.users.find(u => u.email === 'student@demo.in');
-  if (!student) return;
-  const uid = student.id;
-  if (db.portalProfiles[uid]) return;
-  db.portalProfiles[uid] = {
-    user_id: uid,
-    name: 'krishna jaiswal',
-    email: 'student@demo.in',
-    phone: '+91 90123 45678',
-    city: 'Bareilly',
-    course_id: 'cr001-mba',
-    stage: 'application_submitted',
-    counselor_name: 'Neha Khan',
-    readiness: 78,
-    next_step: 'Upload Class 12 marksheet',
-    fee_due: '25000',
-    scholarship: 'Merit review pending',
-    branch: 'bareilly',
-    updated_at: new Date().toISOString()
-  };
-}
 
 // ===== LOGIN (Supabase email/password or legacy JSON) =====
 export async function loginUser(email, password, branch) {
@@ -190,7 +173,6 @@ export async function loginUser(email, password, branch) {
 }
 
 async function loginUserFallback(email, password, branch) {
-  ensureDemoStudentPortal(getDB());
   const db = getDB();
   const users = db.users || [];
   const user = users.find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -371,23 +353,27 @@ export async function signupStudent(email, password, name, phone, branch) {
 // ===== USER CRUD (Admin — creates in Supabase Auth) =====
 export async function getUsers() {
   if (USE_SUPABASE) {
-    const supabase = getServerSupabase();
-    const { data, error } = await supabase.from('profiles').select('*').order('updated_at', { ascending: false });
-    if (error) {
-      if (error.code === '42P01' || error.message?.includes('does not exist')) return [];
-      throw error;
+    try {
+      const supabase = getServerSupabase();
+      const { data, error } = await supabase.from('profiles').select('*').order('updated_at', { ascending: false });
+      if (error) {
+        if (error.code === '42P01' || error.message?.includes('does not exist')) return [];
+        throw error;
+      }
+      return (data || []).map(p => ({
+        id: p.id,
+        name: p.full_name || p.name || p.email,
+        email: p.email,
+        role: p.role,
+        counselor_id: p.counselor_id,
+        branch: p.branch || 'bareilly',
+        created_at: p.created_at,
+        phone: p.phone,
+        password: undefined
+      }));
+    } catch (error) {
+      console.warn('Supabase users read failed, using local JSON fallback:', error.message);
     }
-    return (data || []).map(p => ({
-      id: p.id,
-      name: p.full_name || p.name || p.email,
-      email: p.email,
-      role: p.role,
-      counselor_id: p.counselor_id,
-      branch: p.branch || 'bareilly',
-      created_at: p.created_at,
-      phone: p.phone,
-      password: undefined
-    }));
   }
 
   const db = getDB();

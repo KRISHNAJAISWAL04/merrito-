@@ -94,7 +94,7 @@ export async function sendOTP(phone, otp) {
 
 // Send welcome SMS
 export async function sendWelcomeSMS(lead) {
-  const message = `Welcome ${lead.first_name}! Thank you for your interest in RBMI. Our counselor will contact you soon. Call: 1800-XXX-XXXX`;
+  const message = `Welcome ${lead.first_name}! Thank you for your interest in RBMI. Our counselor will contact you soon. Call: ${process.env.ADMISSION_HELPLINE || '1800-XXX-XXXX'}`;
   return sendSMS(lead.phone, message);
 }
 

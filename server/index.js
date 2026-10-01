@@ -38,7 +38,17 @@ import { autoAssignLead } from './controllers/leadDistributionController.js';
 
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
+// Trust first proxy for accurate IP in rate limiting when behind Nginx/Cloudflare
+app.set('trust proxy', 1);
 const rateBuckets = new Map();
+
+// Periodically evict stale rate-limit entries to prevent memory leak
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, bucket] of rateBuckets) {
+    if (now > bucket.resetAt) rateBuckets.delete(key);
+  }
+}, 300_000); // every 5 minutes
 
 app.use(cors());
 app.use(express.json());
@@ -1408,6 +1418,15 @@ app.post('/api/campaigns', requireAdmin, async (req, res) => {
 
 function ensureMarketingModules() {
   const dbData = getDB();
+  if (db.REAL_DATA_MODE) {
+    for (const key of ['communicationTemplates', 'communicationCampaigns', 'callLogs', 'autoFollowUps', 'broadcastMessages', 'studentInbox', 'chatThreads', 'notificationCenter']) {
+      if (!Array.isArray(dbData[key])) dbData[key] = [];
+    }
+    if (!dbData.communicationIntegrations || typeof dbData.communicationIntegrations !== 'object') {
+      dbData.communicationIntegrations = {};
+    }
+    return dbData;
+  }
   let changed = false;
   const now = new Date().toISOString();
   const leads = dbData.leads || [];
@@ -2102,7 +2121,7 @@ app.get('/api/marketing/publishers', requireAuth, async (req, res) => {
   try {
     const dbData = getDB();
     if (!dbData.publishers) {
-      dbData.publishers = [
+      dbData.publishers = db.REAL_DATA_MODE ? [] : [
         { id: 'pub1', name: 'Shiksha.com', status: 'active', leads_captured: 124, last_sync: new Date().toISOString() },
         { id: 'pub2', name: 'CollegeDekho', status: 'active', leads_captured: 89, last_sync: new Date().toISOString() },
         { id: 'pub3', name: 'Facebook Ads', status: 'active', leads_captured: 245, last_sync: new Date().toISOString() },
@@ -2117,6 +2136,9 @@ app.get('/api/marketing/publishers', requireAuth, async (req, res) => {
 });
 
 app.post('/api/marketing/auto-leads/simulate', requireAuth, async (req, res) => {
+  if (db.REAL_DATA_MODE) {
+    return res.status(403).json({ error: 'Lead simulation is disabled in real-data mode. Use a publisher webhook or add a lead manually.' });
+  }
   try {
     const count = Math.min(12, Math.max(1, Number(req.body?.count || 5)));
     const publisherPool = ['Shiksha', 'CollegeDekho', 'Facebook Ads', 'Google Ads', 'JustDial', 'Website'];
@@ -2406,17 +2428,23 @@ app.use('/api', apiRouter);
 //  START
 // ============================================================
 
-app.listen(PORT, () => {
-  console.log(`\n  RBMI CRM API Server running at http://localhost:${PORT}`);
-  console.log(`  Webhook: POST http://localhost:${PORT}/api/webhook/lead`);
-  console.log(`  Auth: POST http://localhost:${PORT}/api/auth/login`);
-  if (db.USE_SUPABASE) console.log(`  Supabase session: POST http://localhost:${PORT}/api/auth/supabase`);
-  if (isEmailConfigured()) {
-    console.log(`  Email: ✅ Gmail SMTP active (${process.env.GMAIL_USER})`);
-  } else {
-    console.log(`  Email: ⚠️  Not configured — add GMAIL_USER + GMAIL_APP_PASSWORD to .env`);
-  }
-  startCronJobs();
-  console.log('');
-});
+// Export app for Vercel serverless deployment
+export default app;
+
+// Only listen when running locally (not on Vercel)
+if (!process.env.VERCEL) {
+  app.listen(PORT, () => {
+    console.log(`\n  RBMI CRM API Server running at http://localhost:${PORT}`);
+    console.log(`  Webhook: POST http://localhost:${PORT}/api/webhook/lead`);
+    console.log(`  Auth: POST http://localhost:${PORT}/api/auth/login`);
+    if (db.USE_SUPABASE) console.log(`  Supabase session: POST http://localhost:${PORT}/api/auth/supabase`);
+    if (isEmailConfigured()) {
+      console.log(`  Email: ✅ Gmail SMTP active (${process.env.GMAIL_USER})`);
+    } else {
+      console.log(`  Email: ⚠️  Not configured — add GMAIL_USER + GMAIL_APP_PASSWORD to .env`);
+    }
+    startCronJobs();
+    console.log('');
+  });
+}
 

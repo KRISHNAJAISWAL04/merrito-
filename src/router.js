@@ -10,7 +10,8 @@ const ROUTE_PERMISSIONS = {
     '/dashboard', '/leads', '/pipeline', '/applications', '/courses',
     '/calendar', '/queries', '/marketing', '/ai-assistant', '/download',
     '/user-dashboard', '/sqi', '/admission-tests', '/scholarships',
-    '/batches', '/notifications', '/lead-distribution', '/call-logs', '/student-inbox'
+    '/batches', '/notifications', '/lead-distribution', '/call-logs', 
+    '/student-inbox', '/chat-sessions', '/drip-campaigns'
   ],
   student: [
     '/portal', '/applications', '/courses', '/queries', '/payments',

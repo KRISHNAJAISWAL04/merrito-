@@ -44,9 +44,11 @@ import { renderLeadDistribution } from './pages/leadDistribution.js';
 import { renderNotifications } from './pages/notifications.js';
 import { renderCallLogs } from './pages/callLogs.js';
 import { renderStudentInbox } from './pages/studentInbox.js';
+import { renderChatSessions } from './pages/chatSessions.js';
+import { renderDripCampaigns } from './pages/dripCampaigns.js';
 import { getCurrentUser } from './lib/auth.js';
 import { API_BASE } from './lib/api.js';
-import { showLogin, showSignup } from './pages/login.js';
+import { showLogin, showSignup, showUpdatePassword } from './pages/login.js';
 import { createIcons } from './lib/icons.js';
 import { getSupabase } from './lib/supabase.js';
 
@@ -96,7 +98,9 @@ const routes = [
   ['/lead-distribution', renderLeadDistribution],
   ['/notifications', renderNotifications],
   ['/call-logs', renderCallLogs],
-  ['/student-inbox', renderStudentInbox]
+  ['/student-inbox', renderStudentInbox],
+  ['/chat-sessions', renderChatSessions],
+  ['/drip-campaigns', renderDripCampaigns]
 ];
 routes.forEach(([path, fn]) => registerRoute(path, fn));
 

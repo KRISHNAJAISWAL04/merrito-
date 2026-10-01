@@ -1,7 +1,7 @@
 import { getToken } from '../lib/auth.js';
 
 // ===== API CLIENT — RBMI CRM =====
-export const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:3001/api').replace(/\/$/, '');
+export const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 const LOCAL_APPLICATIONS_KEY = 'rbmi_local_applications';
 const LOCAL_QUERIES_KEY = 'rbmi_local_queries';
 const LOCAL_PAYMENTS_KEY = 'rbmi_local_payments';
@@ -46,63 +46,11 @@ function getLocalCollection(key, seedFactory) {
   return seeded;
 }
 
-function seedLocalApplications() {
-  const user = getSessionUser();
-  const seed = [];
-  if (user?.role === 'student') {
-    seed.push({
-      id: 'local-app-student-demo',
-      user_id: user.id,
-      student_name: user.name,
-      email: user.email,
-      course_id: null,
-      course_name: 'Program not selected',
-      status: 'submitted',
-      documents_status: 'pending',
-      documents: seedLocalDocuments(),
-      counselor_name: 'Admissions team',
-      priority: 'medium',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    });
-  }
-  return seed;
-}
-
-function seedLocalQueries() {
-  const user = getSessionUser();
-  return [{
-    id: 'local-query-demo',
-    user_id: user?.id || null,
-    student_name: user?.name || 'Student',
-    subject: 'Admission help',
-    category: 'General',
-    status: 'open',
-    priority: 'medium',
-    message: 'Need help with the next admission step.',
-    response: '',
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }];
-}
-
-function seedLocalPayments() {
-  const user = getSessionUser();
-  return [{
-    id: 'local-payment-demo',
-    user_id: user?.role === 'student' ? user.id : null,
-    student_name: user?.name || 'Student',
-    title: 'Admission fee',
-    amount: 25000,
-    status: 'due',
-    method: 'Online',
-    due_date: '2026-05-15',
-    receipt_no: '',
-    installments: buildLocalInstallments(25000, 2, '2026-05-15'),
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }];
-}
+// Local fallback collections start empty. Records appear only after a real
+// user creates them or the API returns real records.
+function seedLocalApplications() { return []; }
+function seedLocalQueries() { return []; }
+function seedLocalPayments() { return []; }
 
 function getLocalPortalProfiles() {
   return readLocal(LOCAL_PORTAL_KEY, {});
@@ -134,15 +82,16 @@ function saveLocalSettings(value) {
   writeLocal(LOCAL_SETTINGS_KEY, value);
 }
 
-async function request(path, options = {}) {
+export async function request(path, options = {}) {
   const token = getToken();
+  const { headers: optionHeaders = {}, ...requestOptions } = options;
   const res = await fetch(`${API_BASE}${path}`, {
+    ...requestOptions,
     headers: {
       'Content-Type': 'application/json',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      ...options.headers
-    },
-    ...options
+      ...optionHeaders
+    }
   });
 
   if (res.status === 401) {
@@ -269,16 +218,17 @@ export async function deleteTask(id) {
 export function exportLeadsCSV() {
   const token = getToken();
   const url = `${API_BASE}/leads/export/csv`;
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'rbmi-leads.csv';
-  // Use fetch to include auth header
   fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     .then(r => r.blob())
     .then(blob => {
       const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
       a.href = blobUrl;
+      a.download = 'rbmi-leads.csv';
+      a.style.display = 'none';
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
     });
 }
@@ -485,15 +435,17 @@ export async function updateApplication(id, data) {
 export function exportApplicationsCSV() {
   const token = getToken();
   const url = `${API_BASE}/applications/export/csv`;
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'applications.csv';
   fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     .then(r => r.blob())
     .then(blob => {
       const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
       a.href = blobUrl;
+      a.download = 'applications.csv';
+      a.style.display = 'none';
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
     });
 }
@@ -734,15 +686,17 @@ export async function simulateAutoLeads(count = 5) {
 export function exportPaymentsCSV() {
   const token = getToken();
   const url = `${API_BASE}/payments/export/csv`;
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'payments.csv';
   fetch(url, { headers: { Authorization: `Bearer ${token}` } })
     .then(r => r.blob())
     .then(blob => {
       const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
       a.href = blobUrl;
+      a.download = 'payments.csv';
+      a.style.display = 'none';
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(blobUrl);
     });
 }

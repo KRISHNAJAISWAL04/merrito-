@@ -1,4 +1,5 @@
 import * as db from '../supabase.js';
+import { calculateLeadScore } from './leadController.js';
 
 // Form builder - admins can create custom lead capture forms
 export async function getForms(req, res) {
@@ -153,15 +154,6 @@ export async function submitFormPublic(req, res) {
     };
 
     // Calculate lead score
-    function calculateLeadScore(lead) {
-      let score = 20;
-      const sourceScores = { 'Website': 20, 'Google Ads': 25, 'Walk-in': 30, 'Referral': 25, 'Social Media': 15 };
-      score += sourceScores[lead.source] || 15;
-      const priorityScores = { 'high': 30, 'medium': 15, 'low': 5 };
-      score += priorityScores[lead.priority] || 15;
-      return Math.min(100, score);
-    }
-
     leadData.lead_score = calculateLeadScore(leadData);
     leadData.id = db.generateId?.() || Math.random().toString(36).substr(2, 9);
 

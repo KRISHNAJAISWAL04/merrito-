@@ -1,5 +1,6 @@
 // ===== ZOOM SERVICE - Video Counseling Integration =====
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 const ZOOM_API_KEY = process.env.ZOOM_API_KEY;
 const ZOOM_API_SECRET = process.env.ZOOM_API_SECRET;
@@ -162,7 +163,7 @@ export function generateZoomSDKSignature(meetingNumber, role = 0) {
 
   const timestamp = Date.now();
   const msg = Buffer.from(ZOOM_SDK_KEY + meetingNumber + timestamp + role).toString('base64');
-  const hash = require('crypto')
+  const hash = crypto
     .createHmac('sha256', ZOOM_SDK_SECRET)
     .update(msg)
     .digest('base64');

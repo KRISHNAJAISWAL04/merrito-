@@ -4,7 +4,7 @@ import { sendWelcomeSMS, sendStageChangeSMS, isSMSConfigured } from '../services
 import { sendWelcomeWhatsApp, sendWhatsApp, isWhatsAppConfigured } from '../services/whatsappService.js';
 
 // --- LEAD SCORING LOGIC ---
-function calculateLeadScore(lead) {
+export function calculateLeadScore(lead) {
   let score = 20; // Base score
   
   // Source weight

@@ -28,6 +28,8 @@ import utmTrackingRoutes from './utmTrackingRoutes.js';
 import leadDistributionRoutes from './leadDistributionRoutes.js';
 import multiLanguageRoutes from './multiLanguageRoutes.js';
 import formBuilderRoutes from './formBuilderRoutes.js';
+import chatRoutes from './chatRoutes.js';
+import dripCampaignRoutes from './dripCampaignRoutes.js';
 
 const router = express.Router();
 
@@ -60,5 +62,7 @@ router.use('/utm', utmTrackingRoutes);
 router.use('/lead-distribution', leadDistributionRoutes);
 router.use('/i18n', multiLanguageRoutes);
 router.use('/forms', formBuilderRoutes);
+router.use('/chat', chatRoutes);
+router.use('/drip-campaigns', dripCampaignRoutes);
 
 export default router;

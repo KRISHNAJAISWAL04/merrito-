@@ -9,9 +9,11 @@ import {
 } from './supabase.js';
 import { getDB, saveDB, generateId } from './db.js';
 
+let supabaseFallbackMode = false;
+
 function sb() {
   const c = getServerSupabase();
-  if (!c) throw new Error('Supabase not configured');
+  if (!c || supabaseFallbackMode) throw new Error('Supabase not configured');
   return c;
 }
 
@@ -176,6 +178,34 @@ function jsonEnsureAdmissions() {
   return dbData;
 }
 
+function logSupabaseFallback(label, error) {
+  // Once the connection is known to be unavailable, keep subsequent requests
+  // on the local store instead of retrying a slow network call on every page.
+  supabaseFallbackMode = true;
+  console.warn(`Supabase ${label} failed, using local JSON fallback:`, error?.message || error);
+}
+
+function localApplications(reqUser) {
+  const dbData = jsonEnsureAdmissions();
+  let items = dbData.applications || [];
+  if (reqUser?.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
+  return items.map(item => enrichApplication(item, dbData.courses || [])).sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+}
+
+function localQueries(reqUser) {
+  const dbData = jsonEnsureAdmissions();
+  let items = dbData.queries || [];
+  if (reqUser?.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
+  return items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+}
+
+function localPayments(reqUser) {
+  const dbData = jsonEnsureAdmissions();
+  let items = dbData.payments || [];
+  if (reqUser?.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
+  return items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+}
+
 export function getDefaultSettings() {
   return {
     institute_name: 'Rakshpal Bahadur Management Institute',
@@ -228,9 +258,13 @@ export async function storeSettings(partial) {
 
 export async function listLetterTemplates() {
   if (USE_SUPABASE) {
-    const { data, error } = await sb().from('letter_templates').select('*').order('updated_at', { ascending: false });
-    if (error) throw error;
-    return data || [];
+    try {
+      const { data, error } = await sb().from('letter_templates').select('*').order('updated_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      logSupabaseFallback('letter templates read', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   return [...(dbData.letter_templates || [])].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
@@ -245,10 +279,14 @@ export async function insertLetterTemplate(body) {
     created_at: nowIso(),
     updated_at: nowIso()
   };
-  if (USE_SUPABASE) {
-    const { data, error } = await sb().from('letter_templates').insert([row]).select().single();
-    if (error) throw error;
-    return data;
+  if (USE_SUPABASE && !supabaseFallbackMode) {
+    try {
+      const { data, error } = await sb().from('letter_templates').insert([row]).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      logSupabaseFallback('letter template write', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   dbData.letter_templates.unshift(row);
@@ -257,7 +295,7 @@ export async function insertLetterTemplate(body) {
 }
 
 export async function patchLetterTemplate(id, body) {
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && !supabaseFallbackMode) {
     const { data, error } = await sb().from('letter_templates').update({ ...body, updated_at: nowIso() }).eq('id', id).select().single();
     if (error) throw error;
     return data;
@@ -272,11 +310,15 @@ export async function patchLetterTemplate(id, body) {
 
 export async function listOfferLetters(applicationId = null) {
   if (USE_SUPABASE) {
-    let q = sb().from('offer_letters').select('*').order('created_at', { ascending: false });
-    if (applicationId) q = q.eq('application_id', applicationId);
-    const { data, error } = await q;
-    if (error) throw error;
-    return data || [];
+    try {
+      let q = sb().from('offer_letters').select('*').order('created_at', { ascending: false });
+      if (applicationId) q = q.eq('application_id', applicationId);
+      const { data, error } = await q;
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      logSupabaseFallback('offer letters read', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   let items = dbData.offer_letters || [];
@@ -326,10 +368,14 @@ export async function generateOfferLetter(applicationId, templateId) {
     created_at: nowIso()
   };
 
-  if (USE_SUPABASE) {
-    const { data, error } = await sb().from('offer_letters').insert([row]).select().single();
-    if (error) throw error;
-    return data;
+  if (USE_SUPABASE && !supabaseFallbackMode) {
+    try {
+      const { data, error } = await sb().from('offer_letters').insert([row]).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      logSupabaseFallback('offer letter write', error);
+    }
   }
   dbData.offer_letters.unshift(row);
   saveDB(dbData);
@@ -338,29 +384,33 @@ export async function generateOfferLetter(applicationId, templateId) {
 
 
 export async function getPortalProfileForUser(user) {
-  if (USE_SUPABASE) {
-    const { data, error } = await sb().from('portal_profiles').select('*').eq('user_id', user.id).maybeSingle();
-    if (error && error.code !== 'PGRST116') throw error;
-    if (data) return data;
-    const profile = {
-      user_id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: '',
-      city: '',
-      course_id: null,
-      stage: 'enquiry',
-      counselor_name: 'Admissions team',
-      readiness: 35,
-      next_step: 'Complete your profile',
-      fee_due: '0',
-      scholarship: 'Not reviewed yet',
-      branch: user.branch || 'bareilly',
-      updated_at: nowIso()
-    };
-    const { error: insErr } = await sb().from('portal_profiles').insert([profile]);
-    if (insErr) throw insErr;
-    return profile;
+  if (USE_SUPABASE && !supabaseFallbackMode) {
+    try {
+      const { data, error } = await sb().from('portal_profiles').select('*').eq('user_id', user.id).maybeSingle();
+      if (error && error.code !== 'PGRST116') throw error;
+      if (data) return data;
+      const profile = {
+        user_id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: '',
+        city: '',
+        course_id: null,
+        stage: 'enquiry',
+        counselor_name: 'Admissions team',
+        readiness: 35,
+        next_step: 'Complete your profile',
+        fee_due: '0',
+        scholarship: 'Not reviewed yet',
+        branch: user.branch || 'bareilly',
+        updated_at: nowIso()
+      };
+      const { error: insErr } = await sb().from('portal_profiles').insert([profile]);
+      if (insErr) throw insErr;
+      return profile;
+    } catch (error) {
+      logSupabaseFallback('portal profile read', error);
+    }
   }
 
   const dbData = getDB();
@@ -399,9 +449,17 @@ export async function updatePortalProfile(user, body) {
   }
   const next = { ...current, ...updates, updated_at: nowIso() };
 
-  if (USE_SUPABASE) {
-    const { error } = await sb().from('portal_profiles').upsert(next, { onConflict: 'user_id' });
-    if (error) throw error;
+  if (USE_SUPABASE && !supabaseFallbackMode) {
+    try {
+      const { error } = await sb().from('portal_profiles').upsert(next, { onConflict: 'user_id' });
+      if (error) throw error;
+    } catch (error) {
+      logSupabaseFallback('portal profile write', error);
+      const dbData = getDB();
+      if (!dbData.portalProfiles) dbData.portalProfiles = {};
+      dbData.portalProfiles[user.id] = next;
+      saveDB(dbData);
+    }
   } else {
     const dbData = getDB();
     if (!dbData.portalProfiles) dbData.portalProfiles = {};
@@ -435,12 +493,15 @@ function enrichApplication(item, courses) {
 export async function listApplications(reqUser) {
   const courses = await getCourses();
   if (USE_SUPABASE) {
-    let q = sb().from('applications').select('*').order('updated_at', { ascending: false });
-    const { data, error } = await q;
-    if (error) throw error;
-    let items = data || [];
-    if (reqUser.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
-    return items.map(item => enrichApplication(item, courses));
+    try {
+      const { data, error } = await sb().from('applications').select('*').order('updated_at', { ascending: false });
+      if (error) throw error;
+      let items = data || [];
+      if (reqUser.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
+      return items.map(item => enrichApplication(item, courses));
+    } catch (error) {
+      logSupabaseFallback('applications read', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   let items = dbData.applications || [];
@@ -465,11 +526,15 @@ export async function insertApplication(reqUser, body) {
     updated_at: nowIso()
   };
 
-  if (USE_SUPABASE) {
-    const { data, error } = await sb().from('applications').insert([item]).select().single();
-    if (error) throw error;
-    const courses = await getCourses();
-    return enrichApplication(data, courses);
+  if (USE_SUPABASE && !supabaseFallbackMode) {
+    try {
+      const { data, error } = await sb().from('applications').insert([item]).select().single();
+      if (error) throw error;
+      const courses = await getCourses();
+      return enrichApplication(data, courses);
+    } catch (error) {
+      logSupabaseFallback('application write', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   dbData.applications.unshift(item);
@@ -480,7 +545,7 @@ export async function insertApplication(reqUser, body) {
 
 export async function patchApplication(reqUser, id, body) {
   let oldStatus;
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && !supabaseFallbackMode) {
     const { data: row, error: fe } = await sb().from('applications').select('*').eq('id', id).single();
     if (fe || !row) throw new Error('Application not found');
     oldStatus = row.status;
@@ -532,6 +597,40 @@ export async function patchApplication(reqUser, id, body) {
   return enrichApplication(dbData.applications[idx], courses);
 }
 
+// Safe condition evaluator — replaces dangerous eval()
+function evaluateCondition(condition, context) {
+  if (!condition || typeof condition !== 'string') return false;
+
+  const condStr = condition.trim();
+
+  // Support: "status === 'admitted'" or "status == 'admitted'"
+  const eqMatch = condStr.match(/^(\w+)\s*={2,3}\s*['"](.+)['"]$/);
+  if (eqMatch) {
+    return String(context[eqMatch[1]] || '') === eqMatch[2];
+  }
+
+  // Support: "status !== 'rejected'"
+  const neqMatch = condStr.match(/^(\w+)\s*!==?\s*['"](.+)['"]$/);
+  if (neqMatch) {
+    return String(context[neqMatch[1]] || '') !== neqMatch[2];
+  }
+
+  // Support: "status.includes('admit')"
+  const inclMatch = condStr.match(/^(\w+)\.includes\(['"](.+)['"]\)$/);
+  if (inclMatch) {
+    return String(context[inclMatch[1]] || '').includes(inclMatch[2]);
+  }
+
+  // Support simple truthy check: "status"
+  if (/^\w+$/.test(condStr)) {
+    return !!context[condStr];
+  }
+
+  // Default: condition not understood, don't match
+  console.warn(`Workflow condition not recognized: "${condition}"`);
+  return false;
+}
+
 async function triggerWorkflows(trigger, context) {
   const rules = await listWorkflowRules();
   const activeRules = rules.filter(r => r.active && r.trigger === trigger);
@@ -540,9 +639,8 @@ async function triggerWorkflows(trigger, context) {
     let match = false;
     try {
       if (rule.condition) {
-        // Basic evaluation of condition
-        const status = context.status;
-        match = eval(rule.condition);
+        // Safe condition evaluation — NO eval() to prevent RCE
+        match = evaluateCondition(rule.condition, context);
       } else {
         match = true;
       }
@@ -570,16 +668,17 @@ async function triggerWorkflows(trigger, context) {
 
 export async function listQueries(reqUser) {
   if (USE_SUPABASE) {
-    const { data, error } = await sb().from('queries').select('*').order('updated_at', { ascending: false });
-    if (error) throw error;
-    let items = data || [];
-    if (reqUser.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
-    return items;
+    try {
+      const { data, error } = await sb().from('queries').select('*').order('updated_at', { ascending: false });
+      if (error) throw error;
+      let items = data || [];
+      if (reqUser.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
+      return items;
+    } catch (error) {
+      logSupabaseFallback('queries read', error);
+    }
   }
-  const dbData = jsonEnsureAdmissions();
-  let items = dbData.queries || [];
-  if (reqUser.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
-  return items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+  return localQueries(reqUser);
 }
 
 export async function insertQuery(reqUser, body) {
@@ -596,10 +695,14 @@ export async function insertQuery(reqUser, body) {
     created_at: nowIso(),
     updated_at: nowIso()
   };
-  if (USE_SUPABASE) {
-    const { data, error } = await sb().from('queries').insert([item]).select().single();
-    if (error) throw error;
-    return data;
+  if (USE_SUPABASE && !supabaseFallbackMode) {
+    try {
+      const { data, error } = await sb().from('queries').insert([item]).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      logSupabaseFallback('query write', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   dbData.queries.unshift(item);
@@ -608,7 +711,7 @@ export async function insertQuery(reqUser, body) {
 }
 
 export async function patchQuery(reqUser, id, body) {
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && !supabaseFallbackMode) {
     const { data: row, error: fe } = await sb().from('queries').select('*').eq('id', id).single();
     if (fe || !row) throw new Error('Query not found');
     if (reqUser.role === 'student' && row.user_id !== reqUser.id) throw new Error('Access denied');
@@ -639,16 +742,17 @@ export async function patchQuery(reqUser, id, body) {
 
 export async function listPayments(reqUser) {
   if (USE_SUPABASE) {
-    const { data, error } = await sb().from('payments').select('*').order('updated_at', { ascending: false });
-    if (error) throw error;
-    let items = data || [];
-    if (reqUser.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
-    return items;
+    try {
+      const { data, error } = await sb().from('payments').select('*').order('updated_at', { ascending: false });
+      if (error) throw error;
+      let items = data || [];
+      if (reqUser.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
+      return items;
+    } catch (error) {
+      logSupabaseFallback('payments read', error);
+    }
   }
-  const dbData = jsonEnsureAdmissions();
-  let items = dbData.payments || [];
-  if (reqUser.role === 'student') items = items.filter(item => item.user_id === reqUser.id);
-  return items.sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
+  return localPayments(reqUser);
 }
 
 export async function insertPayment(reqUser, body) {
@@ -669,10 +773,14 @@ export async function insertPayment(reqUser, body) {
     created_at: nowIso(),
     updated_at: nowIso()
   };
-  if (USE_SUPABASE) {
-    const { data, error } = await sb().from('payments').insert([item]).select().single();
-    if (error) throw error;
-    return data;
+  if (USE_SUPABASE && !supabaseFallbackMode) {
+    try {
+      const { data, error } = await sb().from('payments').insert([item]).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      logSupabaseFallback('payment write', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   dbData.payments.unshift(item);
@@ -681,7 +789,7 @@ export async function insertPayment(reqUser, body) {
 }
 
 export async function patchPayment(reqUser, id, body) {
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && !supabaseFallbackMode) {
     const { data: row, error: fe } = await sb().from('payments').select('*').eq('id', id).single();
     if (fe || !row) throw new Error('Payment not found');
     if (reqUser.role === 'student' && row.user_id !== reqUser.id) throw new Error('Access denied');
@@ -720,9 +828,13 @@ export async function patchPayment(reqUser, id, body) {
 
 export async function listFormTemplates() {
   if (USE_SUPABASE) {
-    const { data, error } = await sb().from('form_templates').select('*').order('updated_at', { ascending: false });
-    if (error) throw error;
-    return data || [];
+    try {
+      const { data, error } = await sb().from('form_templates').select('*').order('updated_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      logSupabaseFallback('form templates read', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   return [...(dbData.form_templates || [])].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
@@ -738,10 +850,14 @@ export async function insertFormTemplate(body) {
     created_at: nowIso(),
     updated_at: nowIso()
   };
-  if (USE_SUPABASE) {
-    const { data, error } = await sb().from('form_templates').insert([row]).select().single();
-    if (error) throw error;
-    return data;
+  if (USE_SUPABASE && !supabaseFallbackMode) {
+    try {
+      const { data, error } = await sb().from('form_templates').insert([row]).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      logSupabaseFallback('form template write', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   dbData.form_templates.unshift(row);
@@ -751,9 +867,13 @@ export async function insertFormTemplate(body) {
 
 export async function listCampaigns() {
   if (USE_SUPABASE) {
-    const { data, error } = await sb().from('campaigns').select('*').order('updated_at', { ascending: false });
-    if (error) throw error;
-    return data || [];
+    try {
+      const { data, error } = await sb().from('campaigns').select('*').order('updated_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      logSupabaseFallback('campaigns read', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   return [...(dbData.campaigns || [])].sort((a, b) => new Date(b.updated_at) - new Date(a.updated_at));
@@ -770,10 +890,14 @@ export async function insertCampaign(body) {
     created_at: nowIso(),
     updated_at: nowIso()
   };
-  if (USE_SUPABASE) {
-    const { data, error } = await sb().from('campaigns').insert([row]).select().single();
-    if (error) throw error;
-    return data;
+  if (USE_SUPABASE && !supabaseFallbackMode) {
+    try {
+      const { data, error } = await sb().from('campaigns').insert([row]).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      logSupabaseFallback('campaign write', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   dbData.campaigns.unshift(row);
@@ -783,9 +907,13 @@ export async function insertCampaign(body) {
 
 export async function listWorkflowRules() {
   if (USE_SUPABASE) {
-    const { data, error } = await sb().from('workflow_rules').select('*').order('created_at', { ascending: false });
-    if (error) throw error;
-    return data || [];
+    try {
+      const { data, error } = await sb().from('workflow_rules').select('*').order('created_at', { ascending: false });
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      logSupabaseFallback('workflow rules read', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   return [...(dbData.workflow_rules || [])].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
@@ -804,10 +932,14 @@ export async function insertWorkflowRule(body) {
     created_at: nowIso(),
     updated_at: nowIso()
   };
-  if (USE_SUPABASE) {
-    const { data, error } = await sb().from('workflow_rules').insert([row]).select().single();
-    if (error) throw error;
-    return data;
+  if (USE_SUPABASE && !supabaseFallbackMode) {
+    try {
+      const { data, error } = await sb().from('workflow_rules').insert([row]).select().single();
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      logSupabaseFallback('workflow rule write', error);
+    }
   }
   const dbData = jsonEnsureAdmissions();
   dbData.workflow_rules.unshift(row);
@@ -816,7 +948,7 @@ export async function insertWorkflowRule(body) {
 }
 
 export async function patchWorkflowRule(id, body) {
-  if (USE_SUPABASE) {
+  if (USE_SUPABASE && !supabaseFallbackMode) {
     const { data, error } = await sb().from('workflow_rules').update({ ...body, updated_at: nowIso() }).eq('id', id).select().single();
     if (error) throw error;
     return data;

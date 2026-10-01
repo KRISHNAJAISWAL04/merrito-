@@ -19,7 +19,9 @@ export const USE_SUPABASE = Boolean(
   SUPABASE_KEY !== 'your-anon-key' &&
   SUPABASE_KEY !== 'your-service-role-key'
 );
-export const REAL_DATA_MODE = process.env.REAL_DATA_MODE === 'true' || process.env.USE_DEMO_DATA === 'false';
+// Production-safe default: the local fallback must start empty. Demo fixtures
+// are only enabled when explicitly requested for a sandbox environment.
+export const REAL_DATA_MODE = process.env.REAL_DATA_MODE !== 'false' && process.env.USE_DEMO_DATA !== 'true';
 
 if (!USE_SUPABASE) {
   console.warn('Supabase credentials missing. Using local JSON database fallback.');
@@ -28,9 +30,38 @@ if (!USE_SUPABASE) {
   console.warn('Supabase: server using anon key. If Row Level Security blocks reads/writes, set SUPABASE_SERVICE_ROLE_KEY in .env.');
 }
 
-// Kept for auth.js and appStore.js which use the Supabase JS client
+// Kept for auth.js and appStore.js which use the Supabase JS client.
+// A bounded request prevents a missing/unreachable Supabase project from
+// making the local JSON fallback hang every page load.
+let supabaseOffline = false;
+
+async function fetchWithTimeout(input, init = {}) {
+  if (supabaseOffline) throw new Error('Supabase unavailable; using local JSON database');
+  const controller = new AbortController();
+  const timeoutMs = Number(process.env.SUPABASE_TIMEOUT_MS) || 5000;
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  if (init.signal) {
+    if (init.signal.aborted) controller.abort();
+    else init.signal.addEventListener('abort', () => controller.abort(), { once: true });
+  }
+  try {
+    return await fetch(input, { ...init, signal: controller.signal });
+  } catch (error) {
+    // DNS/network failures are deterministic for the lifetime of this
+    // process. Mark the remote store offline so every feature immediately
+    // uses the local database rather than retrying on every request.
+    supabaseOffline = true;
+    throw error;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 const supabaseClient = USE_SUPABASE
-  ? createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: false } })
+  ? createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: { persistSession: false },
+      global: { fetch: fetchWithTimeout }
+    })
   : null;
 
 export function getServerSupabase() {
@@ -47,7 +78,7 @@ const supabaseHeaders = USE_SUPABASE ? {
 async function supabaseFetch(path, options = {}) {
   if (!USE_SUPABASE) throw new Error('Supabase not configured');
   const url = `${SUPABASE_URL}${path}`;
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     ...options,
     headers: { ...supabaseHeaders, ...options.headers }
   });
@@ -124,7 +155,7 @@ export async function getLead(id) {
     } catch (e) {
       console.warn('Supabase getLead failed, falling back to local JSON:', e.message);
     }
-    if (!hasAnyLocalData('leads')) return [];
+    if (!hasAnyLocalData('leads')) return null;
   }
 
   const db = getDB();

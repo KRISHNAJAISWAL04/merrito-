@@ -70,17 +70,21 @@ export async function verifyPayment(req, res) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // In real implementation, verify signature using Razorpay secret
-    // const crypto = require('crypto');
-    // const expectedSignature = crypto
-    //   .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
-    //   .update(razorpay_order_id + '|' + razorpay_payment_id)
-    //   .digest('hex');
-    // if (expectedSignature !== razorpay_signature) {
-    //   return res.status(400).json({ error: 'Invalid signature' });
-    // }
+    // Verify Razorpay signature when secret is configured, otherwise mock
+    const razorpaySecret = process.env.RAZORPAY_KEY_SECRET;
+    if (razorpaySecret) {
+      const { createHmac } = await import('crypto');
+      const expectedSignature = createHmac('sha256', razorpaySecret)
+        .update(razorpay_order_id + '|' + razorpay_payment_id)
+        .digest('hex');
+      if (expectedSignature !== razorpay_signature) {
+        return res.status(400).json({ error: 'Invalid payment signature' });
+      }
+    } else {
+      console.warn('[Payment] RAZORPAY_KEY_SECRET not set — skipping signature verification (mock mode)');
+    }
 
-    // Mock verification - always succeeds
+    // Proceed with payment verification
     const dbData = getDB();
     const order = dbData.payment_orders?.find(o => o.id === razorpay_order_id);
 
