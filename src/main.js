@@ -139,6 +139,15 @@ function saveSession(payload, branch) {
 async function handleAuthCallback() {
   const hashParams = new URLSearchParams(window.location.hash.slice(1));
   const searchParams = new URLSearchParams(window.location.search);
+
+  // Check for OAuth error responses from provider or Supabase
+  const authError = searchParams.get('error_description') || searchParams.get('error') || hashParams.get('error_description') || hashParams.get('error');
+  if (authError) {
+    console.error('Auth callback received error:', authError);
+    sessionStorage.setItem('rbmi_auth_error', authError);
+    return false;
+  }
+
   const hasToken = hashParams.has('access_token') || searchParams.has('code');
   if (!hasToken) return false;
 
@@ -159,7 +168,7 @@ async function handleAuthCallback() {
 
       if (data?.session?.access_token) {
         const urlParams = new URLSearchParams(window.location.search);
-        const branch = urlParams.get('branch') || 'bareilly';
+        const branch = urlParams.get('branch') || localStorage.getItem('rbmi_selected_branch') || 'bareilly';
 
         const res = await fetch(`${API_BASE}/auth/supabase`, {
           method: 'POST',
@@ -192,6 +201,7 @@ async function handleAuthCallback() {
     }
   } catch (err) {
     console.error('Auth callback error:', err);
+    sessionStorage.setItem('rbmi_auth_error', err.message || 'Authentication failed');
   }
   return false;
 }
