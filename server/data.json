@@ -3,77 +3,170 @@
   "counselors": [],
   "courses": [],
   "activities": [],
+  "tasks": [],
   "users": [
     {
-      "id": "u001-admin",
+      "id": "8424c581-c818-4b7d-afd8-60ec0b4ff61c",
       "name": "Admin RBMI",
       "email": "admin@rbmi.edu.in",
-      "password": "admin123",
+      "password": "45c08018dfb42bfe81c9b5dad52ae30d:cc18cefd41156fedd5249caea8e0c7fd71b5608529af3e5eeff0c1309f35697b4b492598ee25e46d17d91d1910c16dab49b63b9cadd02177765ad6a45d800459",
       "role": "admin",
       "counselor_id": null,
       "branch": "bareilly",
-      "created_at": "2026-01-01T00:00:00.000Z"
+      "created_at": "2026-10-02T13:59:46.621Z"
     },
     {
-      "id": "u002-priya",
-      "name": "Priya Sharma",
+      "id": "b6d315a5-ed29-4f59-af3b-3fced1f91ca3",
+      "name": "Neha Khan",
       "email": "priya@rbmi.edu.in",
-      "password": "counselor123",
+      "password": "705a858ba25cf2ccc6630dabf189552b:a52a12ac1e2b15ff5a67a666133815d6924d05efaa48e4e602467e7b268a788af91332e22837a8182408fcd67f1e2f3b23b2acaac0e5e428443dab6a2cb65790",
       "role": "counselor",
-      "counselor_id": "c001-rbmi-priya",
+      "counselor_id": null,
       "branch": "bareilly",
-      "created_at": "2026-01-01T00:00:00.000Z"
+      "created_at": "2026-10-02T13:59:46.621Z"
     },
     {
-      "id": "u003-rajesh",
+      "id": "ea6caf65-460f-45bc-8d3e-6d9b5e924253",
       "name": "Rajesh Kumar",
       "email": "rajesh@rbmi.edu.in",
-      "password": "counselor123",
+      "password": "2ad000a945a2273ee589b8d269aec33e:a625661830a9ede93e8892c391d95d47151b8d440af519283f4162de71c4cbe6e986e2543e97dd3ecde709edd320d03c477fc7fdac9e666fee66f5af6a3fab07",
       "role": "counselor",
-      "counselor_id": "c002-rbmi-rajesh",
+      "counselor_id": null,
       "branch": "bareilly",
-      "created_at": "2026-01-01T00:00:00.000Z"
+      "created_at": "2026-10-02T13:59:46.621Z"
     },
     {
-      "id": "u004-student-demo",
-      "name": "Aarav Mehta",
+      "id": "f3faf9e9-e8cb-4888-98a2-1a9b699b4439",
+      "name": "krishna jaiswal",
       "email": "student@demo.in",
-      "password": "student123",
+      "password": "7e7bd66790a25cd99e820732355cc37c:01b4b5b8e55db04642efb54930fd5893ed4b1f358d93994dcef45d36ca4cade21baa38f33be3a9d7b47c73afb4612e0bde8bf90ff5dc61826d33aca835c7e417",
       "role": "student",
       "counselor_id": null,
       "branch": "bareilly",
-      "created_at": "2026-05-02T10:24:13.829Z"
+      "created_at": "2026-10-02T13:59:46.621Z"
+    }
+  ]
+}  "applications": [
+    {
+      "id": "app-demo-aarav",
+      "user_id": "u004-student-demo",
+      "student_name": "krishna jaiswal",
+      "email": "student@demo.in",
+      "course_id": "cr001-mba",
+      "status": "submitted",
+      "documents_status": "pending",
+      "documents": [
+        {
+          "id": "7942160b-faed-46a9-ad38-853208557d5b",
+          "name": "Class 10 marksheet",
+          "status": "verified",
+          "file_name": "class-10.pdf",
+          "file_url": "",
+          "remarks": "",
+          "uploaded_at": "2026-10-02T13:48:40.551Z",
+          "reviewed_at": "2026-10-02T13:48:40.551Z"
+        },
+        {
+          "id": "aa84788d-96e1-439c-b5a8-36e38a2e1373",
+          "name": "Class 12 marksheet",
+          "status": "missing",
+          "file_name": "",
+          "file_url": "",
+          "remarks": "",
+          "uploaded_at": null,
+          "reviewed_at": null
+        },
+        {
+          "id": "f8a85e3c-7de9-4abf-a031-a94faf904c43",
+          "name": "ID proof",
+          "status": "verified",
+          "file_name": "aadhaar.pdf",
+          "file_url": "",
+          "remarks": "",
+          "uploaded_at": "2026-10-02T13:48:40.551Z",
+          "reviewed_at": "2026-10-02T13:48:40.551Z"
+        },
+        {
+          "id": "6d56fa35-3eb2-4dd4-8bde-9c37f82a9cf6",
+          "name": "Entrance scorecard",
+          "status": "missing",
+          "file_name": "",
+          "file_url": "",
+          "remarks": "",
+          "uploaded_at": null,
+          "reviewed_at": null
+        },
+        {
+          "id": "4ec413f6-10aa-4d6b-9296-683f90a0367d",
+          "name": "Passport photo",
+          "status": "missing",
+          "file_name": "",
+          "file_url": "",
+          "remarks": "",
+          "uploaded_at": null,
+          "reviewed_at": null
+        }
+      ],
+      "counselor_name": "Neha Khan",
+      "priority": "high",
+      "created_at": "2026-10-02T13:48:40.552Z",
+      "updated_at": "2026-10-02T13:48:40.552Z"
     }
   ],
-  "settings": {
-    "institute_name": "Rakshpal Bahadur Management Institute (RBMI)",
-    "short_name": "RBMI",
-    "email": "admissions@rbmi.edu.in",
-    "phone": "+91 581 250 0000",
-    "address": "Pilibhit Bypass Road, Bareilly, Uttar Pradesh - 243006",
-    "website": "https://www.rbmi.edu.in",
-    "academic_year": "2025-2026",
-    "city": "Bareilly",
-    "state": "Uttar Pradesh",
-    "branches": [
-      {
-        "id": "bareilly",
-        "name": "Bareilly Campus",
-        "address": "Pilibhit Bypass Road, Bareilly, UP - 243006",
-        "phone": "+91 581 250 0000"
-      },
-      {
-        "id": "greater_noida",
-        "name": "Greater Noida Campus",
-        "address": "Knowledge Park II, Greater Noida, UP - 201306",
-        "phone": "+91 120 250 0000"
-      }
-    ]
-  },
-  "portalProfiles": {
-    "u004-student-demo": {
+  "queries": [
+    {
+      "id": "qry-demo-aarav",
       "user_id": "u004-student-demo",
-      "name": "Aarav Mehta",
+      "student_name": "krishna jaiswal",
+      "subject": "Document upload help",
+      "category": "Documents",
+      "status": "open",
+      "priority": "medium",
+      "message": "Need help uploading Class 12 marksheet.",
+      "response": "",
+      "created_at": "2026-10-02T13:48:40.552Z",
+      "updated_at": "2026-10-02T13:48:40.552Z"
+    }
+  ],
+  "payments": [
+    {
+      "id": "pay-demo-aarav",
+      "user_id": "u004-student-demo",
+      "student_name": "krishna jaiswal",
+      "title": "Admission confirmation fee",
+      "amount": 25000,
+      "status": "due",
+      "method": "Online",
+      "due_date": "2026-05-15",
+      "receipt_no": "",
+      "installments": [
+        {
+          "id": "3be66807-2d23-4197-b145-74608e408265",
+          "title": "Installment 1",
+          "amount": 12500,
+          "status": "due",
+          "due_date": "2026-05-15",
+          "paid_at": null,
+          "receipt_no": ""
+        },
+        {
+          "id": "c0726c55-411f-4c2c-a0a7-5e4f9428e22f",
+          "title": "Installment 2",
+          "amount": 12500,
+          "status": "due",
+          "due_date": "2026-06-15",
+          "paid_at": null,
+          "receipt_no": ""
+        }
+      ],
+      "created_at": "2026-10-02T13:48:40.553Z",
+      "updated_at": "2026-10-02T13:48:40.553Z"
+    }
+  ],
+  "portalProfiles": {
+    "c17376d1-f82e-4bcb-8207-ecd52d63d63b": {
+      "user_id": "c17376d1-f82e-4bcb-8207-ecd52d63d63b",
+      "name": "krishna jaiswal",
       "email": "student@demo.in",
       "phone": "",
       "city": "",
@@ -85,26 +178,283 @@
       "fee_due": "0",
       "scholarship": "Not reviewed yet",
       "branch": "bareilly",
-      "updated_at": "2026-10-01T07:13:37.255Z"
+      "updated_at": "2026-10-02T13:48:40.553Z"
     }
   },
-  "applications": [],
-  "queries": [],
-  "payments": [],
-  "communicationIntegrations": {},
-  "communicationTemplates": [],
-  "communicationCampaigns": [],
-  "callLogs": [],
-  "autoFollowUps": [],
-  "broadcastMessages": [],
-  "studentInbox": [],
-  "chatThreads": [],
-  "notificationCenter": [],
+  "settings": null,
   "form_templates": [],
   "campaigns": [],
-  "publishers": [],
-  "inboundLogs": [],
-  "letter_templates": [],
+  "letter_templates": [
+    {
+      "id": "lt-demo-001",
+      "name": "Standard MBA Offer Letter",
+      "content": "<h1>Offer of Admission</h1><p>Dear {{name}},</p><p>We are pleased to offer you admission to the <strong>{{course}}</strong> program at RBMI Bareilly for the academic year 2025-26.</p><p>Please complete your fee payment by {{due_date}} to confirm your seat.</p>",
+      "variables": [
+        "name",
+        "course",
+        "due_date"
+      ],
+      "created_at": "2026-10-02T13:48:40.551Z",
+      "updated_at": "2026-10-02T13:48:40.551Z"
+    }
+  ],
   "offer_letters": [],
-  "workflow_rules": []
+  "workflow_rules": [
+    {
+      "id": "wf-demo-001",
+      "name": "Send Offer Letter on Approval",
+      "trigger": "application_status_changed",
+      "condition": "status === \"approved\"",
+      "action": "send_offer_letter",
+      "template_id": "lt-demo-001",
+      "active": true,
+      "created_at": "2026-10-02T13:48:40.551Z"
+    }
+  ],
+  "communicationIntegrations": {
+    "email": {
+      "enabled": true,
+      "provider": "SMTP relay",
+      "sender": "admissions@rbmi.edu.in"
+    },
+    "sms": {
+      "enabled": true,
+      "provider": "MSG91",
+      "sender": "RBMIAD"
+    },
+    "whatsapp": {
+      "enabled": true,
+      "provider": "WhatsApp Business Cloud",
+      "sender": "+91 581 250 0000"
+    },
+    "ivr": {
+      "enabled": true,
+      "provider": "Exotel",
+      "sender": "IVR Queue A"
+    },
+    "push": {
+      "enabled": true,
+      "provider": "Firebase Cloud Messaging",
+      "sender": "RBMI Hub App"
+    }
+  },
+  "communicationTemplates": [
+    {
+      "id": "6f358b6e-92fb-4463-95f7-a60099c8e871",
+      "name": "Open House Invite",
+      "channel": "email",
+      "category": "campaign",
+      "subject": "Join RBMI open house this Saturday",
+      "content": "Hi {{name}}, visit {{campus}} this Saturday for our open house and course guidance session.",
+      "variables": [
+        "name",
+        "campus"
+      ],
+      "active": true,
+      "created_at": "2026-10-02T13:48:40.603Z",
+      "updated_at": "2026-10-02T13:48:40.603Z"
+    },
+    {
+      "id": "8af9de41-3573-4598-b7b4-311b41efc075",
+      "name": "Callback Reminder",
+      "channel": "sms",
+      "category": "follow_up",
+      "subject": "",
+      "content": "Hi {{name}}, our counselor will call you today regarding {{course}} admission.",
+      "variables": [
+        "name",
+        "course"
+      ],
+      "active": true,
+      "created_at": "2026-10-02T13:48:40.603Z",
+      "updated_at": "2026-10-02T13:48:40.603Z"
+    },
+    {
+      "id": "02cc9921-8118-471d-b154-d3e2afb55d4e",
+      "name": "Document Nudge",
+      "channel": "whatsapp",
+      "category": "drip",
+      "subject": "",
+      "content": "Hello {{name}}, please upload your pending documents to keep your admission moving.",
+      "variables": [
+        "name"
+      ],
+      "active": true,
+      "created_at": "2026-10-02T13:48:40.603Z",
+      "updated_at": "2026-10-02T13:48:40.603Z"
+    }
+  ],
+  "communicationCampaigns": [
+    {
+      "id": "e2489db3-b7b4-4cbb-acb9-ce50a3e52141",
+      "name": "MBA Priority Outreach",
+      "channel": "email",
+      "category": "campaign",
+      "status": "draft",
+      "audience": "MBA prospects",
+      "audience_count": 1,
+      "template_id": "6f358b6e-92fb-4463-95f7-a60099c8e871",
+      "subject": "Admissions guidance for MBA applicants",
+      "message": "Shortlist warm MBA leads for a counselor callback.",
+      "auto_followup": true,
+      "owner_id": "u001-admin",
+      "metrics": {
+        "delivered": 0,
+        "opened": 0,
+        "clicked": 0,
+        "replied": 0,
+        "failed": 0
+      },
+      "created_at": "2026-10-02T13:48:40.603Z",
+      "updated_at": "2026-10-02T13:48:40.603Z",
+      "sent_at": null
+    },
+    {
+      "id": "83951c38-6768-4883-9c85-824c694af1b2",
+      "name": "Application Deadline SMS",
+      "channel": "sms",
+      "category": "broadcast",
+      "status": "scheduled",
+      "audience": "All active leads",
+      "audience_count": 1,
+      "template_id": "8af9de41-3573-4598-b7b4-311b41efc075",
+      "subject": "",
+      "message": "Send deadline reminders for pending applicants.",
+      "auto_followup": false,
+      "owner_id": "u001-admin",
+      "metrics": {
+        "delivered": 0,
+        "opened": 0,
+        "clicked": 0,
+        "replied": 0,
+        "failed": 0
+      },
+      "created_at": "2026-10-02T13:48:40.603Z",
+      "updated_at": "2026-10-02T13:48:40.603Z",
+      "sent_at": null
+    },
+    {
+      "id": "4c70ccb2-e547-42c6-9258-ed1c56d78270",
+      "name": "Document Completion Drip",
+      "channel": "whatsapp",
+      "category": "drip",
+      "status": "active",
+      "audience": "Document pending students",
+      "audience_count": 1,
+      "template_id": "02cc9921-8118-471d-b154-d3e2afb55d4e",
+      "subject": "",
+      "message": "Automated nudges for pending document uploads.",
+      "auto_followup": true,
+      "owner_id": "u001-admin",
+      "metrics": {
+        "delivered": 12,
+        "opened": 10,
+        "clicked": 6,
+        "replied": 4,
+        "failed": 1
+      },
+      "created_at": "2026-10-02T13:48:40.603Z",
+      "updated_at": "2026-10-02T13:48:40.603Z",
+      "sent_at": "2026-10-02T13:48:40.603Z"
+    }
+  ],
+  "callLogs": [
+    {
+      "id": "cac8f942-7d17-4984-bb8c-003aa84d5b00",
+      "student_name": "krishna jaiswal",
+      "phone": "+91 90123 45678",
+      "direction": "outbound",
+      "provider": "Exotel",
+      "duration_seconds": 412,
+      "recording_url": "https://recordings.rbmi.local/call-demo-001",
+      "summary": "Discussed MBA admission process and scheduled callback.",
+      "status": "completed",
+      "created_at": "2026-10-02T13:48:40.603Z"
+    }
+  ],
+  "autoFollowUps": [
+    {
+      "id": "b1dd7fd3-ad1d-4e58-9fb5-e88647b9cf2a",
+      "title": "No response in 24 hours",
+      "trigger": "lead_created",
+      "channel": "sms",
+      "delay_hours": 24,
+      "status": "active",
+      "template_id": "8af9de41-3573-4598-b7b4-311b41efc075",
+      "created_at": "2026-10-02T13:48:40.603Z",
+      "updated_at": "2026-10-02T13:48:40.603Z"
+    }
+  ],
+  "broadcastMessages": [
+    {
+      "id": "e6c4b56d-9691-4bc9-8651-948147ea439c",
+      "title": "Scholarship Webinar Alert",
+      "channel": "whatsapp",
+      "audience": "All scholarship leads",
+      "message": "Scholarship webinar starts at 5 PM. Join using the portal link.",
+      "status": "sent",
+      "metrics": {
+        "reached": 1,
+        "engaged": 1
+      },
+      "created_at": "2026-10-02T13:48:40.603Z",
+      "updated_at": "2026-10-02T13:48:40.603Z"
+    }
+  ],
+  "studentInbox": [
+    {
+      "id": "5829c1b0-a5af-48fb-9df9-9a26dabfd110",
+      "student_name": "krishna jaiswal",
+      "channel": "email",
+      "subject": "Admission help required",
+      "message": "Can I switch from BBA to MBA after counseling?",
+      "status": "open",
+      "priority": "high",
+      "created_at": "2026-10-02T13:48:40.603Z",
+      "updated_at": "2026-10-02T13:48:40.603Z"
+    }
+  ],
+  "chatThreads": [
+    {
+      "id": "322c03bf-357f-4dea-af6c-cb4b1ae94588",
+      "student_name": "krishna jaiswal",
+      "counselor_name": "Neha Khan",
+      "status": "active",
+      "last_message_at": "2026-10-02T13:48:40.603Z",
+      "messages": [
+        {
+          "id": "fb173542-9735-4157-807c-46f816faefbb",
+          "sender": "student",
+          "text": "Hello, I need the fee structure for MBA.",
+          "created_at": "2026-10-02T13:48:40.603Z"
+        },
+        {
+          "id": "9a83c125-589b-48b4-a4d8-ceb9a865054b",
+          "sender": "counselor",
+          "text": "Sharing the updated fee structure and scholarship slab now.",
+          "created_at": "2026-10-02T13:48:40.603Z"
+        }
+      ]
+    }
+  ],
+  "notificationCenter": [
+    {
+      "id": "c70fdd4c-dddb-4eb2-89a0-20fc5304c62c",
+      "title": "Broadcast delivered",
+      "message": "Scholarship webinar broadcast reached active leads.",
+      "channel": "push",
+      "target_type": "marketing",
+      "status": "unread",
+      "created_at": "2026-10-02T13:48:40.603Z"
+    },
+    {
+      "id": "39d96a7c-b6c0-428f-9b4e-e0a49c16522f",
+      "title": "Inbox waiting",
+      "message": "krishna jaiswal is waiting for a counselor response.",
+      "channel": "email",
+      "target_type": "student_inbox",
+      "status": "unread",
+      "created_at": "2026-10-02T13:48:40.603Z"
+    }
+  ]
 }

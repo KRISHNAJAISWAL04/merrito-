@@ -1,6 +1,6 @@
 // ===== RBMI Admission Hub — Service Worker =====
-const CACHE_NAME = 'rbmi-hub-v2';
-const DYNAMIC_CACHE = 'rbmi-dynamic-v2';
+const CACHE_NAME = 'rbmi-hub-v3';
+const DYNAMIC_CACHE = 'rbmi-dynamic-v3';
 
 // App shell files to pre-cache
 const APP_SHELL = [
