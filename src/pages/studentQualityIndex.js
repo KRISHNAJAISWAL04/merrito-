@@ -31,7 +31,9 @@ export async function renderStudentQualityIndex(container) {
       fetchLeads({ limit: 500 }).catch(() => ({ leads: [] }))
     ]);
 
-    const leads = leadsData.leads || leadsData || [];
+    const leads = Array.isArray(leadsData)
+      ? leadsData
+      : (leadsData?.data || leadsData?.leads || []);
 
     // --- Compute age distribution from leads ---
     const ageGroups = { '16 Yrs': { male: 0, female: 0 }, '17 Yrs': { male: 0, female: 0 }, '18 Yrs': { male: 0, female: 0 }, '19 Yrs': { male: 0, female: 0 }, '20 Yrs': { male: 0, female: 0 } };
@@ -40,19 +42,24 @@ export async function renderStudentQualityIndex(container) {
     if (leads.length > 0) {
       leads.forEach(lead => {
         const gender = (lead.gender || '').toLowerCase();
+        const genderKey = gender === 'male' || gender === 'm'
+          ? 'male'
+          : gender === 'female' || gender === 'f' ? 'female' : null;
         const age = lead.age ? Number(lead.age) : null;
 
-        if (gender === 'male' || gender === 'm') maleCount++;
-        else if (gender === 'female' || gender === 'f') femaleCount++;
+        if (genderKey === 'male') maleCount++;
+        else if (genderKey === 'female') femaleCount++;
 
         if (age) {
           totalAge += age;
           ageCount++;
-          if (age <= 16) { ageGroups['16 Yrs'][gender === 'female' || gender === 'f' ? 'female' : 'male']++; }
-          else if (age === 17) { ageGroups['17 Yrs'][gender === 'female' || gender === 'f' ? 'female' : 'male']++; }
-          else if (age === 18) { ageGroups['18 Yrs'][gender === 'female' || gender === 'f' ? 'female' : 'male']++; }
-          else if (age === 19) { ageGroups['19 Yrs'][gender === 'female' || gender === 'f' ? 'female' : 'male']++; }
-          else { ageGroups['20 Yrs'][gender === 'female' || gender === 'f' ? 'female' : 'male']++; }
+          if (genderKey) {
+            if (age <= 16) ageGroups['16 Yrs'][genderKey]++;
+            else if (age === 17) ageGroups['17 Yrs'][genderKey]++;
+            else if (age === 18) ageGroups['18 Yrs'][genderKey]++;
+            else if (age === 19) ageGroups['19 Yrs'][genderKey]++;
+            else ageGroups['20 Yrs'][genderKey]++;
+          }
         }
       });
     }
