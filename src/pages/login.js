@@ -263,17 +263,22 @@ export function showLogin({ onSuccess, onSignupClick }) {
   });
 
   // Google login
-  document.getElementById('lgoogle')?.addEventListener('click', () => {
+  document.getElementById('lgoogle')?.addEventListener('click', async () => {
     const branch = document.getElementById('lbranch').value;
     const supabase = getSupabase();
     if (supabase) {
-      supabase.auth.signInWithOAuth({
+      const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: `${window.location.origin}/auth/callback?branch=${branch}`,
           queryParams: { access_type: 'offline', prompt: 'consent' }
         }
       });
+      if (error) {
+        const err = document.getElementById('lerr');
+        err.textContent = '⚠ ' + error.message;
+        err.style.display = 'block';
+      }
     } else {
       const err = document.getElementById('lerr');
       err.textContent = 'Google login needs Supabase credentials.';

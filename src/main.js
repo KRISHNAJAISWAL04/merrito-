@@ -145,6 +145,15 @@ async function handleAuthCallback() {
   try {
     const supabase = getSupabase();
     if (supabase) {
+      // Google OAuth uses the PKCE `code` flow on hosted deployments. Make
+      // the exchange explicit before reading the session; otherwise a new
+      // Google user can arrive at the callback with no client session yet.
+      const oauthCode = searchParams.get('code');
+      if (oauthCode) {
+        const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(oauthCode);
+        if (exchangeError) throw exchangeError;
+      }
+
       const { data, error } = await supabase.auth.getSession();
       if (error) throw error;
 
@@ -157,7 +166,13 @@ async function handleAuthCallback() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ access_token: data.session.access_token })
         });
-        const payload = await res.json();
+        const responseText = await res.text();
+        let payload;
+        try {
+          payload = JSON.parse(responseText);
+        } catch {
+          payload = { error: responseText || `Authentication request failed (${res.status})` };
+        }
         if (!res.ok) throw new Error(payload.error || 'Authentication failed');
 
         saveSession(payload, branch);

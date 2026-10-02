@@ -273,7 +273,13 @@
           successContainer.style.display = 'block';
           window.scrollTo({ top: 0, behavior: 'smooth' });
         } else {
-          const err = await response.json();
+          const responseText = await response.text();
+          let err;
+          try {
+            err = JSON.parse(responseText);
+          } catch {
+            err = { error: responseText || `Request failed (${response.status})` };
+          }
           if (err.duplicate) {
             formAlert.className = 'alert info';
             formAlert.textContent = 'You have already applied! Our team will contact you shortly.';
